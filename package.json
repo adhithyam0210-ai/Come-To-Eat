@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Come To Eat - Modern Responsive Full-Stack Food Ordering Platform",
   "scripts": {
+    "build": "cd client && npm install && npm run build",
     "server": "cd server && npm start",
     "client": "cd client && npm run dev",
     "seed": "cd server && npm run seed"
