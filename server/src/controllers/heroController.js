@@ -7,7 +7,8 @@ class HeroController {
   static async getHeroSlides(req, res) {
     try {
       const slides = await query.all(
-        `SELECT * FROM hero_slides WHERE is_active = 1 ORDER BY sort_order ASC, id ASC`
+        `SELECT id, tag, script, title, desc_text AS desc, image_url, button_text, bg_color, accent_text, target_category, sort_order, is_active
+         FROM hero_slides WHERE is_active = 1 ORDER BY sort_order ASC, id ASC`
       );
       res.json({ success: true, slides });
     } catch (err) {
@@ -21,7 +22,10 @@ class HeroController {
    */
   static async getAllHeroSlidesAdmin(req, res) {
     try {
-      const slides = await query.all(`SELECT * FROM hero_slides ORDER BY sort_order ASC, id ASC`);
+      const slides = await query.all(
+        `SELECT id, tag, script, title, desc_text AS desc, image_url, button_text, bg_color, accent_text, target_category, sort_order, is_active
+         FROM hero_slides ORDER BY sort_order ASC, id ASC`
+      );
       res.json({ success: true, slides });
     } catch (err) {
       res.status(500).json({ success: false, message: 'Failed to fetch hero slides for admin.' });
@@ -52,7 +56,7 @@ class HeroController {
 
       const result = await query.run(
         `INSERT INTO hero_slides 
-         (tag, script, title, desc, image_url, button_text, bg_color, accent_text, target_category, sort_order)
+         (tag, script, title, desc_text, image_url, button_text, bg_color, accent_text, target_category, sort_order)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tag || 'CHEF SIGNATURE',
@@ -68,7 +72,11 @@ class HeroController {
         ]
       );
 
-      const created = await query.get(`SELECT * FROM hero_slides WHERE id = ?`, [result.lastID]);
+      const created = await query.get(
+        `SELECT id, tag, script, title, desc_text AS desc, image_url, button_text, bg_color, accent_text, target_category, sort_order, is_active
+         FROM hero_slides WHERE id = ?`,
+        [result.lastID]
+      );
       res.status(201).json({ success: true, slide: created, message: 'Hero slide created successfully.' });
     } catch (err) {
       console.error('createHeroSlide error:', err);
@@ -101,7 +109,7 @@ class HeroController {
          SET tag = COALESCE(?, tag),
              script = COALESCE(?, script),
              title = COALESCE(?, title),
-             desc = COALESCE(?, desc),
+             desc_text = COALESCE(?, desc_text),
              image_url = COALESCE(?, image_url),
              button_text = COALESCE(?, button_text),
              bg_color = COALESCE(?, bg_color),
@@ -126,7 +134,11 @@ class HeroController {
         ]
       );
 
-      const updated = await query.get(`SELECT * FROM hero_slides WHERE id = ?`, [id]);
+      const updated = await query.get(
+        `SELECT id, tag, script, title, desc_text AS desc, image_url, button_text, bg_color, accent_text, target_category, sort_order, is_active
+         FROM hero_slides WHERE id = ?`,
+        [id]
+      );
       res.json({ success: true, slide: updated, message: 'Hero slide updated successfully.' });
     } catch (err) {
       console.error('updateHeroSlide error:', err);

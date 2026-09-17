@@ -102,6 +102,7 @@ export function CategoryPage({
           {/* Breadcrumb & Back Navigation */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
             <Breadcrumbs
+              theme="dark"
               items={[
                 { label: 'Home', onClick: onNavigateToHome },
                 { label: 'Menu', onClick: onBackToMenu },
@@ -141,23 +142,7 @@ export function CategoryPage({
             gap: '32px'
           }}>
             <div>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                backgroundColor: 'rgba(133, 146, 107, 0.35)',
-                border: '1px solid rgba(133, 146, 107, 0.5)',
-                color: '#E8EFE1',
-                padding: '4px 14px',
-                borderRadius: '20px',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-                marginBottom: '12px'
-              }}>
-                <Sparkles size={13} /> Chef's Selection
-              </div>
+
 
               <h1 style={{
                 fontFamily: "'Playfair Display', serif",
@@ -223,56 +208,7 @@ export function CategoryPage({
 
       {/* Main Content Area */}
       <div className="container" style={{ marginTop: '30px' }}>
-        {/* Category Switcher Pill Bar */}
-        {allCategories.length > 1 && (
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '0.78rem', color: '#6A785E', fontWeight: 700, textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '0.5px' }}>
-              Switch Category
-            </div>
-            <div style={{
-              display: 'flex',
-              gap: '10px',
-              overflowX: 'auto',
-              paddingBottom: '8px',
-              scrollbarWidth: 'none'
-            }}>
-              {allCategories.map((cat) => {
-                const isCurrent = (cat.id && category.id && cat.id === category.id) || cat.slug === category.slug;
-                return (
-                  <button
-                    key={cat.id || cat.slug}
-                    onClick={() => onSelectCategory(cat)}
-                    style={{
-                      padding: '8px 18px',
-                      borderRadius: '24px',
-                      border: isCurrent ? '2px solid #85926B' : '1px solid #DCE3D4',
-                      backgroundColor: isCurrent ? '#85926B' : '#FFFFFF',
-                      color: isCurrent ? '#FFFFFF' : '#3D4636',
-                      fontWeight: isCurrent ? 700 : 600,
-                      fontSize: '0.86rem',
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      boxShadow: isCurrent ? '0 4px 14px rgba(133, 146, 107, 0.3)' : '0 2px 6px rgba(0,0,0,0.02)',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    {cat.image_url && (
-                      <img
-                        src={cat.image_url}
-                        alt=""
-                        style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover' }}
-                      />
-                    )}
-                    <span>{cat.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
+
 
         {/* Filter and Sorting Controls */}
         <div style={{

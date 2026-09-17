@@ -61,7 +61,7 @@ const SAMPLE_REVIEWS = [
   }
 ];
 
-export function ReviewsPage({ onNavigateToHome, onOpenAuth, onOpenOrders }) {
+export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOpenOrders }) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState(SAMPLE_REVIEWS);
   const [ratingFilter, setRatingFilter] = useState('all');
@@ -72,7 +72,8 @@ export function ReviewsPage({ onNavigateToHome, onOpenAuth, onOpenOrders }) {
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   useEffect(() => {
-    api.get('/reviews')
+    const q = selectedBranch?.id ? `?branch_id=${selectedBranch.id}` : '';
+    api.get(`/reviews${q}`)
       .then((res) => {
         if (res.success && res.reviews && res.reviews.length > 0) {
           const mapped = res.reviews.map((r) => ({
@@ -85,10 +86,12 @@ export function ReviewsPage({ onNavigateToHome, onOpenAuth, onOpenOrders }) {
             verified: true
           }));
           setReviews([...mapped, ...SAMPLE_REVIEWS]);
+        } else {
+          setReviews(SAMPLE_REVIEWS);
         }
       })
       .catch(() => {});
-  }, []);
+  }, [selectedBranch]);
 
   const filteredReviews = reviews.filter((r) => {
     if (ratingFilter === 'all') return true;

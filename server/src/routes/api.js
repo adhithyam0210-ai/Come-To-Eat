@@ -13,6 +13,7 @@ const { UploadController } = require('../controllers/uploadController');
 const { SettingsController } = require('../controllers/settingsController');
 const { BranchController } = require('../controllers/branchController');
 const StaffController = require('../controllers/staffController');
+const { OfferController } = require('../controllers/offerController');
 const { registerSseClient } = require('../supabase');
 
 // =================== REALTIME STREAM (Supabase / SSE live reflection) ===================
@@ -74,13 +75,19 @@ router.get('/admin/payments', requireAdmin, AdminController.getPayments);
 router.post('/admin/payments/:orderId/refund', requireAdmin, AdminController.refundPayment);
 router.get('/admin/deliveries', requireStaff, AdminController.getDeliveries);
 
-// =================== COUPONS ===================
+// =================== COUPONS & OFFERS ===================
 router.get('/coupons/active', CouponController.getActiveCoupons);
 router.post('/coupons/validate', CouponController.validateCoupon);
 router.get('/coupons/admin', requireAdmin, CouponController.getAllCouponsAdmin);
 router.post('/coupons', requireAdmin, CouponController.createCoupon);
 router.put('/coupons/:id', requireAdmin, CouponController.updateCoupon);
 router.delete('/coupons/:id', requireAdmin, CouponController.deleteCoupon);
+
+router.get('/offers', OfferController.getOffers);
+router.get('/offers/admin', requireAdmin, OfferController.getAllOffersAdmin);
+router.post('/offers', requireAdmin, OfferController.createOffer);
+router.put('/offers/:id', requireAdmin, OfferController.updateOffer);
+router.delete('/offers/:id', requireAdmin, OfferController.deleteOffer);
 
 // =================== REVIEWS ===================
 router.get('/reviews', ReviewController.getAllPublicReviews);

@@ -115,6 +115,25 @@ export function AdminPortal({
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
 
+  // Chef's Recommendation filter inside Landing Page tab
+  const [chefCatFilter, setChefCatFilter] = useState('all');
+  const [chefSearchTerm, setChefSearchTerm] = useState('');
+
+  // Offer Banners State & Modal
+  const [offers, setOffers] = useState([]);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [editingOffer, setEditingOffer] = useState(null);
+  const [offerForm, setOfferForm] = useState({
+    title: '',
+    tag: 'PROMO',
+    description: '',
+    image_url: '',
+    button_text: 'Claim Offer & Order',
+    target_category: 'Burgers and Sandwiches',
+    bg_color: '#85926B',
+    branch_id: ''
+  });
+
   // Fetch functions
   const fetchBranches = async () => {
     try {
@@ -159,8 +178,14 @@ export function AdminPortal({
       setLoading(true);
       const q = branchId && branchId !== 'all' ? `?branch_id=${branchId}` : '';
       const res = await api.get(`/orders/admin/all${q}`);
-      if (res.success) setOrders(res.orders);
-    } catch (e) {} finally {
+      if (res.success && Array.isArray(res.orders)) {
+        setOrders(res.orders);
+      } else {
+        setOrders([]);
+      }
+    } catch (e) {
+      setOrders([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -234,6 +259,13 @@ export function AdminPortal({
     } catch (e) {}
   };
 
+  const fetchOffers = async () => {
+    try {
+      const res = await api.get('/offers/admin');
+      if (res.success && res.offers) setOffers(res.offers);
+    } catch (e) {}
+  };
+
   const fetchHeroSlides = async () => {
     try {
       const res = await api.get('/hero-slides/admin');
@@ -259,6 +291,7 @@ export function AdminPortal({
     fetchPayments();
     fetchDeliveries();
     fetchCoupons();
+    fetchOffers();
     fetchHeroSlides();
     fetchSettings();
     fetchBranches();
@@ -604,6 +637,67 @@ export function AdminPortal({
     setShowCouponModal(true);
   };
 
+  const openAddOffer = () => {
+    setEditingOffer(null);
+    setOfferForm({
+      title: '',
+      tag: 'PROMO',
+      description: '',
+      image_url: '',
+      button_text: 'Claim Offer & Order',
+      target_category: 'Burgers and Sandwiches',
+      bg_color: '#85926B',
+      branch_id: ''
+    });
+    setShowOfferModal(true);
+  };
+
+  const openEditOffer = (off) => {
+    setEditingOffer(off);
+    setOfferForm({
+      title: off.title,
+      tag: off.tag || 'PROMO',
+      description: off.description || '',
+      image_url: off.image_url || '',
+      button_text: off.button_text || 'Claim Offer & Order',
+      target_category: off.target_category || 'Burgers and Sandwiches',
+      bg_color: off.bg_color || '#85926B',
+      branch_id: off.branch_id || ''
+    });
+    setShowOfferModal(true);
+  };
+
+  const handleSaveOffer = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingOffer) {
+        const res = await api.put(`/offers/${editingOffer.id}`, offerForm);
+        if (res.success) setMessage('Offer banner updated successfully.');
+      } else {
+        const res = await api.post('/offers', offerForm);
+        if (res.success) setMessage('New offer banner created successfully.');
+      }
+      setShowOfferModal(false);
+      setEditingOffer(null);
+      fetchOffers();
+    } catch (err) {
+      alert(err.message || 'Failed to save offer banner.');
+    }
+  };
+
+  const handleDeleteOffer = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this offer banner?')) return;
+    try {
+      const res = await api.delete(`/offers/${id}`);
+      if (res.success) {
+        setMessage('Offer banner deleted.');
+        fetchOffers();
+      }
+    } catch (e) {
+      alert(e.message || 'Failed to delete offer banner.');
+    }
+  };
+
   const openAddSlide = () => {
     setEditingSlide(null);
     setSlideForm({
@@ -636,13 +730,14 @@ export function AdminPortal({
     setShowSlideModal(true);
   };
 
-  const filteredOrders = orders.filter((o) => {
+  const filteredOrders = (orders || []).filter((o) => {
+    if (!o) return false;
     if (orderStatusFilter !== 'all' && o.order_status !== orderStatusFilter) return false;
     if (orderSearch.trim()) {
       const q = orderSearch.toLowerCase();
-      const matchNum = o.order_number.toLowerCase().includes(q);
-      const matchName = o.customer_name.toLowerCase().includes(q);
-      const matchPhone = o.customer_phone?.toLowerCase().includes(q);
+      const matchNum = (o.order_number || '').toLowerCase().includes(q);
+      const matchName = (o.customer_name || '').toLowerCase().includes(q);
+      const matchPhone = (o.customer_phone || '').toLowerCase().includes(q);
       return matchNum || matchName || matchPhone;
     }
     return true;
@@ -654,8 +749,8 @@ export function AdminPortal({
     { id: 'branches', label: 'Store Branches', icon: Building },
     { id: 'foods', label: 'Food Items', icon: UtensilsCrossed },
     { id: 'categories', label: 'Categories', icon: FolderTree },
-    { id: 'coupons', label: 'Coupons & Offers', icon: Tag },
-    { id: 'hero', label: 'Hero Banner', icon: Sparkles },
+    { id: 'coupons', label: 'Offers & Coupons', icon: Tag },
+    { id: 'hero', label: 'Landing Page', icon: Sparkles },
     { id: 'settings', label: 'Store Timings & Info', icon: Clock },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
@@ -1742,87 +1837,164 @@ export function AdminPortal({
           </div>
         )}
 
-        {/* 5. COUPONS TAB (WITH ADD, MODIFY & DELETE OPTIONS AND DATE RANGES) */}
+        {/* 5. OFFERS & COUPONS TAB */}
         {activeTab === 'coupons' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Coupons & Promo Offers
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
-                  Create coupons, set valid start/end dates, modify discounts, or delete expired promotions
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {/* Section A: Visual Offer Banners (for Offers Page) */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                    1. Visual Offer Banners (Offers Page)
+                  </h2>
+                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+                    Create and manage visual promotional offer cards displayed on the customer Offers page
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={openAddCoupon}
-                className="btn-primary"
-                style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
-              >
-                <Plus size={16} /> Add Coupon
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
-              {coupons.map((cp) => (
-                <div
-                  key={cp.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1.5px dashed #C8D1BE',
-                    padding: '18px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minWidth: 0
-                  }}
+                <button
+                  onClick={openAddOffer}
+                  className="btn-primary"
+                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
                 >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{
-                        fontFamily: 'monospace',
-                        fontWeight: 800,
-                        fontSize: '1.1rem',
-                        backgroundColor: '#F3F6EE',
-                        color: '#475234',
-                        padding: '4px 10px',
-                        borderRadius: '6px'
-                      }}>
-                        {cp.code}
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => openEditCoupon(cp)}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: '#F0F4E8',
-                            color: '#475234',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}
-                          title="Modify Coupon"
-                        >
-                          <Edit2 size={13} /> Modify
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCoupon(cp.id)}
-                          style={{
-                            color: '#C62828',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: '#FFEBEE'
-                          }}
-                          title="Delete Coupon"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                  <Plus size={16} /> Add Offer Banner
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '18px' }}>
+                {offers.map((off) => (
+                  <div
+                    key={off.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '1px solid #ECE7DE',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <div style={{
+                      position: 'relative',
+                      height: '140px',
+                      backgroundColor: off.bg_color || '#85926B',
+                      overflow: 'hidden'
+                    }}>
+                      {off.image_url && (
+                        <img src={off.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      )}
+                      <div style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: '#E76F51', color: '#FFF', fontSize: '0.68rem', fontWeight: 800, padding: '3px 10px', borderRadius: '12px' }}>
+                        {off.tag || 'PROMO'}
                       </div>
                     </div>
+                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#1F241C', marginBottom: '6px' }}>{off.title}</div>
+                        <p style={{ fontSize: '0.82rem', color: '#65705C', lineHeight: 1.45, margin: '0 0 12px' }}>{off.description}</p>
+                        <div style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 600 }}>Target: {off.target_category || 'All Categories'}</div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #F0EFEB' }}>
+                        <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475234' }}>CTA: "{off.button_text}"</span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => openEditOffer(off)}
+                            style={{ padding: '5px 10px', borderRadius: '6px', backgroundColor: '#85926B', color: '#FFF', fontSize: '0.76rem', fontWeight: 700, border: 'none' }}
+                          >
+                            <Edit2 size={13} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOffer(off.id)}
+                            style={{ padding: '5px 8px', borderRadius: '6px', backgroundColor: '#FFEBEE', color: '#C62828', fontSize: '0.76rem', border: 'none' }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section B: Discount Coupon Codes */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                    2. Discount Coupon Codes
+                  </h2>
+                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+                    Create checkout promo codes, set valid start/end dates, or modify discount values
+                  </div>
+                </div>
+                <button
+                  onClick={openAddCoupon}
+                  className="btn-primary"
+                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
+                >
+                  <Plus size={16} /> Add Coupon
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+                {coupons.map((cp) => (
+                  <div
+                    key={cp.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '1.5px dashed #C8D1BE',
+                      padding: '18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minWidth: 0
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontWeight: 800,
+                          fontSize: '1.1rem',
+                          backgroundColor: '#F3F6EE',
+                          color: '#475234',
+                          padding: '4px 10px',
+                          borderRadius: '6px'
+                        }}>
+                          {cp.code}
+                        </span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => openEditCoupon(cp)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: '#F0F4E8',
+                              color: '#475234',
+                              fontSize: '0.78rem',
+                              fontWeight: 700
+                            }}
+                            title="Modify Coupon"
+                          >
+                            <Edit2 size={13} /> Modify
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCoupon(cp.id)}
+                            style={{
+                              color: '#C62828',
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: '#FFEBEE'
+                            }}
+                            title="Delete Coupon"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
                     <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#E76F51', marginBottom: '4px' }}>
                       {cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value} FLAT`}
                     </div>
@@ -1831,7 +2003,7 @@ export function AdminPortal({
                     </div>
                     {(cp.start_date || cp.end_date || cp.expires_at) && (
                       <div style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 600 }}>
-                        Valid: {cp.start_date || 'Ongoing'} → {cp.end_date || cp.expires_at || 'No expiry'}
+                        Valid: {cp.start_date || 'Ongoing'} to {cp.end_date || cp.expires_at || 'No expiry'}
                       </div>
                     )}
                   </div>
@@ -1854,100 +2026,306 @@ export function AdminPortal({
               ))}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 6. HERO BANNER TAB (ADD, EDIT & DELETE HERO SLIDES) */}
+        {/* 6. LANDING PAGE TAB (HERO BANNERS, CHEF'S RECOMMENDATION & CRAFTED WITH PASSION) */}
         {activeTab === 'hero' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Hero Banner Slides Management
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
-                  Add hero slides with device image uploads, customize headline titles, CTA buttons, background colors, or delete slides
-                </div>
-              </div>
-              <button
-                onClick={openAddSlide}
-                className="btn-primary"
-                style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
-              >
-                <Plus size={16} /> Add Hero Slide
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-              {heroSlides.map((slide) => (
-                <div
-                  key={slide.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1px solid #ECE7DE',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                >
-                  <div style={{
-                    backgroundColor: slide.bg_color,
-                    padding: '20px',
-                    color: '#FFFFFF',
-                    position: 'relative'
-                  }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px' }}>{slide.tag}</div>
-                    <div style={{ fontFamily: "'Caveat', cursive", fontSize: '1.8rem', lineHeight: 1.2 }}>{slide.script}</div>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginTop: '4px' }}>{slide.title}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {/* Section 1: Hero Banner Slides */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
+                    1. Hero Banner Slides
+                  </h2>
+                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+                    Add dynamic hero slides with custom tags, titles, cursive script, button actions, and background colors
                   </div>
+                </div>
+                <button
+                  onClick={openAddSlide}
+                  className="btn-primary"
+                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
+                >
+                  <Plus size={16} /> Add Hero Slide
+                </button>
+              </div>
 
-                  <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <p style={{ fontSize: '0.82rem', color: '#65705C', lineHeight: 1.5, flex: 1 }}>
-                      {slide.desc}
-                    </p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #F0EFEB' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 700 }}>
-                        CTA: "{slide.button_text}"
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          onClick={() => openEditSlide(slide)}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '6px 12px',
-                            borderRadius: '8px',
-                            backgroundColor: '#85926B',
-                            color: '#FFFFFF',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}
-                        >
-                          <Edit2 size={13} /> Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteHeroSlide(slide.id)}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            backgroundColor: '#FFEBEE',
-                            color: '#C62828',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}
-                          title="Delete Slide"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                {heroSlides.map((slide) => (
+                  <div
+                    key={slide.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '1px solid #ECE7DE',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <div style={{
+                      backgroundColor: slide.bg_color,
+                      padding: '20px',
+                      color: '#FFFFFF',
+                      position: 'relative'
+                    }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px' }}>{slide.tag}</div>
+                      <div style={{ fontFamily: "'Caveat', cursive", fontSize: '1.8rem', lineHeight: 1.2 }}>{slide.script}</div>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginTop: '4px' }}>{slide.title}</div>
+                    </div>
+
+                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <p style={{ fontSize: '0.82rem', color: '#65705C', lineHeight: 1.5, flex: 1 }}>
+                        {slide.desc}
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #F0EFEB' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 700 }}>
+                          CTA: "{slide.button_text}"
+                        </span>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => openEditSlide(slide)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              backgroundColor: '#85926B',
+                              color: '#FFFFFF',
+                              fontSize: '0.78rem',
+                              fontWeight: 700
+                            }}
+                          >
+                            <Edit2 size={13} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteHeroSlide(slide.id)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              backgroundColor: '#FFEBEE',
+                              color: '#C62828',
+                              fontSize: '0.78rem',
+                              fontWeight: 700
+                            }}
+                            title="Delete Slide"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 2: Chef's Recommendation Management */}
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #ECE7DE', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '4px' }}>
+                    2. Chef's Recommendation Highlights
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: '#65705C', margin: 0 }}>
+                    Select dishes from any category or search by name to feature on the Landing Page.
+                  </p>
                 </div>
-              ))}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <select
+                    value={chefCatFilter}
+                    onChange={(e) => setChefCatFilter(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #DCE3D4',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      backgroundColor: '#FAF8F5'
+                    }}
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Search dish..."
+                    value={chefSearchTerm}
+                    onChange={(e) => setChefSearchTerm(e.target.value)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #DCE3D4',
+                      fontSize: '0.84rem',
+                      width: '160px'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', maxHeight: '360px', overflowY: 'auto', paddingRight: '4px' }}>
+                {foods.filter((f) => {
+                  if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
+                  if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
+                  return true;
+                }).map((food) => (
+                  <div
+                    key={food.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: food.is_featured ? '1.5px solid #85926B' : '1px solid #ECE7DE',
+                      backgroundColor: food.is_featured ? '#F5F7F2' : '#FFFFFF'
+                    }}
+                  >
+                    <img
+                      src={food.image_url}
+                      alt=""
+                      style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1F241C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {food.name}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#85926B' }}>₹{food.price}</div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.put(`/foods/${food.id}`, { is_featured: food.is_featured ? 0 : 1 });
+                          fetchFoods();
+                        } catch (e) {
+                          alert('Failed to update recommendation status');
+                        }
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        backgroundColor: food.is_featured ? '#85926B' : '#EAEFE6',
+                        color: food.is_featured ? '#FFFFFF' : '#475234',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {food.is_featured ? 'Featured' : 'Add'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 3: "Crafted With Passion" Promise Settings */}
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #ECE7DE', padding: '24px' }}>
+              <div style={{ marginBottom: '18px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '4px' }}>
+                  3. "Crafted With Passion" Brand Section & Promise Cards
+                </h3>
+                <p style={{ fontSize: '0.84rem', color: '#65705C', margin: 0 }}>
+                  Customize the brand headline, cursive subtitle tag, and all 3 promise card titles & descriptions.
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Section Headline Title
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.crafted_title || 'The Come To Eat Promise'}
+                    onChange={(e) => setSettings({ ...settings, crafted_title: e.target.value })}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DCE3D4', fontSize: '0.88rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Cursive Subtitle Tag
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.crafted_subtitle || 'Crafted With Passion'}
+                    onChange={(e) => setSettings({ ...settings, crafted_subtitle: e.target.value })}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DCE3D4', fontSize: '0.88rem' }}
+                  />
+                </div>
+
+                {/* Card 1 */}
+                <div style={{ backgroundColor: '#FAF8F5', padding: '16px', borderRadius: '14px', border: '1px solid #ECE7DE' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: '#1F241C', marginBottom: '10px' }}>Card 1 (Sparkles Icon)</div>
+                  <input
+                    type="text"
+                    placeholder="Card 1 Title"
+                    value={settings.card1_title || 'Farm-Fresh Ingredients'}
+                    onChange={(e) => setSettings({ ...settings, card1_title: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.84rem', marginBottom: '8px' }}
+                  />
+                  <textarea
+                    placeholder="Card 1 Description"
+                    rows={2}
+                    value={settings.card1_desc || '100% daily-procured farm produce, organic whole dairy, and authentic slow-simmered spices with zero preservatives.'}
+                    onChange={(e) => setSettings({ ...settings, card1_desc: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.82rem', resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Card 2 */}
+                <div style={{ backgroundColor: '#FAF8F5', padding: '16px', borderRadius: '14px', border: '1px solid #ECE7DE' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: '#1F241C', marginBottom: '10px' }}>Card 2 (Zap Icon)</div>
+                  <input
+                    type="text"
+                    placeholder="Card 2 Title"
+                    value={settings.card2_title || 'Fresh Café Preparation'}
+                    onChange={(e) => setSettings({ ...settings, card2_title: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.84rem', marginBottom: '8px' }}
+                  />
+                  <textarea
+                    placeholder="Card 2 Description"
+                    rows={2}
+                    value={settings.card2_desc || 'Crafted fresh on order, insulated packaging keeps burgers crispy and hot coolers iced right to your table.'}
+                    onChange={(e) => setSettings({ ...settings, card2_desc: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.82rem', resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Card 3 */}
+                <div style={{ backgroundColor: '#FAF8F5', padding: '16px', borderRadius: '14px', border: '1px solid #ECE7DE' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: '#1F241C', marginBottom: '10px' }}>Card 3 (Shield Icon)</div>
+                  <input
+                    type="text"
+                    placeholder="Card 3 Title"
+                    value={settings.card3_title || 'Hygienic Café'}
+                    onChange={(e) => setSettings({ ...settings, card3_title: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.84rem', marginBottom: '8px' }}
+                  />
+                  <textarea
+                    placeholder="Card 3 Description"
+                    rows={2}
+                    value={settings.card3_desc || 'Strict 5-star hygiene benchmarks, temperature-controlled food stations, and contactless café protocols.'}
+                    onChange={(e) => setSettings({ ...settings, card3_desc: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.82rem', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <button type="submit" className="btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem' }}>
+                    Save Landing Page Brand & Promise Cards
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
@@ -3115,6 +3493,131 @@ export function AdminPortal({
                   </button>
                   <button type="submit" className="btn-primary" style={{ padding: '8px 20px' }}>
                     Send Transfer Request
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ADD / EDIT VISUAL OFFER BANNER MODAL */}
+        {showOfferModal && (
+          <div className="modal-overlay" style={{ zIndex: 1100 }}>
+            <div className="modal-container" style={{ maxWidth: '640px', width: '90%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', margin: 0 }}>
+                  {editingOffer ? `Edit Offer Banner #${editingOffer.id}` : 'Add New Offer Banner'}
+                </h3>
+                <button onClick={() => setShowOfferModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#65705C' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveOffer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Offer Headline Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Flat 50% OFF First Order"
+                    value={offerForm.title}
+                    onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Badge Tag *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. WELCOME SPECIAL"
+                      value={offerForm.tag}
+                      onChange={(e) => setOfferForm({ ...offerForm, tag: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Button CTA Label
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Order Burgers Now"
+                      value={offerForm.button_text}
+                      onChange={(e) => setOfferForm({ ...offerForm, button_text: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Description / Offer Detail
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Unlock 50% discount on gourmet smash burgers..."
+                    value={offerForm.description}
+                    onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+                    className="form-input"
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                <ImageUploadField
+                  label="Offer Banner Image URL"
+                  value={offerForm.image_url}
+                  onChange={(url) => setOfferForm({ ...offerForm, image_url: url })}
+                  placeholder="https://images.unsplash.com/..."
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Target Category Filter
+                    </label>
+                    <select
+                      value={offerForm.target_category}
+                      onChange={(e) => setOfferForm({ ...offerForm, target_category: e.target.value })}
+                      className="form-select"
+                    >
+                      <option value="">All Categories</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Branch Scope
+                    </label>
+                    <select
+                      value={offerForm.branch_id}
+                      onChange={(e) => setOfferForm({ ...offerForm, branch_id: e.target.value })}
+                      className="form-select"
+                    >
+                      <option value="">All Branches (Global)</option>
+                      {branches.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px' }}>
+                  <button type="button" onClick={() => setShowOfferModal(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ padding: '8px 20px' }}>
+                    {editingOffer ? 'Update Banner' : 'Create Banner'}
                   </button>
                 </div>
               </form>

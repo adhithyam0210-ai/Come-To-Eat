@@ -8,6 +8,7 @@ export function LandingPage({
   heroSlides = [],
   categories = [],
   foods = [],
+  settings = {},
   onOpenAuth,
   onOpenFoodDetail,
   onAddToCart,
@@ -35,10 +36,10 @@ export function LandingPage({
         <div className="container">
           <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto clamp(28px, 4vw, 44px)' }}>
             <div className="font-cursive" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 1.9rem)', color: '#85926B', marginBottom: '4px' }}>
-              Crafted With Passion
+              {settings?.crafted_subtitle || 'Crafted With Passion'}
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.6rem, 3.5vw, 2.3rem)', color: '#1F241C', fontWeight: 700 }}>
-              The Come To Eat Promise
+              {settings?.crafted_title || 'The Come To Eat Promise'}
             </h2>
             <div style={{ width: '48px', height: '3px', backgroundColor: '#85926B', borderRadius: '2px', margin: '10px auto 0' }} />
           </div>
@@ -49,9 +50,11 @@ export function LandingPage({
                 <Sparkles size={20} />
               </div>
               <div>
-                <h4 style={{ fontWeight: 700, fontSize: '1.02rem', color: '#1F241C', marginBottom: '6px' }}>Farm-Fresh Ingredients</h4>
+                <h4 style={{ fontWeight: 700, fontSize: '1.02rem', color: '#1F241C', marginBottom: '6px' }}>
+                  {settings?.card1_title || 'Farm-Fresh Ingredients'}
+                </h4>
                 <p style={{ fontSize: '0.82rem', color: '#6A7463', lineHeight: 1.45, margin: 0 }}>
-                  100% daily-procured farm produce, organic whole dairy, and authentic slow-simmered spices with zero preservatives.
+                  {settings?.card1_desc || '100% daily-procured farm produce, organic whole dairy, and authentic slow-simmered spices with zero preservatives.'}
                 </p>
               </div>
             </div>
@@ -61,9 +64,11 @@ export function LandingPage({
                 <Zap size={20} />
               </div>
               <div>
-                <h4 style={{ fontWeight: 700, fontSize: '1.02rem', color: '#1F241C', marginBottom: '6px' }}>Fresh Café Preparation</h4>
+                <h4 style={{ fontWeight: 700, fontSize: '1.02rem', color: '#1F241C', marginBottom: '6px' }}>
+                  {settings?.card2_title || 'Fresh Café Preparation'}
+                </h4>
                 <p style={{ fontSize: '0.82rem', color: '#6A7463', lineHeight: 1.45, margin: 0 }}>
-                  Crafted fresh on order, insulated packaging keeps burgers crispy and hot coolers iced right to your table.
+                  {settings?.card2_desc || 'Crafted fresh on order, insulated packaging keeps burgers crispy and hot coolers iced right to your table.'}
                 </p>
               </div>
             </div>
@@ -73,9 +78,11 @@ export function LandingPage({
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <h4 style={{ fontWeight: 700, fontSize: '1.02rem', color: '#1F241C', marginBottom: '6px' }}>Hygienic Café</h4>
+                <h4 style={{ fontWeight: 700, fontSize: '1.02rem', color: '#1F241C', marginBottom: '6px' }}>
+                  {settings?.card3_title || 'Hygienic Café'}
+                </h4>
                 <p style={{ fontSize: '0.82rem', color: '#6A7463', lineHeight: 1.45, margin: 0 }}>
-                  Strict 5-star hygiene benchmarks, temperature-controlled food stations, and contactless café protocols.
+                  {settings?.card3_desc || 'Strict 5-star hygiene benchmarks, temperature-controlled food stations, and contactless café protocols.'}
                 </p>
               </div>
             </div>

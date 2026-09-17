@@ -327,10 +327,15 @@ function MainApp() {
             />
           )}
           {currentPage === 'offers' && (
-            <OffersPage onNavigateToMenu={() => handleNavigate('menu')} />
+            <OffersPage
+              onNavigateToMenu={() => handleNavigate('menu')}
+              onSelectCategory={handleSelectCategory}
+              selectedBranch={selectedBranch}
+            />
           )}
           {currentPage === 'reviews' && (
             <ReviewsPage
+              selectedBranch={selectedBranch}
               onOpenAuth={(tab = 'login') => { setAuthTab(tab); setAuthModalOpen(true); }}
               onOpenOrders={() => setOrderHistoryOpen(true)}
             />

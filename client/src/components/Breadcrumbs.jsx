@@ -1,8 +1,13 @@
 import React from 'react';
 import { ChevronRight, Home } from 'lucide-react';
 
-export function Breadcrumbs({ items = [], style = {} }) {
+export function Breadcrumbs({ items = [], style = {}, theme = 'dark' }) {
   if (!items || items.length === 0) return null;
+
+  const isDarkTheme = theme === 'dark';
+  const linkColor = isDarkTheme ? '#D4E2C7' : '#5E6C51';
+  const activeColor = isDarkTheme ? '#FFFFFF' : '#1F241C';
+  const chevronColor = isDarkTheme ? '#A7B799' : '#85926B';
 
   return (
     <nav
@@ -11,10 +16,9 @@ export function Breadcrumbs({ items = [], style = {} }) {
         display: 'flex',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: '6px',
+        gap: '8px',
         padding: '10px 0 16px',
-        fontSize: '0.82rem',
-        color: '#6F7B62',
+        fontSize: '0.96rem',
         ...style
       }}
     >
@@ -23,24 +27,24 @@ export function Breadcrumbs({ items = [], style = {} }) {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '4px',
-          color: items.length === 1 ? '#2A3324' : '#85926B',
-          fontWeight: 600,
+          gap: '6px',
+          color: items.length === 1 ? activeColor : linkColor,
+          fontWeight: 700,
           background: 'none',
           border: 'none',
           cursor: items[0]?.onClick ? 'pointer' : 'default',
           padding: 0,
-          fontSize: '0.82rem',
-          transition: 'color 0.2s ease'
+          fontSize: '0.96rem',
+          transition: 'opacity 0.2s ease'
         }}
         onMouseEnter={(e) => {
-          if (items[0]?.onClick) e.currentTarget.style.color = '#2A3324';
+          if (items[0]?.onClick) e.currentTarget.style.opacity = '0.8';
         }}
         onMouseLeave={(e) => {
-          if (items[0]?.onClick) e.currentTarget.style.color = '#85926B';
+          if (items[0]?.onClick) e.currentTarget.style.opacity = '1';
         }}
       >
-        <Home size={13} />
+        <Home size={16} color={linkColor} />
         <span>Home</span>
       </button>
 
@@ -48,16 +52,18 @@ export function Breadcrumbs({ items = [], style = {} }) {
         const isLast = idx === items.length - 2;
         return (
           <React.Fragment key={idx}>
-            <ChevronRight size={13} color="#A7B399" />
+            <ChevronRight size={16} color={chevronColor} />
             {isLast || !item.onClick ? (
               <span
                 style={{
-                  color: '#2A3324',
-                  fontWeight: 700,
-                  maxWidth: '260px',
+                  color: activeColor,
+                  fontWeight: 800,
+                  fontSize: '0.98rem',
+                  maxWidth: '300px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  textShadow: isDarkTheme ? '0 1px 3px rgba(0,0,0,0.5)' : 'none'
                 }}
               >
                 {item.label}
@@ -66,17 +72,17 @@ export function Breadcrumbs({ items = [], style = {} }) {
               <button
                 onClick={item.onClick}
                 style={{
-                  color: '#85926B',
-                  fontWeight: 600,
+                  color: linkColor,
+                  fontWeight: 700,
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
                   padding: 0,
-                  fontSize: '0.82rem',
-                  transition: 'color 0.2s ease'
+                  fontSize: '0.96rem',
+                  transition: 'opacity 0.2s ease'
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#2A3324')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#85926B')}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.8')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
               >
                 {item.label}
               </button>

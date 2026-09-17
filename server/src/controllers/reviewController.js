@@ -30,12 +30,22 @@ class ReviewController {
 
   static async getAllPublicReviews(req, res) {
     try {
-      const reviews = await query.all(
-        `SELECT r.*, f.name as food_name, f.image_url as food_image
-         FROM reviews r
-         LEFT JOIN food_items f ON r.food_id = f.id
-         ORDER BY r.created_at DESC LIMIT 50`
-      );
+      const { branch_id } = req.query;
+      let sql = `
+        SELECT r.*, f.name as food_name, f.image_url as food_image
+        FROM reviews r
+        LEFT JOIN food_items f ON r.food_id = f.id
+        WHERE 1=1
+      `;
+      const params = [];
+
+      if (branch_id && branch_id !== 'all') {
+        sql += ` AND (r.branch_id = ? OR r.branch_id IS NULL)`;
+        params.push(Number(branch_id));
+      }
+
+      sql += ` ORDER BY r.created_at DESC LIMIT 50`;
+      const reviews = await query.all(sql, params);
       res.json({ success: true, reviews });
     } catch (err) {
       res.status(500).json({ success: false, message: 'Failed to fetch reviews.' });
