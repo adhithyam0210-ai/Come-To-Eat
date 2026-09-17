@@ -83,8 +83,9 @@ router.put('/coupons/:id', requireAdmin, CouponController.updateCoupon);
 router.delete('/coupons/:id', requireAdmin, CouponController.deleteCoupon);
 
 // =================== REVIEWS ===================
+router.get('/reviews', ReviewController.getAllPublicReviews);
 router.get('/reviews/food/:foodId', ReviewController.getFoodReviews);
-router.post('/reviews', verifyToken, ReviewController.addReview);
+router.post('/reviews', optionalToken, ReviewController.addReview);
 router.get('/reviews/admin', requireAdmin, ReviewController.getAllReviewsAdmin);
 
 // =================== FILE UPLOADS ===================
