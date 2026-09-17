@@ -1,0 +1,33 @@
+# Environment variables (Secrets)
+.env
+.env*.local
+*.env
+client/.env
+server/.env
+
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Production build artifacts
+dist/
+dist-ssr/
+client/dist/
+
+# SQLite Database local files
+server/data/*.db
+server/data/*.sqlite
+server/data/*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
