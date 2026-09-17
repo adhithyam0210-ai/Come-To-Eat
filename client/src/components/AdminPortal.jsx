@@ -852,7 +852,9 @@ export function AdminPortal({
             <Eye size={15} /> Customer View
           </button>
           <button
-            onClick={logout}
+            onClick={() => {
+              if (window.confirm('Are you sure you want to sign out of Come To Eat?')) logout();
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',

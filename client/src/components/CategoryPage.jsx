@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Star, Clock, Plus, Check, SlidersHorizontal, Sparkles, UtensilsCrossed } from 'lucide-react';
 import { DietaryBadge } from './DietaryBadge';
+import { Breadcrumbs } from './Breadcrumbs';
 
 export function CategoryPage({
   category,
   allCategories = [],
   foods = [],
   onBackToMenu,
+  onNavigateToHome,
   onSelectCategory,
   onOpenItemDetail,
   onAddToCart
@@ -98,7 +100,15 @@ export function CategoryPage({
 
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           {/* Breadcrumb & Back Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+            <Breadcrumbs
+              items={[
+                { label: 'Home', onClick: onNavigateToHome },
+                { label: 'Menu', onClick: onBackToMenu },
+                { label: category.name }
+              ]}
+              style={{ padding: 0 }}
+            />
             <button
               onClick={onBackToMenu}
               style={{
@@ -109,9 +119,9 @@ export function CategoryPage({
                 backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(255, 255, 255, 0.25)',
                 color: '#FFFFFF',
-                padding: '7px 16px',
+                padding: '6px 16px',
                 borderRadius: '20px',
-                fontSize: '0.84rem',
+                fontSize: '0.82rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
@@ -119,10 +129,8 @@ export function CategoryPage({
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.28)')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.16)')}
             >
-              <ArrowLeft size={15} /> Back to Full Menu
+              <ArrowLeft size={14} /> Back to Full Menu
             </button>
-            <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.85rem' }}>/</span>
-            <span style={{ color: '#EBF0E4', fontSize: '0.85rem', fontWeight: 600 }}>{category.name}</span>
           </div>
 
           {/* Banner Main Grid */}

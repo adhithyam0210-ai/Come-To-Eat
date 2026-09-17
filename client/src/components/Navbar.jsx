@@ -395,9 +395,11 @@ export function Navbar({
 
                   <button
                     onClick={() => {
-                      logout();
-                      setUserDropdown(false);
-                      setActivePortal('user');
+                      if (window.confirm('Are you sure you want to sign out of Come To Eat?')) {
+                        logout();
+                        setUserDropdown(false);
+                        setActivePortal('user');
+                      }
                     }}
                     style={{
                       width: '100%',
@@ -563,9 +565,11 @@ export function Navbar({
                 </button>
                 <button
                   onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
-                    setActivePortal('user');
+                    if (window.confirm('Are you sure you want to sign out of Come To Eat?')) {
+                      logout();
+                      setMobileMenuOpen(false);
+                      setActivePortal('user');
+                    }
                   }}
                   style={{ textAlign: 'left', padding: '6px 0', color: '#C62828', fontWeight: 700, fontSize: '0.9rem' }}
                 >

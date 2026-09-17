@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Star, Heart, MessageSquare, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, Heart, Sparkles, CheckCircle2, ShieldCheck, Send, Check, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
+import { Breadcrumbs } from './Breadcrumbs';
 
 const SAMPLE_REVIEWS = [
   {
@@ -60,39 +61,73 @@ const SAMPLE_REVIEWS = [
   }
 ];
 
-export function ReviewsPage({ onOpenAuth, onOpenOrders }) {
+export function ReviewsPage({ onNavigateToHome, onOpenAuth, onOpenOrders }) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState(SAMPLE_REVIEWS);
   const [ratingFilter, setRatingFilter] = useState('all');
   const [newRating, setNewRating] = useState(5);
   const [newDish, setNewDish] = useState('');
   const [newComment, setNewComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    api.get('/reviews')
+      .then((res) => {
+        if (res.success && res.reviews && res.reviews.length > 0) {
+          const mapped = res.reviews.map((r) => ({
+            id: r.id,
+            name: r.user_name || 'Valued Guest',
+            dish: r.food_name || 'Café Special',
+            rating: Math.round(r.rating || 5),
+            text: r.comment,
+            date: new Date(r.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+            verified: true
+          }));
+          setReviews([...mapped, ...SAMPLE_REVIEWS]);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filteredReviews = reviews.filter((r) => {
     if (ratingFilter === 'all') return true;
     return r.rating === Number(ratingFilter);
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    const newRev = {
-      id: Date.now(),
-      name: user ? user.name : 'Valued Guest',
-      dish: newDish.trim() || 'Café Favorite',
-      rating: newRating,
-      text: newComment.trim(),
-      date: 'Just now',
-      verified: !!user
-    };
+    setSubmitting(true);
+    try {
+      const res = await api.post('/reviews', {
+        food_id: 1,
+        rating: newRating,
+        comment: newComment.trim(),
+        guest_name: user ? user.name : (newDish ? `${newDish} Fan` : 'Valued Guest')
+      });
 
-    setReviews([newRev, ...reviews]);
-    setNewComment('');
-    setNewDish('');
-    setSubmitSuccess(true);
-    setTimeout(() => setSubmitSuccess(false), 3000);
+      const newRev = {
+        id: res.review?.id || Date.now(),
+        name: user ? user.name : 'Valued Guest',
+        dish: newDish.trim() || 'Café Specialty',
+        rating: newRating,
+        text: newComment.trim(),
+        date: 'Just now',
+        verified: !!user
+      };
+
+      setReviews([newRev, ...reviews]);
+      setNewComment('');
+      setNewDish('');
+      setSubmitSuccess(true);
+      setTimeout(() => setSubmitSuccess(false), 4000);
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -175,7 +210,15 @@ export function ReviewsPage({ onOpenAuth, onOpenOrders }) {
         </div>
       </div>
 
-      <div className="container" style={{ marginTop: '30px' }}>
+      <div className="container" style={{ marginTop: '20px' }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          items={[
+            { label: 'Home', onClick: onNavigateToHome },
+            { label: 'Customer Reviews' }
+          ]}
+        />
+
         {/* Rating Filter Tabs */}
         <div style={{
           display: 'flex',
@@ -183,7 +226,8 @@ export function ReviewsPage({ onOpenAuth, onOpenOrders }) {
           alignItems: 'center',
           flexWrap: 'wrap',
           gap: '12px',
-          marginBottom: '28px'
+          marginBottom: '28px',
+          marginTop: '10px'
         }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             {[
@@ -296,11 +340,11 @@ export function ReviewsPage({ onOpenAuth, onOpenOrders }) {
           ))}
         </div>
 
-        {/* Share Your Feedback Box */}
+        {/* Share Your Feedback & Review Form Box */}
         <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '24px',
-          padding: '36px',
+          padding: 'clamp(24px, 4vw, 36px)',
           border: '1px solid #ECE7DE',
           boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
           maxWidth: '720px',
@@ -321,30 +365,144 @@ export function ReviewsPage({ onOpenAuth, onOpenOrders }) {
               <ShieldCheck size={24} color="#85926B" />
             </div>
             <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: '#1F241C', margin: '0 0 8px' }}>
-              Verified Diner Reviews Only
+              Share Your Dining Experience
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#6A785E', maxWidth: '560px', margin: '0 auto 22px', lineHeight: 1.6 }}>
-              To ensure 100% authentic feedback, reviews can only be submitted by verified diners from their <strong>Order History</strong> after experiencing their meal.
+            <p style={{ fontSize: '0.9rem', color: '#6A785E', maxWidth: '560px', margin: '0 auto 16px', lineHeight: 1.6 }}>
+              We value your voice! Let us know how your food was prepared and enjoyed.
             </p>
-
-            {user ? (
-              <button
-                onClick={onOpenOrders}
-                className="btn-accent"
-                style={{ padding: '13px 28px', fontSize: '0.94rem', margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              >
-                <Sparkles size={16} /> Rate Your Completed Orders in Order History
-              </button>
-            ) : (
-              <button
-                onClick={() => onOpenAuth('login')}
-                className="btn-accent"
-                style={{ padding: '13px 28px', fontSize: '0.94rem', margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              >
-                Sign In to View Orders & Rate Dishes
-              </button>
-            )}
           </div>
+
+          {submitSuccess && (
+            <div style={{
+              backgroundColor: '#E8F5E9',
+              border: '1px solid #A5D6A7',
+              color: '#2E7D32',
+              padding: '12px 16px',
+              borderRadius: '12px',
+              marginBottom: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontSize: '0.9rem',
+              fontWeight: 600
+            }}>
+              <Check size={18} /> Thank you! Your review has been submitted and added.
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#333D29', marginBottom: '6px' }}>
+                Your Rating
+              </label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setNewRating(star)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Star
+                      size={24}
+                      fill={star <= newRating ? '#F59E0B' : 'transparent'}
+                      color={star <= newRating ? '#F59E0B' : '#D1D5DB'}
+                    />
+                  </button>
+                ))}
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#85926B', alignSelf: 'center', marginLeft: '6px' }}>
+                  {newRating} / 5 Stars
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#333D29', marginBottom: '6px' }}>
+                Dish or Beverage Ordered (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Classic Smash Burger, Brown Sugar Boba"
+                value={newDish}
+                onChange={(e) => setNewDish(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  border: '1px solid #DCE3D4',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  backgroundColor: '#FAF8F5'
+                }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#333D29', marginBottom: '6px' }}>
+                Your Review *
+              </label>
+              <textarea
+                required
+                rows={3}
+                placeholder="Tell us what made your meal great, flavors, delivery experience..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '12px',
+                  border: '1px solid #DCE3D4',
+                  fontSize: '0.9rem',
+                  outline: 'none',
+                  backgroundColor: '#FAF8F5',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginTop: '6px' }}>
+              {onOpenOrders && (
+                <button
+                  type="button"
+                  onClick={onOpenOrders}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#85926B',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Rate completed dishes from Order History →
+                </button>
+              )}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-accent"
+                style={{
+                  padding: '12px 26px',
+                  fontSize: '0.92rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginLeft: 'auto'
+                }}
+              >
+                <Send size={16} /> {submitting ? 'Submitting...' : 'Post Review'}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
