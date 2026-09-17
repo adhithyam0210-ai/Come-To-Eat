@@ -1,0 +1,13 @@
+{
+  "name": "come-to-eat",
+  "version": "1.0.0",
+  "description": "Come To Eat - Modern Responsive Full-Stack Food Ordering Platform",
+  "scripts": {
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev",
+    "seed": "cd server && npm run seed"
+  },
+  "keywords": ["restaurant", "food-ordering", "react", "express", "sqlite"],
+  "author": "",
+  "license": "ISC"
+}
