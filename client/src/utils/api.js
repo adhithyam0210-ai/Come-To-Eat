@@ -1087,9 +1087,14 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       if (supabase) {
         try {
           for (const [key, value] of Object.entries(body)) {
-            await supabase.from('restaurant_settings').upsert({ setting_key: key, setting_value: String(value) });
+            await supabase.from('restaurant_settings').upsert(
+              { setting_key: key, setting_value: String(value) },
+              { onConflict: 'setting_key' }
+            );
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('[Supabase Settings Error]:', e.message);
+        }
       }
       return { success: true, settings: body };
     }

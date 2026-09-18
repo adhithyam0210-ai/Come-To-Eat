@@ -2676,7 +2676,7 @@ export function AdminPortal({
                     fontSize: '0.82rem',
                     fontWeight: 700
                   }}>
-                    {foods.filter((f) => f.is_featured === 1).length} Dishes Featured
+                    {foods.filter((f) => f.is_featured === 1 || f.is_featured === true || f.is_featured === '1').length} Dishes Featured
                   </span>
                 </div>
                 <p style={{ fontSize: '0.9rem', color: '#65705C', margin: 0 }}>
@@ -2687,10 +2687,10 @@ export function AdminPortal({
               {/* 2A. Currently Added Chef's Recommendations */}
               <div>
                 <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#3A442E', marginBottom: '12px', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-                  ⭐ Active Featured Dishes ({foods.filter((f) => f.is_featured === 1).length})
+                  ⭐ Active Featured Dishes ({foods.filter((f) => f.is_featured === 1 || f.is_featured === true || f.is_featured === '1').length})
                 </h4>
 
-                {foods.filter((f) => f.is_featured === 1).length === 0 ? (
+                {foods.filter((f) => f.is_featured === 1 || f.is_featured === true || f.is_featured === '1').length === 0 ? (
                   <div style={{
                     backgroundColor: '#FAF8F5',
                     borderRadius: '14px',
@@ -2709,7 +2709,7 @@ export function AdminPortal({
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
-                    {foods.filter((f) => f.is_featured === 1).map((food) => {
+                    {foods.filter((f) => f.is_featured === 1 || f.is_featured === true || f.is_featured === '1').map((food) => {
                       const category = categories.find((c) => c.id === food.category_id);
                       return (
                         <div
@@ -2821,7 +2821,7 @@ export function AdminPortal({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
                   {foods
                     .filter((f) => {
-                      if (f.is_featured === 1) return false; // hide already added dishes
+                      if (f.is_featured === 1 || f.is_featured === true || f.is_featured === '1') return false; // hide already added dishes
                       if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
                       if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
                       return true;
@@ -2885,7 +2885,7 @@ export function AdminPortal({
                     })}
 
                   {foods.filter((f) => {
-                    if (f.is_featured === 1) return false;
+                    if (f.is_featured === 1 || f.is_featured === true || f.is_featured === '1') return false;
                     if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
                     if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
                     return true;
