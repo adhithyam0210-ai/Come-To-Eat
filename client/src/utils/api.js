@@ -1683,12 +1683,22 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/admin/employees') {
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('admins').select('*, branches(name, code)').order('id', { ascending: true });
+        // Fetch admins without relational join (avoids FK requirement → 400 error)
+        const { data, error } = await supabase.from('admins').select('*').order('id', { ascending: true });
         if (!error && data && data.length) {
+          // Separately fetch branches to map names
+          let branchMap = {};
+          try {
+            const { data: branchData } = await supabase.from('branches').select('id, name, code');
+            if (branchData) {
+              branchData.forEach(b => { branchMap[b.id] = b; });
+            }
+          } catch (e) {}
+
           const mapped = data.map(e => ({
             ...e,
-            branch_name: e.branches?.name || 'Indiranagar (Flagship)',
-            branch_code: e.branches?.code || 'INDIRA'
+            branch_name: branchMap[e.branch_id]?.name || 'Indiranagar (Flagship)',
+            branch_code: branchMap[e.branch_id]?.code || 'INDIRA'
           }));
           return { success: true, employees: mapped };
         }
@@ -1770,7 +1780,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/admin/payments') {
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('payments').select('*, orders(order_number, customer_name)').order('created_at', { ascending: false });
+        // Plain select to avoid FK join 400 error (payments→orders FK not defined in Supabase)
+        const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
         if (!error && data && data.length) return { success: true, payments: data };
       } catch (e) {}
     }
@@ -1795,7 +1806,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/admin/deliveries') {
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('delivery_orders').select('*, orders(order_number, customer_name, customer_phone, delivery_address_json)').order('updated_at', { ascending: false });
+        // Plain select to avoid FK join 400 error (delivery_orders→orders FK not defined in Supabase)
+        const { data, error } = await supabase.from('delivery_orders').select('*').order('updated_at', { ascending: false });
         if (!error && data && data.length) return { success: true, deliveries: data };
       } catch (e) {}
     }
