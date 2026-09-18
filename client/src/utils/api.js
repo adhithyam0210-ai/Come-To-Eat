@@ -644,9 +644,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       category_id: body.category_id ? Number(body.category_id) : 1,
       price: Number(body.price) || 0,
       discount_price: body.discount_price ? Number(body.discount_price) : null,
-      is_veg: body.is_veg !== undefined ? Boolean(Number(body.is_veg)) : true,
-      is_available: body.is_available !== undefined ? Boolean(Number(body.is_available)) : true,
-      is_featured: body.is_featured !== undefined ? Boolean(Number(body.is_featured)) : false,
+      is_veg: (body.is_veg === true || body.is_veg === 1 || body.is_veg === '1') ? 1 : 0,
+      is_available: (body.is_available === false || body.is_available === 0 || body.is_available === '0') ? 0 : 1,
+      is_featured: (body.is_featured === true || body.is_featured === 1 || body.is_featured === '1') ? 1 : 0,
       prep_time: body.prep_time || '15 min',
       image_url: body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
       description: body.description || '',
@@ -667,10 +667,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (body.category_id !== undefined) updatePayload.category_id = Number(body.category_id);
     if (body.price !== undefined) updatePayload.price = Number(body.price);
     if (body.discount_price !== undefined) updatePayload.discount_price = body.discount_price ? Number(body.discount_price) : null;
-    // Accept both number (0/1) and boolean for veg/availability/featured
-    if (body.is_veg !== undefined) updatePayload.is_veg = Boolean(Number(body.is_veg));
-    if (body.is_available !== undefined) updatePayload.is_available = Boolean(Number(body.is_available));
-    if (body.is_featured !== undefined) updatePayload.is_featured = Boolean(Number(body.is_featured));
+    // Cast integer 1/0 for postgresql compatibility
+    if (body.is_veg !== undefined) updatePayload.is_veg = (body.is_veg === true || body.is_veg === 1 || body.is_veg === '1') ? 1 : 0;
+    if (body.is_available !== undefined) updatePayload.is_available = (body.is_available === false || body.is_available === 0 || body.is_available === '0') ? 0 : 1;
+    if (body.is_featured !== undefined) updatePayload.is_featured = (body.is_featured === true || body.is_featured === 1 || body.is_featured === '1') ? 1 : 0;
     const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', id).select().single();
     if (error) throw new Error(error.message);
     const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
@@ -680,11 +680,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath.startsWith('/foods/') && method === 'DELETE') {
     const id = cleanPath.split('/')[2];
-    if (supabase) {
-      try {
-        await supabase.from('food_items').delete().eq('id', id);
-      } catch (e) {}
-    }
+    if (!supabase) return { success: false, message: 'Database not connected' };
+    const { error } = await supabase.from('food_items').delete().eq('id', id);
+    if (error) throw new Error(error.message);
     const fresh = await refetchAndBroadcast('food_items', broadcastFoods, 'id');
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));

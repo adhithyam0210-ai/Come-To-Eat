@@ -35,6 +35,11 @@ function getOrdersChannel() {
   if (!supabase) return null;
   if (!_ordersChannel) {
     _ordersChannel = supabase.channel('orders_channel');
+    _ordersChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to live orders stream.');
+      }
+    });
   }
   return _ordersChannel;
 }
@@ -56,12 +61,6 @@ export function subscribeToLiveOrders(onOrderUpdate) {
         }
       });
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[Supabase Realtime] Connected to live orders stream.');
-      }
-    });
-
     return () => {};
   } catch (err) {
     console.warn('[Supabase Realtime] Subscription error:', err.message);
@@ -77,6 +76,9 @@ export async function broadcastLiveOrder(orderData, eventType = 'ORDER_UPDATED')
   try {
     const channel = getOrdersChannel();
     if (channel) {
+      if (channel.state !== 'joined') {
+        await new Promise(r => setTimeout(r, 150));
+      }
       await channel.send({
         type: 'broadcast',
         event: eventType,
@@ -96,6 +98,11 @@ function getHeroSlidesChannel() {
   if (!supabase) return null;
   if (!_heroSlidesChannel) {
     _heroSlidesChannel = supabase.channel('hero_slides_channel');
+    _heroSlidesChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to hero_slides_channel');
+      }
+    });
   }
   return _heroSlidesChannel;
 }
@@ -117,12 +124,6 @@ export function subscribeToHeroSlides(onSlidesUpdate) {
         onSlidesUpdate();
       });
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[Supabase Realtime] Connected to hero_slides_channel');
-      }
-    });
-
     return () => {};
   } catch (err) {
     return () => {};
@@ -137,13 +138,19 @@ export async function broadcastHeroSlides(slidesData) {
   try {
     const channel = getHeroSlidesChannel();
     if (channel) {
+      if (channel.state !== 'joined') {
+        await new Promise(r => setTimeout(r, 150));
+      }
       await channel.send({
         type: 'broadcast',
         event: 'HERO_SLIDES_UPDATED',
         payload: slidesData
       });
+      console.log('[Supabase Realtime] Broadcasted hero slides to subscribers');
     }
-  } catch (err) {}
+  } catch (err) {
+    console.warn('[Supabase Realtime] Broadcast hero slides error:', err.message);
+  }
 }
 
 /**
@@ -154,6 +161,11 @@ function getFoodsChannel() {
   if (!supabase) return null;
   if (!_foodsChannel) {
     _foodsChannel = supabase.channel('foods_channel');
+    _foodsChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to foods_channel');
+      }
+    });
   }
   return _foodsChannel;
 }
@@ -175,12 +187,6 @@ export function subscribeToFoods(onFoodsUpdate) {
         onFoodsUpdate();
       });
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[Supabase Realtime] Connected to foods_channel');
-      }
-    });
-
     return () => {};
   } catch (err) {
     return () => {};
@@ -195,13 +201,19 @@ export async function broadcastFoods(foodsData) {
   try {
     const channel = getFoodsChannel();
     if (channel) {
+      if (channel.state !== 'joined') {
+        await new Promise(r => setTimeout(r, 150));
+      }
       await channel.send({
         type: 'broadcast',
         event: 'FOODS_UPDATED',
         payload: foodsData
       });
+      console.log('[Supabase Realtime] Broadcasted foods to subscribers');
     }
-  } catch (err) {}
+  } catch (err) {
+    console.warn('[Supabase Realtime] Broadcast foods error:', err.message);
+  }
 }
 
 /**
@@ -212,6 +224,11 @@ function getCategoriesChannel() {
   if (!supabase) return null;
   if (!_categoriesChannel) {
     _categoriesChannel = supabase.channel('categories_channel');
+    _categoriesChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to categories_channel');
+      }
+    });
   }
   return _categoriesChannel;
 }
@@ -233,12 +250,6 @@ export function subscribeToCategories(onCategoriesUpdate) {
         onCategoriesUpdate();
       });
 
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[Supabase Realtime] Connected to categories_channel');
-      }
-    });
-
     return () => {};
   } catch (err) {
     return () => {};
@@ -253,12 +264,18 @@ export async function broadcastCategories(catsData) {
   try {
     const channel = getCategoriesChannel();
     if (channel) {
+      if (channel.state !== 'joined') {
+        await new Promise(r => setTimeout(r, 150));
+      }
       await channel.send({
         type: 'broadcast',
         event: 'CATEGORIES_UPDATED',
         payload: catsData
       });
+      console.log('[Supabase Realtime] Broadcasted categories to subscribers');
     }
-  } catch (err) {}
+  } catch (err) {
+    console.warn('[Supabase Realtime] Broadcast categories error:', err.message);
+  }
 }
 
