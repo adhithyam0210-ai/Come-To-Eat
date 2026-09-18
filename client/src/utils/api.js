@@ -133,6 +133,67 @@ const DEFAULT_COUPONS = [
   { id: 3, code: 'FREESHIP', discount_type: 'fixed', discount_value: 40, min_order_value: 150, max_discount: 40, is_active: 1 }
 ];
 
+let memoryHeroSlides = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_hero_slides') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  return [...DEFAULT_HERO_SLIDES];
+})();
+
+const saveMemoryHeroSlides = (slides) => {
+  memoryHeroSlides = slides;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_hero_slides', JSON.stringify(slides));
+    }
+  } catch (e) {}
+};
+
+let memoryOffers = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_offers') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  return [...DEFAULT_OFFERS];
+})();
+
+const saveMemoryOffers = (offers) => {
+  memoryOffers = offers;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_offers', JSON.stringify(offers));
+    }
+  } catch (e) {}
+};
+
+let memoryCoupons = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_coupons') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  return [...DEFAULT_COUPONS];
+})();
+
+const saveMemoryCoupons = (coupons) => {
+  memoryCoupons = coupons;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_coupons', JSON.stringify(coupons));
+    }
+  } catch (e) {}
+};
+
+
 const DEFAULT_ORDERS = [
   {
     id: 101,
@@ -711,24 +772,30 @@ export async function directSupabaseRequest(endpoint, options = {}) {
             desc: s.desc_text || s.desc || '',
             desc_text: s.desc_text || s.desc || ''
           }));
-          if (formatted.length === 0 && data.length > 0) {
-            const allFormatted = data.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
-            return { success: true, slides: allFormatted };
-          }
           return { success: true, slides: formatted };
         }
       } catch (e) {}
     }
-    const mapped = DEFAULT_HERO_SLIDES.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
-    return { success: true, slides: mapped };
+    const filteredMemory = cleanPath === '/hero-slides' 
+      ? memoryHeroSlides.filter(s => s.is_active !== false && s.is_active !== 0)
+      : memoryHeroSlides;
+    const formattedMemory = filteredMemory.map(s => ({
+      ...s,
+      desc: s.desc_text || s.desc || '',
+      desc_text: s.desc_text || s.desc || ''
+    }));
+    return { success: true, slides: formattedMemory };
   }
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
+    const newId = Date.now();
     const payload = {
+      id: newId,
       tag: body.tag || 'CHEF SPECIAL',
       script: body.script || 'Delicious & Fresh',
       title: body.title || 'Special Signature',
       desc_text: body.desc_text || body.desc || '',
+      desc: body.desc_text || body.desc || '',
       image_url: body.image_url || body.image || '',
       button_text: body.button_text || 'Order Now',
       bg_color: body.bg_color || '#85926B',
@@ -737,24 +804,38 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       sort_order: body.sort_order !== undefined ? Number(body.sort_order) : 99,
       is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1
     };
-    if (!supabase) return { success: false, message: 'Database disconnected' };
-    const { data, error } = await supabase.from('hero_slides').insert([payload]).select().single();
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
-    const normalized = fresh.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: normalized }));
+
+    let createdSlide = payload;
+    if (supabase) {
+      try {
+        const { id, desc, ...dbPayload } = payload;
+        const { data, error } = await supabase.from('hero_slides').insert([dbPayload]).select().single();
+        if (!error && data) {
+          createdSlide = { ...data, desc: data.desc_text || data.desc || '' };
+        }
+      } catch (e) {}
     }
-    return { success: true, slide: data };
+
+    const updated = [...memoryHeroSlides, createdSlide];
+    saveMemoryHeroSlides(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updated }));
+    }
+    return { success: true, slide: createdSlide, slides: updated };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'PUT') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const slideId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+
     const payload = {};
     if (body.tag !== undefined) payload.tag = body.tag;
     if (body.script !== undefined) payload.script = body.script;
     if (body.title !== undefined) payload.title = body.title;
-    if (body.desc !== undefined || body.desc_text !== undefined) payload.desc_text = body.desc_text || body.desc || '';
+    if (body.desc !== undefined || body.desc_text !== undefined) {
+      payload.desc_text = body.desc_text || body.desc || '';
+      payload.desc = body.desc_text || body.desc || '';
+    }
     if (body.image_url !== undefined || body.image !== undefined) payload.image_url = body.image_url || body.image || '';
     if (body.button_text !== undefined) payload.button_text = body.button_text;
     if (body.bg_color !== undefined) payload.bg_color = body.bg_color;
@@ -763,35 +844,45 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (body.sort_order !== undefined) payload.sort_order = Number(body.sort_order);
     if (body.is_active !== undefined) payload.is_active = (body.is_active ? 1 : 0);
 
-    if (!supabase) return { success: false, message: 'Database disconnected' };
-    const slideId = isNaN(Number(id)) ? id : Number(id);
-    const { data, error } = await supabase
-      .from('hero_slides')
-      .upsert({ id: slideId, ...payload }, { onConflict: 'id' })
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
-    const normalized = fresh.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: normalized }));
+    let updatedSlide = { id: slideId, ...payload };
+    if (supabase) {
+      try {
+        const { desc, ...dbPayload } = payload;
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .upsert({ id: slideId, ...dbPayload }, { onConflict: 'id' })
+          .select()
+          .single();
+        if (!error && data) {
+          updatedSlide = { ...data, desc: data.desc_text || data.desc || '' };
+        }
+      } catch (e) {}
     }
-    return { success: true, slide: data };
+
+    const updatedList = memoryHeroSlides.map(s => String(s.id) === String(rawId) ? { ...s, ...updatedSlide } : s);
+    saveMemoryHeroSlides(updatedList);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updatedList }));
+    }
+    return { success: true, slide: updatedSlide, slides: updatedList };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'DELETE') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const slideId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+
     if (supabase) {
       try {
-        await supabase.from('hero_slides').delete().eq('id', id);
+        await supabase.from('hero_slides').delete().or(`id.eq.${slideId},id.eq.${rawId}`);
       } catch (e) {}
     }
-    const fresh = await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
-    const normalized = fresh.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
+
+    const updatedList = memoryHeroSlides.filter(s => String(s.id) !== String(rawId));
+    saveMemoryHeroSlides(updatedList);
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: normalized }));
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updatedList }));
     }
-    return { success: true, message: 'Slide deleted' };
+    return { success: true, message: 'Slide deleted', slides: updatedList };
   }
 
   // -------------------------------------------------------------
@@ -806,38 +897,49 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data && data.length) return { success: true, offers: data };
       } catch (e) {}
     }
-    return { success: true, offers: cleanPath === '/offers' ? DEFAULT_OFFERS.filter(o => o.is_active !== 0) : DEFAULT_OFFERS };
+    const filteredOffers = cleanPath === '/offers' ? memoryOffers.filter(o => o.is_active !== 0) : memoryOffers;
+    return { success: true, offers: filteredOffers };
   }
 
   if (cleanPath === '/offers' && method === 'POST') {
+    let created = { id: Date.now(), ...body };
     if (supabase) {
       try {
         const { data, error } = await supabase.from('offer_banners').insert([body]).select().single();
-        if (!error && data) return { success: true, offer: data };
+        if (!error && data) created = data;
       } catch (e) {}
     }
-    return { success: true, offer: { id: Date.now(), ...body } };
+    const updated = [...memoryOffers, created];
+    saveMemoryOffers(updated);
+    return { success: true, offer: created, offers: updated };
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'PUT') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const offerId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+    let updatedOffer = { id: offerId, ...body };
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('offer_banners').update(body).eq('id', id).select().single();
-        if (!error && data) return { success: true, offer: data };
+        const { data, error } = await supabase.from('offer_banners').update(body).eq('id', offerId).select().single();
+        if (!error && data) updatedOffer = data;
       } catch (e) {}
     }
-    return { success: true, offer: { id: Number(id), ...body } };
+    const updated = memoryOffers.map(o => String(o.id) === String(rawId) ? { ...o, ...updatedOffer } : o);
+    saveMemoryOffers(updated);
+    return { success: true, offer: updatedOffer, offers: updated };
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'DELETE') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const offerId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
       try {
-        await supabase.from('offer_banners').delete().eq('id', id);
+        await supabase.from('offer_banners').delete().or(`id.eq.${offerId},id.eq.${rawId}`);
       } catch (e) {}
     }
-    return { success: true, message: 'Offer deleted' };
+    const updated = memoryOffers.filter(o => String(o.id) !== String(rawId));
+    saveMemoryOffers(updated);
+    return { success: true, message: 'Offer deleted', offers: updated };
   }
 
   // -------------------------------------------------------------
