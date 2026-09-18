@@ -825,15 +825,29 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/hero-slides' || cleanPath === '/hero-slides/admin') {
     if (supabase) {
       try {
-        let q = supabase.from('hero_slides').select('*').order('sort_order', { ascending: true });
-        if (cleanPath === '/hero-slides') q = q.eq('is_active', 1);
-        const { data, error } = await q;
+        // Fetch ALL slides, then filter client-side.
+        // This handles both boolean (true/false) and integer (1/0) is_active column types.
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
         if (!error && data && data.length) {
-          const formatted = data.map(s => ({
+          let slides = data;
+          // For user-facing route, only show active slides
+          if (cleanPath === '/hero-slides') {
+            slides = data.filter(s => s.is_active !== false && s.is_active !== 0);
+          }
+          const formatted = slides.map(s => ({
             ...s,
             desc: s.desc_text || s.desc || '',
             desc_text: s.desc_text || s.desc || ''
           }));
+          // If all slides were filtered out, return all slides anyway (avoid empty hero)
+          if (formatted.length === 0 && data.length > 0) {
+            const allFormatted = data.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
+            return { success: true, slides: allFormatted };
+          }
           return { success: true, slides: formatted };
         }
       } catch (e) {}
@@ -845,7 +859,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       desc: s.desc_text || s.desc || '',
       desc_text: s.desc_text || s.desc || ''
     }));
-    return { success: true, slides: cleanPath === '/hero-slides' ? mapped.filter(s => s.is_active !== 0) : mapped };
+    // Client-side filter for local fallback too
+    const filteredMapped = cleanPath === '/hero-slides' ? mapped.filter(s => s.is_active !== false && s.is_active !== 0) : mapped;
+    return { success: true, slides: filteredMapped.length > 0 ? filteredMapped : mapped };
   }
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
