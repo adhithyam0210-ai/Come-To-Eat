@@ -42,23 +42,57 @@ const DEFAULT_SLIDES = [
 ];
 
 export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClick }) {
-  const [slides, setSlides] = useState(slidesProp && slidesProp.length > 0 ? slidesProp : DEFAULT_SLIDES);
+  const [slides, setSlides] = useState(() => {
+    if (slidesProp && slidesProp.length > 0) return slidesProp;
+    try {
+      const saved = localStorage.getItem('cte_hero_slides');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_SLIDES;
+  });
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Sync with prop slides or fetch
   useEffect(() => {
     if (slidesProp && slidesProp.length > 0) {
       setSlides(slidesProp);
+      setCurrentSlide((prev) => (prev >= slidesProp.length ? 0 : prev));
     } else {
       api.get('/hero-slides')
         .then((res) => {
           if (res.success && res.slides && res.slides.length > 0) {
             setSlides(res.slides);
+            setCurrentSlide((prev) => (prev >= res.slides.length ? 0 : prev));
           }
         })
         .catch(() => {});
     }
   }, [slidesProp]);
+
+  // Listen to global live updates for hero slides
+  useEffect(() => {
+    const handleLiveSlidesUpdate = (e) => {
+      if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        setSlides(e.detail);
+        setCurrentSlide(0);
+      } else {
+        api.get('/hero-slides')
+          .then((res) => {
+            if (res.success && res.slides && res.slides.length > 0) {
+              setSlides(res.slides);
+              setCurrentSlide(0);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
+    window.addEventListener('cte:hero_slides_updated', handleLiveSlidesUpdate);
+    return () => window.removeEventListener('cte:hero_slides_updated', handleLiveSlidesUpdate);
+  }, []);
 
   // Auto slide timer
   useEffect(() => {

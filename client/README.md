@@ -1,16 +1,43 @@
-# React + Vite
+# Come To Eat - Direct Supabase Architecture (No Backend Server Needed)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This application runs **100% frontend-to-database** via `@supabase/supabase-js`. You do not need to run any Node.js or Express backend server.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Quick Setup Guide
 
-## React Compiler
+### 1. Database Setup in Supabase
+1. Open your [Supabase Dashboard](https://app.supabase.com).
+2. Go to **SQL Editor** -> **New query**.
+3. Copy and paste the contents of [`client/supabase_schema.sql`](file:///c:/Users/adhit/OneDrive/Desktop/Come%20To%20Eat/client/supabase_schema.sql).
+4. Click **Run**. This will create all required tables (`orders`, `food_items`, `categories`, `branches`, `coupons`, `offer_banners`, `hero_slides`, `reviews`, `users`, `admins`, `restaurant_settings`, etc.) and seed initial demo data with Realtime enabled.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Configure Environment Variables
+Ensure [`client/.env`](file:///c:/Users/adhit/OneDrive/Desktop/Come%20To%20Eat/client/.env) contains your Supabase project keys:
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-## Expanding the Oxlint configuration
+### 3. Run the App
+```bash
+cd client
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+---
+
+## 🔑 Default Login Credentials
+
+| Role | Email | Password | Access Portal |
+| :--- | :--- | :--- | :--- |
+| **Executive Admin** | `admin@cometoeat.com` | `admin123` | `/admin` (Full Cafe Operations) |
+| **Kitchen Staff (Employee)** | `chef@cometoeat.com` | `employee123` | `/employee` (Kitchen Live Orders & Food Out-of-Stock) |
+| **Customer** | Register in UI or use any email | Any 4+ chars | Customer Portal / Ordering |
+
+---
+
+## ⚡ Direct Frontend Features
+- **Direct PostgreSQL Operations**: Food menu browsing, branch selection, coupon validation, reviews, and store settings.
+- **Supabase Realtime Live Reflection**: Zero-delay live order updates from the customer order placement to the kitchen staff portal.
+- **Supabase Storage Uploads**: Food and banner image uploads direct to Supabase storage.

@@ -3,9 +3,9 @@ import {
   LayoutDashboard, ShoppingBag, UtensilsCrossed, FolderTree, Users, CreditCard,
   Truck, Tag, MessageSquare, Plus, Edit2, Trash2, CheckCircle, CheckCircle2, Check, AlertTriangle,
   Search, RefreshCw, X, ArrowUpRight, ArrowRight, TrendingUp, Shield, Clock, Eye, ChefHat, Package, Sparkles,
-  Building, MapPin, Phone
+  Building, MapPin, Phone, Mail
 } from 'lucide-react';
-import { api } from '../utils/api';
+import { api, DEFAULT_HERO_SLIDES } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { subscribeToLiveOrders } from '../utils/supabase';
 import { ImageUploadField } from './ImageUploadField';
@@ -269,8 +269,33 @@ export function AdminPortal({
   const fetchHeroSlides = async () => {
     try {
       const res = await api.get('/hero-slides/admin');
-      if (res.success) setHeroSlides(res.slides);
+      if (res.success && Array.isArray(res.slides)) {
+        setHeroSlides(res.slides);
+        return;
+      }
     } catch (e) {}
+    try {
+      const fallback = await api.get('/hero-slides');
+      if (fallback.success && Array.isArray(fallback.slides)) {
+        setHeroSlides(fallback.slides);
+        return;
+      }
+    } catch (err) {}
+    setHeroSlides(DEFAULT_HERO_SLIDES);
+  };
+
+  const handleReloadDefaultSlides = async () => {
+    try {
+      localStorage.setItem('cte_hero_slides', JSON.stringify(DEFAULT_HERO_SLIDES));
+      setHeroSlides(DEFAULT_HERO_SLIDES);
+      setMessage('Default hero slides restored successfully.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: DEFAULT_HERO_SLIDES }));
+      }
+      if (onDataUpdate) onDataUpdate();
+    } catch (e) {
+      alert('Failed to reload default slides');
+    }
   };
 
   const fetchSettings = async () => {
@@ -306,6 +331,14 @@ export function AdminPortal({
 
     return () => unsubscribe();
   }, []);
+
+  // Auto-dismiss toast message after 4.5s
+  useEffect(() => {
+    if (message) {
+      const t = setTimeout(() => setMessage(''), 4500);
+      return () => clearTimeout(t);
+    }
+  }, [message]);
 
   // Category Save (Add & Edit)
   const handleSaveCategory = async (e) => {
@@ -388,7 +421,7 @@ export function AdminPortal({
       }
       setShowSlideModal(false);
       setEditingSlide(null);
-      fetchHeroSlides();
+      await fetchHeroSlides();
       if (onDataUpdate) onDataUpdate();
     } catch (err) {
       alert(err.message || 'Failed to save hero slide.');
@@ -401,7 +434,7 @@ export function AdminPortal({
       const res = await api.delete(`/hero-slides/${id}`);
       if (res.success) {
         setMessage('Hero slide deleted successfully.');
-        fetchHeroSlides();
+        await fetchHeroSlides();
         if (onDataUpdate) onDataUpdate();
       }
     } catch (err) {
@@ -411,17 +444,34 @@ export function AdminPortal({
 
   // Store Settings & Timings Save
   const handleSaveSettings = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setSettingsLoading(true);
     try {
       const res = await api.put('/settings', settings);
       if (res.success) {
-        setMessage('Store timings and details updated successfully!');
+        setMessage('Store timings and operational info updated successfully!');
         if (onSettingsUpdate) onSettingsUpdate(res.settings);
         if (onDataUpdate) onDataUpdate();
       }
     } catch (err) {
       alert(err.message || 'Failed to save store settings.');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const handleSaveLandingCards = async (e) => {
+    if (e) e.preventDefault();
+    setSettingsLoading(true);
+    try {
+      const res = await api.put('/settings', settings);
+      if (res.success) {
+        setMessage('Landing page brand headline and promise cards saved successfully!');
+        if (onSettingsUpdate) onSettingsUpdate(res.settings);
+        if (onDataUpdate) onDataUpdate();
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to save landing page cards.');
     } finally {
       setSettingsLoading(false);
     }
@@ -968,24 +1018,43 @@ export function AdminPortal({
       </aside>
 
       {/* Main Content */}
-      <main className="portal-main">
-        {/* Toast */}
+      <main className="portal-main" style={{ position: 'relative' }}>
+        {/* Floating Toast Popup Notification */}
         {message && (
           <div style={{
-            backgroundColor: '#E8F5E9',
-            border: '1px solid #A5D6A7',
-            color: '#2E7D32',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            marginBottom: '20px',
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            zIndex: 1300,
+            backgroundColor: '#1E251C',
+            color: '#FFFFFF',
+            border: '1.5px solid #85926B',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+            padding: '14px 20px',
+            borderRadius: '14px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            gap: '12px',
+            maxWidth: '420px',
+            animation: 'scaleInModal 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
           }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <CheckCircle2 size={16} /> {message}
-            </span>
-            <button onClick={() => setMessage('')} style={{ color: '#2E7D32', display: 'flex', alignItems: 'center' }}>
+            <CheckCircle2 size={20} color="#85926B" style={{ flexShrink: 0 }} />
+            <div style={{ fontSize: '0.86rem', fontWeight: 600, lineHeight: 1.4, flex: 1 }}>
+              {message}
+            </div>
+            <button
+              onClick={() => setMessage('')}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px',
+                cursor: 'pointer',
+                color: '#DCE4D2',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
               <X size={15} />
             </button>
           </div>
@@ -994,19 +1063,17 @@ export function AdminPortal({
         {/* 1. DASHBOARD TAB (Includes Full Revenue Metrics for Manager Admin) */}
         {activeTab === 'dashboard' && stats && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Kitchen & Sales Overview
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Kitchen & Sales Overview</h2>
+                <div className="subtitle">
                   Real-time operational health and financial revenue metrics
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#FFFFFF', padding: '6px 12px', borderRadius: '12px', border: '1.5px solid #85926B', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-                  <Building size={14} color="#85926B" />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475234' }}>Branch:</span>
+              <div className="portal-header-actions">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', padding: '8px 16px', borderRadius: '12px', border: '1.5px solid #85926B', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                  <Building size={16} color="#85926B" />
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#475234' }}>Branch:</span>
                   <select
                     value={selectedBranchFilter}
                     onChange={(e) => {
@@ -1018,7 +1085,7 @@ export function AdminPortal({
                     style={{
                       border: 'none',
                       backgroundColor: 'transparent',
-                      fontSize: '0.8rem',
+                      fontSize: '0.92rem',
                       fontWeight: 700,
                       color: '#1F241C',
                       cursor: 'pointer',
@@ -1039,63 +1106,63 @@ export function AdminPortal({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
+                    gap: '8px',
+                    padding: '10px 18px',
                     borderRadius: '9999px',
                     backgroundColor: '#FFFFFF',
-                    border: '1px solid #DCE3D4',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
+                    border: '1.5px solid #DCE3D4',
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
                     color: '#475234'
                   }}
                 >
-                  <RefreshCw size={14} /> Refresh Data
+                  <RefreshCw size={15} /> Refresh Data
                 </button>
               </div>
             </div>
 
             {/* Financial & Operational Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-              <div style={{ backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.74rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Today's Revenue</div>
-                <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#1F241C', marginTop: '4px' }}>₹{stats.todayRevenue || 0}</div>
-                <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '4px' }}>Total All Time: ₹{stats.totalRevenue || 0}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+              <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Today's Revenue</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#1F241C', marginTop: '6px' }}>₹{stats.todayRevenue || 0}</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '6px' }}>Total All Time: ₹{stats.totalRevenue || 0}</div>
               </div>
 
-              <div style={{ backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.74rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Today's Orders</div>
-                <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#1F241C', marginTop: '4px' }}>{stats.todayOrders}</div>
-                <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '4px' }}>All-time total: {stats.totalOrders}</div>
+              <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Today's Orders</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#1F241C', marginTop: '6px' }}>{stats.todayOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '6px' }}>All-time total: {stats.totalOrders}</div>
               </div>
 
-              <div style={{ backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.74rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Active Kitchen Orders</div>
-                <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#E76F51', marginTop: '4px' }}>{stats.pendingOrders}</div>
-                <div style={{ fontSize: '0.75rem', color: '#E76F51', marginTop: '4px' }}>Needs preparation / dispatch</div>
+              <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Kitchen Orders</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#E76F51', marginTop: '6px' }}>{stats.pendingOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#E76F51', marginTop: '6px' }}>Needs preparation / dispatch</div>
               </div>
 
-              <div style={{ backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.74rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Completed Deliveries</div>
-                <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#2E7D32', marginTop: '4px' }}>{stats.completedOrders}</div>
-                <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '4px' }}>Cancelled: {stats.cancelledOrders}</div>
+              <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completed Deliveries</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#2E7D32', marginTop: '6px' }}>{stats.completedOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '6px' }}>Cancelled: {stats.cancelledOrders}</div>
               </div>
             </div>
 
             {/* Popular Items & Recent Orders */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
               <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1F241C', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '16px' }}>
                   Popular Food Items
                 </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {stats.popularItems?.map((p, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F4F6F1' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#2A3324' }}>
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #F4F6F1' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.94rem', color: '#2A3324' }}>
                         #{idx + 1} {p.food_name}
                       </span>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#1F241C' }}>{p.total_sold} sold</div>
-                        <div style={{ fontSize: '0.74rem', color: '#7E8775' }}>₹{p.total_revenue}</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#1F241C' }}>{p.total_sold} sold</div>
+                        <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>₹{p.total_revenue}</div>
                       </div>
                     </div>
                   ))}
@@ -1104,25 +1171,25 @@ export function AdminPortal({
 
               <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1F241C' }}>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C' }}>
                     Recent Orders
                   </h4>
-                  <button onClick={() => setActiveTab('orders')} style={{ fontSize: '0.8rem', color: '#85926B', fontWeight: 600 }}>
+                  <button onClick={() => setActiveTab('orders')} style={{ fontSize: '0.88rem', color: '#85926B', fontWeight: 700 }}>
                     View All →
                   </button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {stats.recentOrders?.slice(0, 6).map((ro) => (
-                    <div key={ro.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
+                    <div key={ro.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1F241C' }}>#{ro.order_number}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#7E8775' }}>{ro.customer_name} • ₹{ro.final_amount}</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#1F241C' }}>#{ro.order_number}</div>
+                        <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>{ro.customer_name} • ₹{ro.final_amount}</div>
                       </div>
                       <span style={{
-                        fontSize: '0.72rem',
+                        fontSize: '0.78rem',
                         fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '4px',
+                        padding: '3px 10px',
+                        borderRadius: '6px',
                         backgroundColor: ro.order_status === 'Delivered' ? '#E8F5E9' : '#FFF3E0',
                         color: ro.order_status === 'Delivered' ? '#2E7D32' : '#E65100'
                       }}>
@@ -1139,20 +1206,18 @@ export function AdminPortal({
         {/* 2. LIVE ORDERS TAB (ADMIN: VIEW-ONLY PER SPECIFICATION) */}
         {activeTab === 'orders' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Live Orders Audit (View-Only)
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Live Orders Audit (View-Only)</h2>
+                <div className="subtitle">
                   Managerial audit view • Operational status transitions are handled live in the Employee Station
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#FFFFFF', padding: '6px 12px', borderRadius: '12px', border: '1.5px solid #85926B' }}>
-                  <Building size={14} color="#85926B" />
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475234' }}>Branch:</span>
+              <div className="portal-header-actions">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', padding: '8px 16px', borderRadius: '12px', border: '1.5px solid #85926B' }}>
+                  <Building size={16} color="#85926B" />
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#475234' }}>Branch:</span>
                   <select
                     value={selectedBranchFilter}
                     onChange={(e) => {
@@ -1163,7 +1228,7 @@ export function AdminPortal({
                     style={{
                       border: 'none',
                       backgroundColor: 'transparent',
-                      fontSize: '0.8rem',
+                      fontSize: '0.92rem',
                       fontWeight: 700,
                       color: '#1F241C',
                       cursor: 'pointer',
@@ -1185,13 +1250,13 @@ export function AdminPortal({
                   value={orderSearch}
                   onChange={(e) => setOrderSearch(e.target.value)}
                   style={{
-                    padding: '8px 14px',
+                    padding: '10px 16px',
                     borderRadius: '9999px',
-                    border: '1px solid #DCE3D4',
-                    fontSize: '0.84rem',
+                    border: '1.5px solid #DCE3D4',
+                    fontSize: '0.92rem',
                     outline: 'none',
                     width: '100%',
-                    maxWidth: '220px'
+                    maxWidth: '240px'
                   }}
                 />
                 <button
@@ -1199,17 +1264,17 @@ export function AdminPortal({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
+                    gap: '8px',
+                    padding: '10px 18px',
                     borderRadius: '9999px',
                     backgroundColor: '#FFFFFF',
-                    border: '1px solid #DCE3D4',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
+                    border: '1.5px solid #DCE3D4',
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
                     color: '#475234'
                   }}
                 >
-                  <RefreshCw size={13} /> Refresh
+                  <RefreshCw size={15} /> Refresh
                 </button>
               </div>
             </div>
@@ -1221,14 +1286,14 @@ export function AdminPortal({
                   key={status}
                   onClick={() => setOrderStatusFilter(status)}
                   style={{
-                    padding: '6px 14px',
+                    padding: '8px 16px',
                     borderRadius: '20px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
                     whiteSpace: 'nowrap',
                     backgroundColor: orderStatusFilter === status ? '#85926B' : '#FFFFFF',
                     color: orderStatusFilter === status ? '#FFFFFF' : '#475234',
-                    border: '1px solid #DCE3D4'
+                    border: '1.5px solid #DCE3D4'
                   }}
                 >
                   {status === 'all' ? 'All Orders' : status}
@@ -1238,85 +1303,107 @@ export function AdminPortal({
 
             {/* Orders Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
-              {filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1px solid #ECE7DE',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minWidth: 0
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>
-                            #{order.order_number}
-                          </span>
-                          <span style={{
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            padding: '1px 6px',
-                            borderRadius: '4px',
-                            backgroundColor: '#EAF0E2',
-                            color: '#475234',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '3px'
-                          }}>
-                            <Building size={10} /> {order.branch_name || 'Indiranagar'}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: '#7E8775', marginTop: '2px' }}>
-                          {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                      </div>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '0.74rem',
-                        fontWeight: 700,
-                        backgroundColor: order.order_status === 'Delivered' ? '#E8F5E9' : '#FFF3E0',
-                        color: order.order_status === 'Delivered' ? '#2E7D32' : '#E65100'
-                      }}>
-                        {order.order_status}
-                      </span>
-                    </div>
-
-                    <div style={{ borderTop: '1px solid #F2EFE9', paddingTop: '10px', marginBottom: '10px', fontSize: '0.84rem' }}>
-                      <div style={{ fontWeight: 600, color: '#1F241C' }}>{order.customer_name}</div>
-                      <div style={{ color: '#7E8775', fontSize: '0.78rem' }}>{order.customer_phone || 'No phone'}</div>
-                      <div style={{ color: '#556149', fontSize: '0.78rem', marginTop: '4px' }}>
-                        📍 {order.delivery_type === 'pickup' ? 'Takeaway Pickup at Counter' : (order.delivery_address || 'Home Delivery')}
-                      </div>
-                    </div>
-
-                    <div style={{ fontSize: '0.82rem', color: '#475234', marginBottom: '10px' }}>
-                      {order.items?.map((item, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-                          <span>{item.quantity}x {item.food_name}</span>
-                          <span>₹{item.price * item.quantity}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px solid #F2EFE9', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1F241C' }}>
-                      Total: ₹{order.final_amount}
-                    </span>
-                    <span style={{ fontStyle: 'italic', color: '#85926B', fontSize: '0.76rem' }}>
-                      Admin View-Only • Kitchen Managed
-                    </span>
-                  </div>
+              {filteredOrders.length === 0 ? (
+                <div style={{
+                  gridColumn: '1 / -1',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '1px dashed #DCE3D4',
+                  padding: '48px 24px',
+                  textAlign: 'center',
+                  color: '#65705C'
+                }}>
+                  <ShoppingBag size={42} style={{ margin: '0 auto 12px', color: '#85926B', opacity: 0.7 }} />
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>No orders found</h3>
+                  <p style={{ fontSize: '0.85rem', margin: 0 }}>There are currently no live orders matching your branch or status filter.</p>
                 </div>
-              ))}
+              ) : (
+                filteredOrders.map((order) => {
+                  const orderItems = order.items && order.items.length > 0
+                    ? order.items
+                    : (order.items_json ? (typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json) : []);
+
+                  return (
+                    <div
+                      key={order.id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1px solid #ECE7DE',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        minWidth: 0
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>
+                                #{order.order_number}
+                              </span>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: '#EAF0E2',
+                                color: '#475234',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px'
+                              }}>
+                                <Building size={10} /> {order.branch_name || 'Indiranagar'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#7E8775', marginTop: '2px' }}>
+                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            backgroundColor: order.order_status === 'Delivered' ? '#E8F5E9' : '#FFF3E0',
+                            color: order.order_status === 'Delivered' ? '#2E7D32' : '#E65100'
+                          }}>
+                            {order.order_status}
+                          </span>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid #F2EFE9', paddingTop: '10px', marginBottom: '10px', fontSize: '0.84rem' }}>
+                          <div style={{ fontWeight: 600, color: '#1F241C' }}>{order.customer_name}</div>
+                          <div style={{ color: '#7E8775', fontSize: '0.78rem' }}>{order.customer_phone || 'No phone'}</div>
+                          <div style={{ color: '#556149', fontSize: '0.78rem', marginTop: '4px' }}>
+                            📍 {order.delivery_type === 'pickup' ? 'Takeaway Pickup at Counter' : (order.delivery_address || 'Home Delivery')}
+                          </div>
+                        </div>
+
+                        <div style={{ fontSize: '0.82rem', color: '#475234', marginBottom: '10px' }}>
+                          {orderItems?.map((item, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                              <span>{item.quantity}x {item.food_name || item.name}</span>
+                              <span>₹{(item.price || item.unit_price || 0) * (item.quantity || 1)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ borderTop: '1px solid #F2EFE9', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1F241C' }}>
+                          Total: ₹{order.final_amount}
+                        </span>
+                        <span style={{ fontStyle: 'italic', color: '#85926B', fontSize: '0.76rem' }}>
+                          Admin View-Only • Kitchen Managed
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
@@ -1324,20 +1411,18 @@ export function AdminPortal({
         {/* STORE BRANCHES & DEDICATED STAFF TAB */}
         {activeTab === 'branches' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Store Outlets & Dedicated Staff
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Store Outlets & Dedicated Staff</h2>
+                <div className="subtitle">
                   Manage Come To Eat café branch locations and employee station assignments with two-way verification
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="portal-header-actions">
                 <button
                   onClick={openAddBranch}
                   className="btn-secondary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.92rem', fontWeight: 700 }}
                 >
                   <Plus size={16} /> Add Outlet Branch
                 </button>
@@ -1352,73 +1437,62 @@ export function AdminPortal({
                     setShowAddEmployeeModal(true);
                   }}
                   className="btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', fontSize: '0.92rem' }}
                 >
                   <ChefHat size={16} /> Create Staff Employee
                 </button>
               </div>
             </div>
 
-            {/* BRANCHES LIST */}
+            {/* BRANCHES LIST CARDS */}
             <div style={{ marginBottom: '32px' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2B3224', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Building size={18} color="#85926B" /> Café Outlets ({branches.length})
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Building size={18} color="#85926B" /> Physical Branch Outlets ({branches.length})
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 {branches.map((b) => (
                   <div
                     key={b.id}
                     style={{
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      padding: '18px',
-                      border: '1px solid #E6ECE0',
+                      borderRadius: '16px',
+                      border: '1.5px solid #E6ECE0',
+                      padding: '20px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      gap: '12px'
+                      justifyContent: 'space-between'
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                         <div>
-                          <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>
-                            {b.name}
-                          </span>
-                          <span style={{
-                            marginLeft: '8px',
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            backgroundColor: '#EAF0E2',
-                            color: '#475234'
-                          }}>
-                            {b.code}
+                          <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#1F241C' }}>{b.name}</div>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#85926B', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                            Code: {b.code}
                           </span>
                         </div>
                         <span style={{
-                          fontSize: '0.74rem',
+                          fontSize: '0.76rem',
                           fontWeight: 700,
-                          padding: '3px 8px',
+                          padding: '3px 10px',
                           borderRadius: '6px',
                           backgroundColor: b.is_active ? '#E8F5E9' : '#FFEBEE',
                           color: b.is_active ? '#2E7D32' : '#C62828'
                         }}>
-                          {b.is_active ? 'Active' : 'Inactive'}
+                          {b.is_active ? 'ONLINE' : 'INACTIVE'}
                         </span>
                       </div>
-                      <div style={{ fontSize: '0.84rem', color: '#556149', display: 'flex', alignItems: 'flex-start', gap: '6px', marginBottom: '6px' }}>
-                        <MapPin size={14} style={{ flexShrink: 0, marginTop: '2px', color: '#85926B' }} />
-                        <span>{b.address || 'Address not set'}</span>
+                      <div style={{ fontSize: '0.88rem', color: '#556149', marginBottom: '6px', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                        <MapPin size={15} color="#85926B" style={{ flexShrink: 0, marginTop: '3px' }} />
+                        <span>{b.address || 'Address not configured'}</span>
                       </div>
-                      <div style={{ fontSize: '0.84rem', color: '#556149', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Phone size={14} style={{ flexShrink: 0, color: '#85926B' }} />
-                        <span>{b.phone || 'Phone not set'}</span>
+                      <div style={{ fontSize: '0.88rem', color: '#556149', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Phone size={15} color="#85926B" style={{ flexShrink: 0 }} />
+                        <span>{b.phone || 'Phone not configured'}</span>
                       </div>
                     </div>
-                    <div style={{ borderTop: '1px solid #F0EFEA', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ borderTop: '1px solid #F0EFEA', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <button
                         onClick={() => handleDeleteBranch(b.id, b.name)}
                         style={{
@@ -1426,7 +1500,7 @@ export function AdminPortal({
                           border: 'none',
                           color: '#C62828',
                           fontWeight: 700,
-                          fontSize: '0.82rem',
+                          fontSize: '0.86rem',
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1434,7 +1508,7 @@ export function AdminPortal({
                         }}
                         title="Delete branch outlet"
                       >
-                        <Trash2 size={13} /> Delete Branch
+                        <Trash2 size={14} /> Delete Branch
                       </button>
                       <button
                         onClick={() => openEditBranch(b)}
@@ -1443,14 +1517,14 @@ export function AdminPortal({
                           border: 'none',
                           color: '#475234',
                           fontWeight: 700,
-                          fontSize: '0.82rem',
+                          fontSize: '0.86rem',
                           cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '5px'
                         }}
                       >
-                        <Edit2 size={13} /> Edit Outlet Info
+                        <Edit2 size={14} /> Edit Outlet Info
                       </button>
                     </div>
                   </div>
@@ -1461,7 +1535,7 @@ export function AdminPortal({
             {/* EMPLOYEES & TWO-WAY REASSIGNMENT */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#2B3224', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#2B3224', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ChefHat size={18} color="#85926B" /> Staff Employees & Station Verification ({employees.length})
                 </h3>
               </div>
@@ -1470,147 +1544,251 @@ export function AdminPortal({
               <div style={{
                 backgroundColor: '#F8FAF5',
                 border: '1px solid #DCE6D3',
-                borderRadius: '10px',
-                padding: '14px 18px',
-                marginBottom: '18px',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                marginBottom: '20px',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '12px',
-                fontSize: '0.86rem',
+                fontSize: '0.92rem',
                 color: '#3B4530',
                 lineHeight: 1.5
               }}>
-                <Shield size={20} color="#85926B" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <Shield size={22} color="#85926B" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   <strong>Branch Lock & Two-Way Verification Policy:</strong> Employees operate exclusively within their assigned physical station. When you initiate a branch reassignment, the employee is presented with a prominent confirmation prompt upon their next login. Only when confirmed by the employee does their operational station switch.
                 </div>
               </div>
 
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '12px',
-                border: '1px solid #E6ECE0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                overflowX: 'auto'
-              }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #E6ECE0', fontSize: '0.82rem', color: '#556149', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      <th style={{ padding: '14px 18px' }}>Staff Member</th>
-                      <th style={{ padding: '14px 18px' }}>Current Branch</th>
-                      <th style={{ padding: '14px 18px' }}>Station Status</th>
-                      <th style={{ padding: '14px 18px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {employees.length === 0 ? (
-                      <tr>
-                        <td colSpan="4" style={{ padding: '32px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic' }}>
-                          No staff employee accounts created yet. Click "Create Staff Employee" above to add kitchen or café staff.
-                        </td>
+              {/* Desktop Table View */}
+              <div className="responsive-table-view">
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  border: '1px solid #E6ECE0',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  overflowX: 'auto'
+                }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '640px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #E6ECE0', fontSize: '0.86rem', color: '#556149', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <th style={{ padding: '16px 20px' }}>Staff Member</th>
+                        <th style={{ padding: '16px 20px' }}>Current Branch</th>
+                        <th style={{ padding: '16px 20px' }}>Station Status</th>
+                        <th style={{ padding: '16px 20px', textAlign: 'right' }}>Actions</th>
                       </tr>
-                    ) : (
-                      employees.map((emp) => (
-                        <tr key={emp.id} style={{ borderBottom: '1px solid #F2EFE9', fontSize: '0.88rem' }}>
-                          <td style={{ padding: '14px 18px' }}>
-                            <div style={{ fontWeight: 700, color: '#1F241C' }}>{emp.name}</div>
-                            <div style={{ fontSize: '0.78rem', color: '#7E8775' }}>{emp.email}</div>
+                    </thead>
+                    <tbody>
+                      {employees.length === 0 ? (
+                        <tr>
+                          <td colSpan="4" style={{ padding: '36px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic', fontSize: '0.94rem' }}>
+                            No staff employee accounts created yet. Click "Create Staff Employee" above to add kitchen or café staff.
                           </td>
-                          <td style={{ padding: '14px 18px' }}>
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              backgroundColor: '#EAF0E2',
-                              color: '#3B4530',
-                              fontWeight: 700,
-                              fontSize: '0.82rem'
-                            }}>
-                              <Building size={13} /> {emp.branch_name || 'Unassigned'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '14px 18px' }}>
-                            {emp.transfer_status === 'pending_employee_confirmation' ? (
-                              <div>
+                        </tr>
+                      ) : (
+                        employees.map((emp) => (
+                          <tr key={emp.id} style={{ borderBottom: '1px solid #F2EFE9', fontSize: '0.94rem' }}>
+                            <td style={{ padding: '16px 20px' }}>
+                              <div style={{ fontWeight: 700, color: '#1F241C' }}>{emp.name}</div>
+                              <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>{emp.email}</div>
+                            </td>
+                            <td style={{ padding: '16px 20px' }}>
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                color: '#1F241C',
+                                fontWeight: 600,
+                                fontSize: '0.92rem'
+                              }}>
+                                <Building size={15} color="#65705C" /> {emp.branch_name || 'Indiranagar (Flagship)'}
+                              </div>
+                            </td>
+                            <td style={{ padding: '16px 20px' }}>
+                              {emp.transfer_status === 'pending_employee_confirmation' ? (
+                                <div>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    color: '#E65100',
+                                    fontWeight: 700,
+                                    fontSize: '0.88rem'
+                                  }}>
+                                    <AlertTriangle size={15} /> Pending Confirmation
+                                  </span>
+                                  <div style={{ fontSize: '0.8rem', color: '#7E8775', marginTop: '3px' }}>
+                                    Relocating to: <strong>{emp.pending_branch_name}</strong>
+                                  </div>
+                                </div>
+                              ) : (
                                 <span style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '5px',
-                                  padding: '4px 10px',
-                                  borderRadius: '6px',
-                                  backgroundColor: '#FFF3E0',
-                                  color: '#E65100',
+                                  color: '#2E7D32',
                                   fontWeight: 700,
-                                  fontSize: '0.78rem'
+                                  fontSize: '0.88rem'
                                 }}>
-                                  <AlertTriangle size={13} /> Pending Confirmation
+                                  <CheckCircle size={15} /> Active at Station
                                 </span>
-                                <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '3px' }}>
-                                  Relocating to: <strong>{emp.pending_branch_name}</strong>
-                                </div>
-                              </div>
-                            ) : (
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '5px',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                backgroundColor: '#E8F5E9',
-                                color: '#2E7D32',
-                                fontWeight: 700,
-                                fontSize: '0.78rem'
-                              }}>
-                                <CheckCircle size={13} /> Active at Station
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                            {emp.transfer_status === 'pending_employee_confirmation' ? (
-                              <button
-                                onClick={() => handleCancelTransfer(emp.id)}
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '0.78rem',
-                                  fontWeight: 700,
-                                  backgroundColor: '#FFEBEE',
-                                  color: '#C62828',
-                                  border: '1px solid #FFCDD2',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Cancel Transfer
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setTransferEmployee(emp);
-                                  const other = branches.find(b => b.id !== emp.branch_id);
-                                  setTransferBranchId(other ? other.id : '');
-                                }}
-                                style={{
-                                  padding: '6px 14px',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 700,
-                                  backgroundColor: '#F3F6EF',
-                                  color: '#475234',
-                                  border: '1px solid #DCE6D3',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                Transfer Branch
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                              )}
+                            </td>
+                            <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                              {emp.transfer_status === 'pending_employee_confirmation' ? (
+                                <button
+                                  onClick={() => handleCancelTransfer(emp.id)}
+                                  style={{
+                                    padding: '8px 14px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 700,
+                                    backgroundColor: '#FFEBEE',
+                                    color: '#C62828',
+                                    border: '1px solid #FFCDD2',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Cancel Transfer
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setTransferEmployee(emp);
+                                    const other = branches.find(b => b.id !== emp.branch_id);
+                                    setTransferBranchId(other ? other.id : '');
+                                  }}
+                                  style={{
+                                    padding: '8px 16px',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 700,
+                                    backgroundColor: '#F3F6EF',
+                                    color: '#475234',
+                                    border: '1px solid #DCE6D3',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Transfer Branch
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Mobile Cards View */}
+              <div className="responsive-cards-view">
+                {employees.length === 0 ? (
+                  <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DE', padding: '24px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic' }}>
+                    No staff employee accounts created yet. Click "Create Staff Employee" above to add kitchen or café staff.
+                  </div>
+                ) : (
+                  employees.map((emp) => (
+                    <div
+                      key={emp.id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '16px',
+                        border: '1px solid #ECE7DE',
+                        padding: '16px 18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>{emp.name}</div>
+                          <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>{emp.email}</div>
+                        </div>
+                        {emp.transfer_status === 'pending_employee_confirmation' ? (
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            backgroundColor: '#FFF3E0',
+                            color: '#E65100',
+                            border: '1px solid #FFE082'
+                          }}>
+                            Pending Move
+                          </span>
+                        ) : (
+                          <span style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            backgroundColor: '#E8F5E9',
+                            color: '#2E7D32',
+                            border: '1px solid #C8E6C9'
+                          }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: '#475234', backgroundColor: '#FAF8F5', padding: '10px 12px', borderRadius: '10px' }}>
+                        <Building size={16} color="#85926B" style={{ flexShrink: 0 }} />
+                        <span style={{ fontWeight: 600 }}>Station: {emp.branch_name || 'Indiranagar (Flagship)'}</span>
+                      </div>
+
+                      {emp.transfer_status === 'pending_employee_confirmation' && (
+                        <div style={{ fontSize: '0.82rem', color: '#E65100', backgroundColor: '#FFF8E1', padding: '8px 12px', borderRadius: '8px' }}>
+                          Relocation Requested to: <strong>{emp.pending_branch_name}</strong>
+                        </div>
+                      )}
+
+                      <div style={{ borderTop: '1px solid #F4F2EC', paddingTop: '10px' }}>
+                        {emp.transfer_status === 'pending_employee_confirmation' ? (
+                          <button
+                            onClick={() => handleCancelTransfer(emp.id)}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              fontSize: '0.88rem',
+                              fontWeight: 700,
+                              backgroundColor: '#FFEBEE',
+                              color: '#C62828',
+                              border: '1px solid #FFCDD2',
+                              borderRadius: '10px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Cancel Transfer Request
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setTransferEmployee(emp);
+                              const other = branches.find(b => b.id !== emp.branch_id);
+                              setTransferBranchId(other ? other.id : '');
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              fontSize: '0.88rem',
+                              fontWeight: 700,
+                              backgroundColor: '#F3F6EF',
+                              color: '#475234',
+                              border: '1px solid #DCE6D3',
+                              borderRadius: '10px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Transfer Branch Station
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -1619,106 +1797,212 @@ export function AdminPortal({
         {/* 3. FOOD ITEMS TAB */}
         {activeTab === 'foods' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Menu Dishes & Catalog
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Menu Dishes & Catalog</h2>
+                <div className="subtitle">
                   Manage dishes across Come To Eat categories with device image upload
                 </div>
               </div>
-              <button
-                onClick={() => {
-                  setEditingFood(null);
-                  setFoodForm({
-                    name: '',
-                    category_id: categories[0]?.id || 1,
-                    price: '',
-                    discount_price: '',
-                    is_veg: 1,
-                    is_available: 1,
-                    prep_time: '15 min',
-                    image_url: '',
-                    description: '',
-                    is_featured: 0
-                  });
-                  setShowAddFoodModal(true);
-                }}
-                className="btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
-              >
-                <Plus size={16} /> Add Food Item
-              </button>
+              <div className="portal-header-actions">
+                <button
+                  onClick={() => {
+                    setEditingFood(null);
+                    setFoodForm({
+                      name: '',
+                      category_id: categories[0]?.id || 1,
+                      price: '',
+                      discount_price: '',
+                      is_veg: 1,
+                      is_available: 1,
+                      prep_time: '15 min',
+                      image_url: '',
+                      description: '',
+                      is_featured: 0
+                    });
+                    setShowAddFoodModal(true);
+                  }}
+                  className="btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', padding: '10px 20px', fontSize: '0.94rem' }}
+                >
+                  <Plus size={16} /> Add Food Item
+                </button>
+              </div>
             </div>
 
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DE', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              <table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
-                <thead style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE' }}>
-                  <tr>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Food Item</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Category</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Price</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Diet</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Status</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {foods.map((food) => (
-                    <tr key={food.id} style={{ borderBottom: '1px solid #F2EFE9' }}>
-                      <td style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img src={food.image_url} alt={food.name} style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'cover' }} />
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#1F241C' }}>{food.name}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#7E8775' }}>{food.prep_time}</div>
-                        </div>
-                      </td>
-                      <td style={{ padding: '12px 18px', color: '#556149' }}>{food.category_name}</td>
-                      <td style={{ padding: '12px 18px', fontWeight: 700 }}>₹{food.discount_price || food.price}</td>
-                      <td style={{ padding: '12px 18px' }}>
+            {/* Desktop Table View */}
+            <div className="responsive-table-view">
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DE', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', fontSize: '0.94rem', textAlign: 'left' }}>
+                  <thead style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE' }}>
+                    <tr>
+                      <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Food Item</th>
+                      <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Category</th>
+                      <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Price</th>
+                      <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Diet</th>
+                      <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Status</th>
+                      <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {foods.map((food) => (
+                      <tr key={food.id} style={{ borderBottom: '1px solid #F2EFE9' }}>
+                        <td style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                          <img src={food.image_url} alt={food.name} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover' }} />
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#1F241C', fontSize: '0.96rem' }}>{food.name}</div>
+                            <div style={{ fontSize: '0.78rem', color: '#7E8775', marginTop: '2px' }}>{food.prep_time}</div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 20px', color: '#556149' }}>{food.category_name}</td>
+                        <td style={{ padding: '14px 20px', fontWeight: 800, color: '#1F241C' }}>₹{food.discount_price || food.price}</td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '5px',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            border: food.is_veg ? '1px solid #2E7D32' : '1px solid #C62828',
+                            color: food.is_veg ? '#2E7D32' : '#C62828',
+                            backgroundColor: food.is_veg ? '#F1F8F3' : '#FDF2F2'
+                          }}>
+                            {food.is_veg ? 'VEG' : 'NON-VEG'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 20px' }}>
+                          <button
+                            onClick={() => handleToggleAvailability(food.id)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '16px',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              backgroundColor: food.is_available ? '#E8F5E9' : '#FFEBEE',
+                              color: food.is_available ? '#2E7D32' : '#C62828',
+                              border: '1px solid currentColor',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {food.is_available ? 'Active (Live)' : 'Sold Out'}
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px 18px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => openEditFood(food)} title="Edit Food" style={{ color: '#85926B', padding: '4px' }}>
+                              <Edit2 size={16} />
+                            </button>
+                            <button onClick={() => handleDeleteFood(food.id)} title="Delete Food" style={{ color: '#C62828', padding: '4px' }}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="responsive-cards-view">
+              {foods.map((food) => (
+                <div
+                  key={food.id}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    border: '1px solid #ECE7DE',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                    <img
+                      src={food.image_url}
+                      alt={food.name}
+                      style={{ width: '60px', height: '60px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '6px' }}>
+                        <h4 style={{ fontWeight: 800, fontSize: '1rem', color: '#1F241C', margin: 0 }}>{food.name}</h4>
                         <span style={{
-                          padding: '2px 6px',
+                          padding: '2px 7px',
                           borderRadius: '4px',
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
                           border: food.is_veg ? '1px solid #2E7D32' : '1px solid #C62828',
                           color: food.is_veg ? '#2E7D32' : '#C62828',
-                          backgroundColor: food.is_veg ? '#F1F8F3' : '#FDF2F2'
+                          backgroundColor: food.is_veg ? '#F1F8F3' : '#FDF2F2',
+                          flexShrink: 0
                         }}>
                           {food.is_veg ? 'VEG' : 'NON-VEG'}
                         </span>
-                      </td>
-                      <td style={{ padding: '12px 18px' }}>
-                        <button
-                          onClick={() => handleToggleAvailability(food.id)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '16px',
-                            fontSize: '0.76rem',
-                            fontWeight: 700,
-                            backgroundColor: food.is_available ? '#E8F5E9' : '#FFEBEE',
-                            color: food.is_available ? '#2E7D32' : '#C62828',
-                            border: '1px solid currentColor'
-                          }}
-                        >
-                          {food.is_available ? 'Active (Live)' : 'Sold Out'}
-                        </button>
-                      </td>
-                      <td style={{ padding: '12px 18px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button onClick={() => openEditFood(food)} title="Edit Food" style={{ color: '#85926B', padding: '4px' }}>
-                            <Edit2 size={16} />
-                          </button>
-                          <button onClick={() => handleDeleteFood(food.id)} title="Delete Food" style={{ color: '#C62828', padding: '4px' }}>
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#7E8775', marginTop: '2px' }}>
+                        {food.category_name} • {food.prep_time}
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C', marginTop: '4px' }}>
+                        ₹{food.discount_price || food.price}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid #F4F2EC', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      onClick={() => handleToggleAvailability(food.id)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '16px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        backgroundColor: food.is_available ? '#E8F5E9' : '#FFEBEE',
+                        color: food.is_available ? '#2E7D32' : '#C62828',
+                        border: '1px solid currentColor',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {food.is_available ? 'Active (Live)' : 'Sold Out'}
+                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => openEditFood(food)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          backgroundColor: '#F3F6EF',
+                          color: '#475234',
+                          fontSize: '0.84rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        <Edit2 size={14} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFood(food.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          backgroundColor: '#FFEBEE',
+                          color: '#C62828',
+                          fontSize: '0.84rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1726,30 +2010,28 @@ export function AdminPortal({
         {/* 4. CATEGORIES TAB (WITH ADD & EDIT & DELETE CATEGORY OPTIONS) */}
         {activeTab === 'categories' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Food Categories Management
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Food Categories Management</h2>
+                <div className="subtitle">
                   Create categories, upload category banner images from your device, and manage menu sections
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="portal-header-actions">
                 <button
                   onClick={fetchCategories}
                   className="btn-secondary"
-                  style={{ padding: '8px 14px', fontSize: '0.86rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '10px 18px', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                   title="Reload categories"
                 >
-                  <RefreshCw size={15} /> Refresh
+                  <RefreshCw size={16} /> Refresh
                 </button>
                 <button
                   onClick={openAddCategory}
                   className="btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
+                  style={{ padding: '10px 20px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
                 >
-                  <Plus size={16} /> Add Category
+                  <Plus size={18} /> Add Category
                 </button>
               </div>
             </div>
@@ -1757,76 +2039,77 @@ export function AdminPortal({
             {categories.length === 0 ? (
               <div style={{
                 backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
+                borderRadius: '18px',
                 border: '1px solid #ECE7DE',
                 padding: '48px 20px',
                 textAlign: 'center'
               }}>
-                <FolderTree size={42} color="#85926B" style={{ margin: '0 auto 12px' }} />
-                <h4 style={{ fontWeight: 700, fontSize: '1.1rem', color: '#1F241C', marginBottom: '6px' }}>No Categories Loaded</h4>
-                <p style={{ color: '#7E8775', fontSize: '0.88rem', marginBottom: '16px' }}>Click refresh to fetch current menu categories or add a new category.</p>
-                <button onClick={fetchCategories} className="btn-secondary" style={{ padding: '8px 18px' }}>
+                <FolderTree size={46} color="#85926B" style={{ margin: '0 auto 14px' }} />
+                <h4 style={{ fontWeight: 700, fontSize: '1.2rem', color: '#1F241C', marginBottom: '8px' }}>No Categories Loaded</h4>
+                <p style={{ color: '#7E8775', fontSize: '0.96rem', marginBottom: '18px' }}>Click refresh to fetch current menu categories or add a new category.</p>
+                <button onClick={fetchCategories} className="btn-secondary" style={{ padding: '10px 20px', fontSize: '0.92rem' }}>
                   Refresh Categories
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '18px' }}>
                 {categories.map((cat) => (
                   <div
                     key={cat.id}
                     style={{
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '16px',
+                      borderRadius: '18px',
                       border: '1px solid #ECE7DE',
                       overflow: 'hidden',
                       display: 'flex',
                       flexDirection: 'column',
-                      minWidth: 0
+                      minWidth: 0,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                     }}
                   >
                     <img
                       src={cat.image_url}
                       alt={cat.name}
-                      style={{ width: '100%', height: '140px', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '150px', objectFit: 'cover' }}
                     />
-                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1F241C' }}>
+                    <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1F241C' }}>
                           {cat.name}
                         </h4>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             onClick={() => openEditCategory(cat)}
                             style={{
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '4px',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
+                              gap: '5px',
+                              padding: '6px 10px',
+                              borderRadius: '8px',
                               backgroundColor: '#F0F4E8',
                               color: '#475234',
-                              fontSize: '0.78rem',
+                              fontSize: '0.84rem',
                               fontWeight: 700
                             }}
                             title="Edit Category Details"
                           >
-                            <Edit2 size={13} /> Edit
+                            <Edit2 size={14} /> Edit
                           </button>
                           <button
                             onClick={() => handleDeleteCategory(cat.id)}
                             style={{
                               color: '#C62828',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
+                              padding: '6px 10px',
+                              borderRadius: '8px',
                               backgroundColor: '#FFEBEE'
                             }}
                             title="Delete Category"
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
-                      <p style={{ fontSize: '0.82rem', color: '#6A7463', lineHeight: 1.4, flex: 1 }}>
+                      <p style={{ fontSize: '0.9rem', color: '#6A7463', lineHeight: 1.5, flex: 1 }}>
                         {cat.description}
                       </p>
                     </div>
@@ -1839,73 +2122,74 @@ export function AdminPortal({
 
         {/* 5. OFFERS & COUPONS TAB */}
         {activeTab === 'coupons' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
             {/* Section A: Visual Offer Banners (for Offers Page) */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                    1. Visual Offer Banners (Offers Page)
-                  </h2>
-                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+              <div className="portal-header-bar">
+                <div className="portal-header-title">
+                  <h2>1. Visual Offer Banners (Offers Page)</h2>
+                  <div className="subtitle">
                     Create and manage visual promotional offer cards displayed on the customer Offers page
                   </div>
                 </div>
-                <button
-                  onClick={openAddOffer}
-                  className="btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
-                >
-                  <Plus size={16} /> Add Offer Banner
-                </button>
+                <div className="portal-header-actions">
+                  <button
+                    onClick={openAddOffer}
+                    className="btn-primary"
+                    style={{ padding: '10px 20px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
+                  >
+                    <Plus size={18} /> Add Offer Banner
+                  </button>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '18px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
                 {offers.map((off) => (
                   <div
                     key={off.id}
                     style={{
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '16px',
+                      borderRadius: '18px',
                       border: '1px solid #ECE7DE',
                       overflow: 'hidden',
                       display: 'flex',
-                      flexDirection: 'column'
+                      flexDirection: 'column',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                     }}
                   >
                     <div style={{
                       position: 'relative',
-                      height: '140px',
+                      height: '150px',
                       backgroundColor: off.bg_color || '#85926B',
                       overflow: 'hidden'
                     }}>
                       {off.image_url && (
                         <img src={off.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       )}
-                      <div style={{ position: 'absolute', top: '10px', left: '10px', backgroundColor: '#E76F51', color: '#FFF', fontSize: '0.68rem', fontWeight: 800, padding: '3px 10px', borderRadius: '12px' }}>
+                      <div style={{ position: 'absolute', top: '12px', left: '12px', backgroundColor: '#E76F51', color: '#FFF', fontSize: '0.76rem', fontWeight: 800, padding: '4px 12px', borderRadius: '14px' }}>
                         {off.tag || 'PROMO'}
                       </div>
                     </div>
-                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#1F241C', marginBottom: '6px' }}>{off.title}</div>
-                        <p style={{ fontSize: '0.82rem', color: '#65705C', lineHeight: 1.45, margin: '0 0 12px' }}>{off.description}</p>
-                        <div style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 600 }}>Target: {off.target_category || 'All Categories'}</div>
+                        <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#1F241C', marginBottom: '6px' }}>{off.title}</div>
+                        <p style={{ fontSize: '0.9rem', color: '#65705C', lineHeight: 1.5, margin: '0 0 12px' }}>{off.description}</p>
+                        <div style={{ fontSize: '0.82rem', color: '#85926B', fontWeight: 700 }}>Target: {off.target_category || 'All Categories'}</div>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #F0EFEB' }}>
-                        <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475234' }}>CTA: "{off.button_text}"</span>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F0EFEB' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475234' }}>CTA: "{off.button_text}"</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
                           <button
                             onClick={() => openEditOffer(off)}
-                            style={{ padding: '5px 10px', borderRadius: '6px', backgroundColor: '#85926B', color: '#FFF', fontSize: '0.76rem', fontWeight: 700, border: 'none' }}
+                            style={{ padding: '6px 12px', borderRadius: '8px', backgroundColor: '#85926B', color: '#FFF', fontSize: '0.82rem', fontWeight: 700, border: 'none' }}
                           >
-                            <Edit2 size={13} /> Edit
+                            <Edit2 size={14} /> Edit
                           </button>
                           <button
                             onClick={() => handleDeleteOffer(off.id)}
-                            style={{ padding: '5px 8px', borderRadius: '6px', backgroundColor: '#FFEBEE', color: '#C62828', fontSize: '0.76rem', border: 'none' }}
+                            style={{ padding: '6px 10px', borderRadius: '8px', backgroundColor: '#FFEBEE', color: '#C62828', fontSize: '0.82rem', border: 'none' }}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
@@ -1917,49 +2201,50 @@ export function AdminPortal({
 
             {/* Section B: Discount Coupon Codes */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                    2. Discount Coupon Codes
-                  </h2>
-                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
+              <div className="portal-header-bar">
+                <div className="portal-header-title">
+                  <h2>2. Discount Coupon Codes</h2>
+                  <div className="subtitle">
                     Create checkout promo codes, set valid start/end dates, or modify discount values
                   </div>
                 </div>
-                <button
-                  onClick={openAddCoupon}
-                  className="btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
-                >
-                  <Plus size={16} /> Add Coupon
-                </button>
+                <div className="portal-header-actions">
+                  <button
+                    onClick={openAddCoupon}
+                    className="btn-primary"
+                    style={{ padding: '10px 20px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
+                  >
+                    <Plus size={18} /> Add Coupon
+                  </button>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '18px' }}>
                 {coupons.map((cp) => (
                   <div
                     key={cp.id}
                     style={{
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '16px',
+                      borderRadius: '18px',
                       border: '1.5px dashed #C8D1BE',
-                      padding: '18px',
+                      padding: '20px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      minWidth: 0
+                      minWidth: 0,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                         <span style={{
                           fontFamily: 'monospace',
                           fontWeight: 800,
-                          fontSize: '1.1rem',
+                          fontSize: '1.18rem',
                           backgroundColor: '#F3F6EE',
                           color: '#475234',
-                          padding: '4px 10px',
-                          borderRadius: '6px'
+                          padding: '5px 12px',
+                          borderRadius: '8px'
                         }}>
                           {cp.code}
                         </span>
@@ -1970,11 +2255,11 @@ export function AdminPortal({
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
+                              padding: '5px 10px',
+                              borderRadius: '8px',
                               backgroundColor: '#F0F4E8',
                               color: '#475234',
-                              fontSize: '0.78rem',
+                              fontSize: '0.82rem',
                               fontWeight: 700
                             }}
                             title="Modify Coupon"
@@ -1985,8 +2270,8 @@ export function AdminPortal({
                             onClick={() => handleDeleteCoupon(cp.id)}
                             style={{
                               color: '#C62828',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
+                              padding: '5px 9px',
+                              borderRadius: '8px',
                               backgroundColor: '#FFEBEE'
                             }}
                             title="Delete Coupon"
@@ -1995,145 +2280,200 @@ export function AdminPortal({
                           </button>
                         </div>
                       </div>
-                    <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#E76F51', marginBottom: '4px' }}>
-                      {cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value} FLAT`}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: '#6A7463', marginBottom: '4px' }}>
-                      Min Order: ₹{cp.min_order_value} • Max Cap: ₹{cp.max_discount}
-                    </div>
-                    {(cp.start_date || cp.end_date || cp.expires_at) && (
-                      <div style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 600 }}>
-                        Valid: {cp.start_date || 'Ongoing'} to {cp.end_date || cp.expires_at || 'No expiry'}
+                      <div style={{ fontWeight: 800, fontSize: '1.35rem', color: '#E76F51', marginBottom: '6px' }}>
+                        {cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value} FLAT`}
                       </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #F0F4E8' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#7E8775' }}>
-                      Redeemed: <strong>{cp.times_used || 0} times</strong>
-                    </span>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: cp.is_active ? '#E8F5E9' : '#F5F5F5',
-                      color: cp.is_active ? '#2E7D32' : '#9E9E9E'
-                    }}>
-                      {cp.is_active ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-        {/* 6. LANDING PAGE TAB (HERO BANNERS, CHEF'S RECOMMENDATION & CRAFTED WITH PASSION) */}
-        {activeTab === 'hero' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {/* Section 1: Hero Banner Slides */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                    1. Hero Banner Slides
-                  </h2>
-                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
-                    Add dynamic hero slides with custom tags, titles, cursive script, button actions, and background colors
-                  </div>
-                </div>
-                <button
-                  onClick={openAddSlide}
-                  className="btn-primary"
-                  style={{ padding: '8px 18px', fontSize: '0.86rem', whiteSpace: 'nowrap' }}
-                >
-                  <Plus size={16} /> Add Hero Slide
-                </button>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-                {heroSlides.map((slide) => (
-                  <div
-                    key={slide.id}
-                    style={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '16px',
-                      border: '1px solid #ECE7DE',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}
-                  >
-                    <div style={{
-                      backgroundColor: slide.bg_color,
-                      padding: '20px',
-                      color: '#FFFFFF',
-                      position: 'relative'
-                    }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '1px' }}>{slide.tag}</div>
-                      <div style={{ fontFamily: "'Caveat', cursive", fontSize: '1.8rem', lineHeight: 1.2 }}>{slide.script}</div>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, marginTop: '4px' }}>{slide.title}</div>
-                    </div>
-
-                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <p style={{ fontSize: '0.82rem', color: '#65705C', lineHeight: 1.5, flex: 1 }}>
-                        {slide.desc}
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #F0EFEB' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#85926B', fontWeight: 700 }}>
-                          CTA: "{slide.button_text}"
-                        </span>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button
-                            onClick={() => openEditSlide(slide)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '6px 12px',
-                              borderRadius: '8px',
-                              backgroundColor: '#85926B',
-                              color: '#FFFFFF',
-                              fontSize: '0.78rem',
-                              fontWeight: 700
-                            }}
-                          >
-                            <Edit2 size={13} /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteHeroSlide(slide.id)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              padding: '6px 10px',
-                              borderRadius: '8px',
-                              backgroundColor: '#FFEBEE',
-                              color: '#C62828',
-                              fontSize: '0.78rem',
-                              fontWeight: 700
-                            }}
-                            title="Delete Slide"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                      <div style={{ fontSize: '0.88rem', color: '#6A7463', marginBottom: '6px' }}>
+                        Min Order: ₹{cp.min_order_value} • Max Cap: ₹{cp.max_discount}
+                      </div>
+                      {(cp.start_date || cp.end_date || cp.expires_at) && (
+                        <div style={{ fontSize: '0.82rem', color: '#85926B', fontWeight: 600 }}>
+                          Valid: {cp.start_date || 'Ongoing'} to {cp.end_date || cp.expires_at || 'No expiry'}
                         </div>
-                      </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F0F4E8' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#7E8775' }}>
+                        Redeemed: <strong>{cp.times_used || 0} times</strong>
+                      </span>
+                      <span style={{
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        padding: '3px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: cp.is_active ? '#E8F5E9' : '#F5F5F5',
+                        color: cp.is_active ? '#2E7D32' : '#9E9E9E'
+                      }}>
+                        {cp.is_active ? 'ACTIVE' : 'INACTIVE'}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 6. LANDING PAGE TAB (HERO BANNERS, CHEF'S RECOMMENDATION & CRAFTED WITH PASSION) */}
+        {activeTab === 'hero' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+            {/* Section 1: Hero Banner Slides */}
+            <div>
+              <div className="portal-header-bar">
+                <div className="portal-header-title">
+                  <h2>1. Hero Banner Slides</h2>
+                  <div className="subtitle">
+                    Add dynamic hero slides with custom tags, titles, cursive script, button actions, and background colors
+                  </div>
+                </div>
+                <div className="portal-header-actions">
+                  <button
+                    onClick={fetchHeroSlides}
+                    className="btn-secondary"
+                    style={{ padding: '10px 18px', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                    title="Reload slides"
+                  >
+                    <RefreshCw size={16} /> Refresh
+                  </button>
+                  <button
+                    onClick={openAddSlide}
+                    className="btn-primary"
+                    style={{ padding: '10px 20px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
+                  >
+                    <Plus size={18} /> Add Hero Slide
+                  </button>
+                </div>
+              </div>
+
+              {heroSlides.length === 0 ? (
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '18px',
+                  border: '1.5px dashed #CBD4C0',
+                  padding: '48px 24px',
+                  textAlign: 'center'
+                }}>
+                  <Sparkles size={46} color="#85926B" style={{ margin: '0 auto 14px' }} />
+                  <h4 style={{ fontWeight: 800, fontSize: '1.25rem', color: '#1F241C', marginBottom: '8px' }}>No Hero Banner Slides Found</h4>
+                  <p style={{ color: '#7E8775', fontSize: '0.94rem', marginBottom: '20px', maxWidth: '420px', margin: '0 auto 20px' }}>
+                    Create custom promotional slides displayed on the customer landing and home pages.
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button onClick={handleReloadDefaultSlides} className="btn-secondary" style={{ padding: '10px 20px', fontSize: '0.92rem' }}>
+                      <RefreshCw size={15} /> Reload Default Slides
+                    </button>
+                    <button onClick={openAddSlide} className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.92rem' }}>
+                      <Plus size={16} /> Add Hero Slide
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  {heroSlides.map((slide) => (
+                    <div
+                      key={slide.id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '18px',
+                        border: '1px solid #ECE7DE',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      <div style={{
+                        backgroundColor: slide.bg_color || '#85926B',
+                        padding: '22px',
+                        color: '#FFFFFF',
+                        position: 'relative',
+                        minHeight: '130px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                      }}>
+                        {slide.image_url && (
+                          <div style={{ position: 'absolute', right: '14px', bottom: '14px', width: '70px', height: '70px', borderRadius: '12px', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                            <img src={slide.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontSize: '0.76rem', fontWeight: 800, letterSpacing: '1px' }}>{slide.tag || 'PROMO'}</div>
+                          <div style={{ fontFamily: "'Caveat', cursive", fontSize: '2rem', lineHeight: 1.2 }}>{slide.script || 'Delicious'}</div>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', fontWeight: 700, marginTop: '4px', maxWidth: '75%' }}>{slide.title}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          <p style={{ fontSize: '0.9rem', color: '#65705C', lineHeight: 1.5, margin: '0 0 10px' }}>
+                            {slide.desc || slide.desc_text || 'No description provided'}
+                          </p>
+                          {slide.target_category && (
+                            <div style={{ fontSize: '0.82rem', color: '#85926B', fontWeight: 700 }}>
+                              Target Category: {slide.target_category}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #F0EFEB' }}>
+                          <span style={{ fontSize: '0.82rem', color: '#85926B', fontWeight: 700 }}>
+                            CTA: "{slide.button_text || 'Order Now'}"
+                          </span>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                              onClick={() => openEditSlide(slide)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '7px 14px',
+                                borderRadius: '8px',
+                                backgroundColor: '#85926B',
+                                color: '#FFFFFF',
+                                fontSize: '0.84rem',
+                                fontWeight: 700,
+                                border: 'none',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Edit2 size={14} /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteHeroSlide(slide.id)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '7px 12px',
+                                borderRadius: '8px',
+                                backgroundColor: '#FFEBEE',
+                                color: '#C62828',
+                                fontSize: '0.84rem',
+                                fontWeight: 700,
+                                border: 'none',
+                                cursor: 'pointer'
+                              }}
+                              title="Delete Slide"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Section 2: Chef's Recommendation Management */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #ECE7DE', padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '4px' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1F241C', marginBottom: '4px' }}>
                     2. Chef's Recommendation Highlights
                   </h3>
-                  <p style={{ fontSize: '0.84rem', color: '#65705C', margin: 0 }}>
+                  <p style={{ fontSize: '0.9rem', color: '#65705C', margin: 0 }}>
                     Select dishes from any category or search by name to feature on the Landing Page.
                   </p>
                 </div>
@@ -2142,10 +2482,10 @@ export function AdminPortal({
                     value={chefCatFilter}
                     onChange={(e) => setChefCatFilter(e.target.value)}
                     style={{
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       borderRadius: '10px',
                       border: '1px solid #DCE3D4',
-                      fontSize: '0.84rem',
+                      fontSize: '0.9rem',
                       fontWeight: 600,
                       backgroundColor: '#FAF8F5'
                     }}
@@ -2161,17 +2501,17 @@ export function AdminPortal({
                     value={chefSearchTerm}
                     onChange={(e) => setChefSearchTerm(e.target.value)}
                     style={{
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       borderRadius: '10px',
                       border: '1px solid #DCE3D4',
-                      fontSize: '0.84rem',
-                      width: '160px'
+                      fontSize: '0.9rem',
+                      width: '180px'
                     }}
                   />
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', maxHeight: '360px', overflowY: 'auto', paddingRight: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
                 {foods.filter((f) => {
                   if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
                   if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
@@ -2183,8 +2523,8 @@ export function AdminPortal({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '12px',
-                      padding: '10px 14px',
-                      borderRadius: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '14px',
                       border: food.is_featured ? '1.5px solid #85926B' : '1px solid #ECE7DE',
                       backgroundColor: food.is_featured ? '#F5F7F2' : '#FFFFFF'
                     }}
@@ -2192,35 +2532,37 @@ export function AdminPortal({
                     <img
                       src={food.image_url}
                       alt=""
-                      style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover' }}
+                      style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover' }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1F241C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1F241C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {food.name}
                       </div>
-                      <div style={{ fontSize: '0.74rem', color: '#85926B' }}>₹{food.price}</div>
+                      <div style={{ fontSize: '0.82rem', color: '#85926B', fontWeight: 600 }}>₹{food.price}</div>
                     </div>
                     <button
                       onClick={async () => {
                         try {
                           await api.put(`/foods/${food.id}`, { is_featured: food.is_featured ? 0 : 1 });
                           fetchFoods();
+                          setMessage(food.is_featured ? `Removed "${food.name}" from featured highlights.` : `Added "${food.name}" to featured highlights.`);
                         } catch (e) {
                           alert('Failed to update recommendation status');
                         }
                       }}
                       style={{
-                        padding: '4px 8px',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
                         fontWeight: 700,
-                        backgroundColor: food.is_featured ? '#85926B' : '#EAEFE6',
-                        color: food.is_featured ? '#FFFFFF' : '#475234',
-                        border: 'none',
-                        cursor: 'pointer'
+                        backgroundColor: food.is_featured ? '#FFEBEE' : '#EAEFE6',
+                        color: food.is_featured ? '#C62828' : '#475234',
+                        border: food.is_featured ? '1px solid #FFCDD2' : '1px solid #DCE3D4',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
                       }}
                     >
-                      {food.is_featured ? 'Featured' : 'Add'}
+                      {food.is_featured ? 'Remove' : '+ Add'}
                     </button>
                   </div>
                 ))}
@@ -2229,99 +2571,103 @@ export function AdminPortal({
 
             {/* Section 3: "Crafted With Passion" Promise Settings */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #ECE7DE', padding: '24px' }}>
-              <div style={{ marginBottom: '18px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '4px' }}>
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1F241C', marginBottom: '4px' }}>
                   3. "Crafted With Passion" Brand Section & Promise Cards
                 </h3>
-                <p style={{ fontSize: '0.84rem', color: '#65705C', margin: 0 }}>
+                <p style={{ fontSize: '0.9rem', color: '#65705C', margin: 0 }}>
                   Customize the brand headline, cursive subtitle tag, and all 3 promise card titles & descriptions.
                 </p>
               </div>
 
-              <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
-                    Section Headline Title
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.crafted_title || 'The Come To Eat Promise'}
-                    onChange={(e) => setSettings({ ...settings, crafted_title: e.target.value })}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DCE3D4', fontSize: '0.88rem' }}
-                  />
+              <form onSubmit={handleSaveLandingCards} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#475234', marginBottom: '6px' }}>
+                      Section Headline Title
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.crafted_title || 'The Come To Eat Promise'}
+                      onChange={(e) => setSettings({ ...settings, crafted_title: e.target.value })}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #DCE3D4', fontSize: '0.94rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.88rem', fontWeight: 700, color: '#475234', marginBottom: '6px' }}>
+                      Cursive Subtitle Tag
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.crafted_subtitle || 'Crafted With Passion'}
+                      onChange={(e) => setSettings({ ...settings, crafted_subtitle: e.target.value })}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #DCE3D4', fontSize: '0.94rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                  {/* Card 1 */}
+                  <div style={{ backgroundColor: '#FAF8F5', padding: '18px', borderRadius: '14px', border: '1px solid #ECE7DE', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1F241C', marginBottom: '10px' }}>Card 1 (Sparkles Icon)</div>
+                    <input
+                      type="text"
+                      placeholder="Card 1 Title"
+                      value={settings.card1_title || 'Farm-Fresh Ingredients'}
+                      onChange={(e) => setSettings({ ...settings, card1_title: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.9rem', marginBottom: '8px' }}
+                    />
+                    <textarea
+                      placeholder="Card 1 Description"
+                      rows={3}
+                      value={settings.card1_desc || '100% daily-procured farm produce, organic whole dairy, and authentic slow-simmered spices with zero preservatives.'}
+                      onChange={(e) => setSettings({ ...settings, card1_desc: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.88rem', resize: 'vertical', flex: 1 }}
+                    />
+                  </div>
+
+                  {/* Card 2 */}
+                  <div style={{ backgroundColor: '#FAF8F5', padding: '18px', borderRadius: '14px', border: '1px solid #ECE7DE', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1F241C', marginBottom: '10px' }}>Card 2 (Zap Icon)</div>
+                    <input
+                      type="text"
+                      placeholder="Card 2 Title"
+                      value={settings.card2_title || 'Fresh Café Preparation'}
+                      onChange={(e) => setSettings({ ...settings, card2_title: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.9rem', marginBottom: '8px' }}
+                    />
+                    <textarea
+                      placeholder="Card 2 Description"
+                      rows={3}
+                      value={settings.card2_desc || 'Crafted fresh on order, insulated packaging keeps burgers crispy and hot coolers iced right to your table.'}
+                      onChange={(e) => setSettings({ ...settings, card2_desc: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.88rem', resize: 'vertical', flex: 1 }}
+                    />
+                  </div>
+
+                  {/* Card 3 */}
+                  <div style={{ backgroundColor: '#FAF8F5', padding: '18px', borderRadius: '14px', border: '1px solid #ECE7DE', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1F241C', marginBottom: '10px' }}>Card 3 (Shield Icon)</div>
+                    <input
+                      type="text"
+                      placeholder="Card 3 Title"
+                      value={settings.card3_title || 'Hygienic Café'}
+                      onChange={(e) => setSettings({ ...settings, card3_title: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.9rem', marginBottom: '8px' }}
+                    />
+                    <textarea
+                      placeholder="Card 3 Description"
+                      rows={3}
+                      value={settings.card3_desc || 'Strict 5-star hygiene benchmarks, temperature-controlled food stations, and contactless café protocols.'}
+                      onChange={(e) => setSettings({ ...settings, card3_desc: e.target.value })}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.88rem', resize: 'vertical', flex: 1 }}
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
-                    Cursive Subtitle Tag
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.crafted_subtitle || 'Crafted With Passion'}
-                    onChange={(e) => setSettings({ ...settings, crafted_subtitle: e.target.value })}
-                    style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid #DCE3D4', fontSize: '0.88rem' }}
-                  />
-                </div>
-
-                {/* Card 1 */}
-                <div style={{ backgroundColor: '#FAF8F5', padding: '16px', borderRadius: '14px', border: '1px solid #ECE7DE' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: '#1F241C', marginBottom: '10px' }}>Card 1 (Sparkles Icon)</div>
-                  <input
-                    type="text"
-                    placeholder="Card 1 Title"
-                    value={settings.card1_title || 'Farm-Fresh Ingredients'}
-                    onChange={(e) => setSettings({ ...settings, card1_title: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.84rem', marginBottom: '8px' }}
-                  />
-                  <textarea
-                    placeholder="Card 1 Description"
-                    rows={2}
-                    value={settings.card1_desc || '100% daily-procured farm produce, organic whole dairy, and authentic slow-simmered spices with zero preservatives.'}
-                    onChange={(e) => setSettings({ ...settings, card1_desc: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.82rem', resize: 'vertical' }}
-                  />
-                </div>
-
-                {/* Card 2 */}
-                <div style={{ backgroundColor: '#FAF8F5', padding: '16px', borderRadius: '14px', border: '1px solid #ECE7DE' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: '#1F241C', marginBottom: '10px' }}>Card 2 (Zap Icon)</div>
-                  <input
-                    type="text"
-                    placeholder="Card 2 Title"
-                    value={settings.card2_title || 'Fresh Café Preparation'}
-                    onChange={(e) => setSettings({ ...settings, card2_title: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.84rem', marginBottom: '8px' }}
-                  />
-                  <textarea
-                    placeholder="Card 2 Description"
-                    rows={2}
-                    value={settings.card2_desc || 'Crafted fresh on order, insulated packaging keeps burgers crispy and hot coolers iced right to your table.'}
-                    onChange={(e) => setSettings({ ...settings, card2_desc: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.82rem', resize: 'vertical' }}
-                  />
-                </div>
-
-                {/* Card 3 */}
-                <div style={{ backgroundColor: '#FAF8F5', padding: '16px', borderRadius: '14px', border: '1px solid #ECE7DE' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.86rem', color: '#1F241C', marginBottom: '10px' }}>Card 3 (Shield Icon)</div>
-                  <input
-                    type="text"
-                    placeholder="Card 3 Title"
-                    value={settings.card3_title || 'Hygienic Café'}
-                    onChange={(e) => setSettings({ ...settings, card3_title: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.84rem', marginBottom: '8px' }}
-                  />
-                  <textarea
-                    placeholder="Card 3 Description"
-                    rows={2}
-                    value={settings.card3_desc || 'Strict 5-star hygiene benchmarks, temperature-controlled food stations, and contactless café protocols.'}
-                    onChange={(e) => setSettings({ ...settings, card3_desc: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #DCE3D4', fontSize: '0.82rem', resize: 'vertical' }}
-                  />
-                </div>
-
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <button type="submit" className="btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem' }}>
+                  <button type="submit" className="btn-primary" style={{ padding: '12px 28px', fontSize: '0.95rem' }}>
                     Save Landing Page Brand & Promise Cards
                   </button>
                 </div>
@@ -2333,19 +2679,19 @@ export function AdminPortal({
         {/* 7. STORE SETTINGS & TIMINGS TAB */}
         {activeTab === 'settings' && (
           <div>
-            <div style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                Store Timings & Operational Settings
-              </h2>
-              <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px' }}>
-                Customize your daily restaurant operating hours, delivery promise badges, and contact details reflected immediately on the live website
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Store Timings & Operational Settings</h2>
+                <div className="subtitle">
+                  Customize your daily restaurant operating hours, delivery promise badges, and contact details reflected immediately on the live website
+                </div>
               </div>
             </div>
 
-            <div style={{ backgroundColor: '#FFFFFF', padding: 'clamp(16px, 4vw, 28px)', borderRadius: '20px', border: '1px solid #ECE7DE', maxWidth: '680px', width: '100%', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
-              <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div style={{ backgroundColor: '#FFFFFF', padding: 'clamp(18px, 4vw, 32px)', borderRadius: '20px', border: '1px solid #ECE7DE', maxWidth: '720px', width: '100%', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+              <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.94rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
                     Top Bar Timing Headline
                   </label>
                   <input
@@ -2356,13 +2702,13 @@ export function AdminPortal({
                     className="form-input"
                     placeholder="e.g. Open Daily: 10:00 AM – 11:30 PM"
                   />
-                  <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '4px' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '4px' }}>
                     Displays in the top green banner across all pages for customers and staff.
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.94rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
                     Weekly Operating Schedule
                   </label>
                   <input
@@ -2373,13 +2719,13 @@ export function AdminPortal({
                     className="form-input"
                     placeholder="e.g. Monday – Sunday: 10:00 AM – 11:30 PM (No weekly off)"
                   />
-                  <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '4px' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '4px' }}>
                     Displayed in the Landing Page and customer Home Page information cards.
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.94rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
                     Delivery Guarantee Badge
                   </label>
                   <input
@@ -2392,9 +2738,9 @@ export function AdminPortal({
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '0.94rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
                       Contact Phone
                     </label>
                     <input
@@ -2406,7 +2752,7 @@ export function AdminPortal({
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
+                    <label style={{ display: 'block', fontSize: '0.94rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
                       Contact Email
                     </label>
                     <input
@@ -2420,7 +2766,7 @@ export function AdminPortal({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
+                  <label style={{ display: 'block', fontSize: '0.94rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>
                     Kitchen Physical Address
                   </label>
                   <input
@@ -2432,12 +2778,12 @@ export function AdminPortal({
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
                   <button
                     type="submit"
                     disabled={settingsLoading}
                     className="btn-primary"
-                    style={{ padding: '10px 24px' }}
+                    style={{ padding: '12px 28px', fontSize: '0.95rem' }}
                   >
                     {settingsLoading ? 'Saving...' : 'Save Timing & Store Settings'}
                   </button>
@@ -2450,30 +2796,118 @@ export function AdminPortal({
         {/* 7. CUSTOMERS TAB */}
         {activeTab === 'customers' && (
           <div>
-            <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25, marginBottom: '18px' }}>
-              Registered Customer Accounts
-            </h2>
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #ECE7DE', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                <thead style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE', color: '#475234' }}>
-                  <tr>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Customer</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Email</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Phone</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Total Orders</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((c) => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #F2EFE9' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>{c.name}</td>
-                      <td style={{ padding: '14px 18px', color: '#556149' }}>{c.email}</td>
-                      <td style={{ padding: '14px 18px', color: '#7E8775' }}>{c.phone || 'N/A'}</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>{c.total_orders || 0}</td>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Registered Customer Accounts</h2>
+                <div className="subtitle">
+                  Directory of customer profiles, contact numbers, and cumulative order history
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="responsive-table-view">
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #ECE7DE', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse', fontSize: '0.94rem' }}>
+                  <thead style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE', color: '#475234' }}>
+                    <tr>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Customer</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Email</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Phone</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Total Orders</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {customers.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" style={{ padding: '32px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic' }}>
+                          No registered customer accounts found.
+                        </td>
+                      </tr>
+                    ) : (
+                      customers.map((c) => (
+                        <tr key={c.id} style={{ borderBottom: '1px solid #F2EFE9' }}>
+                          <td style={{ padding: '16px 20px', fontWeight: 700, color: '#1F241C' }}>{c.name}</td>
+                          <td style={{ padding: '16px 20px', color: '#556149' }}>{c.email}</td>
+                          <td style={{ padding: '16px 20px', color: '#7E8775' }}>{c.phone || 'N/A'}</td>
+                          <td style={{ padding: '16px 20px', fontWeight: 800, color: '#1F241C' }}>{c.total_orders || 0}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="responsive-cards-view">
+              {customers.length === 0 ? (
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DE', padding: '24px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic' }}>
+                  No registered customer accounts found.
+                </div>
+              ) : (
+                customers.map((c) => (
+                  <div
+                    key={c.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '1px solid #ECE7DE',
+                      padding: '16px 18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          backgroundColor: '#EBF0E4',
+                          color: '#475234',
+                          fontWeight: 800,
+                          fontSize: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {c.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>{c.name}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#7E8775' }}>Customer ID #{c.id}</div>
+                        </div>
+                      </div>
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: '9999px',
+                        fontSize: '0.8rem',
+                        fontWeight: 800,
+                        backgroundColor: '#F0F4E8',
+                        color: '#475234',
+                        border: '1px solid #D8E2D0'
+                      }}>
+                        {c.total_orders || 0} Orders
+                      </span>
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #F4F2EC', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.92rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475234' }}>
+                        <Mail size={16} color="#85926B" style={{ flexShrink: 0 }} />
+                        <span style={{ wordBreak: 'break-all' }}>{c.email}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475234' }}>
+                        <Phone size={16} color="#85926B" style={{ flexShrink: 0 }} />
+                        <span>{c.phone || 'No phone registered'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -2481,43 +2915,125 @@ export function AdminPortal({
         {/* 8. PAYMENTS TAB */}
         {activeTab === 'payments' && (
           <div>
-            <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25, marginBottom: '18px' }}>
-              Financial Transactions Audit
-            </h2>
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #ECE7DE', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-                <thead style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE', color: '#475234' }}>
-                  <tr>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Order #</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Customer</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Method</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Amount</th>
-                    <th style={{ padding: '14px 18px', textAlign: 'left' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #F2EFE9' }}>
-                      <td style={{ padding: '14px 18px', fontWeight: 700 }}>#{p.order_number}</td>
-                      <td style={{ padding: '14px 18px' }}>{p.customer_name}</td>
-                      <td style={{ padding: '14px 18px', color: '#556149' }}>{p.payment_method}</td>
-                      <td style={{ padding: '14px 18px', fontWeight: 800 }}>₹{p.amount}</td>
-                      <td style={{ padding: '14px 18px' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.72rem',
-                          fontWeight: 700,
-                          backgroundColor: p.status === 'successful' ? '#E8F5E9' : '#F4F6F1',
-                          color: p.status === 'successful' ? '#2E7D32' : '#475234'
-                        }}>
-                          {p.status}
-                        </span>
-                      </td>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Financial Transactions Audit</h2>
+                <div className="subtitle">
+                  Comprehensive log of verified checkout receipts and payments across all outlets
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="responsive-table-view">
+              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #ECE7DE', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', fontSize: '0.94rem' }}>
+                  <thead style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE', color: '#475234' }}>
+                    <tr>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Order #</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Customer</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Method</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Amount</th>
+                      <th style={{ padding: '16px 20px', textAlign: 'left', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.4px', textTransform: 'uppercase' }}>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {payments.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" style={{ padding: '32px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic' }}>
+                          No payment transactions recorded yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      payments.map((p) => (
+                        <tr key={p.id} style={{ borderBottom: '1px solid #F2EFE9' }}>
+                          <td style={{ padding: '16px 20px', fontWeight: 800, color: '#1F241C' }}>#{p.order_number}</td>
+                          <td style={{ padding: '16px 20px', color: '#1F241C', fontWeight: 600 }}>{p.customer_name}</td>
+                          <td style={{ padding: '16px 20px', color: '#556149' }}>{p.payment_method}</td>
+                          <td style={{ padding: '16px 20px', fontWeight: 800, color: '#1F241C', fontSize: '1rem' }}>₹{p.amount}</td>
+                          <td style={{ padding: '16px 20px' }}>
+                            <span style={{
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              backgroundColor: p.status === 'successful' ? '#E8F5E9' : '#F4F6F1',
+                              color: p.status === 'successful' ? '#2E7D32' : '#475234'
+                            }}>
+                              {p.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="responsive-cards-view">
+              {payments.length === 0 ? (
+                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DE', padding: '24px', textAlign: 'center', color: '#7E8775', fontStyle: 'italic' }}>
+                  No payment transactions recorded yet.
+                </div>
+              ) : (
+                payments.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '1px solid #ECE7DE',
+                      padding: '16px 18px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 800, fontSize: '1.08rem', color: '#1F241C' }}>
+                          #{p.order_number}
+                        </span>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: '#F0F4E8',
+                          color: '#475234',
+                          border: '1px solid #D8E2D0'
+                        }}>
+                          {p.payment_method}
+                        </span>
+                      </div>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        backgroundColor: p.status === 'successful' ? '#E8F5E9' : '#FFF3E0',
+                        color: p.status === 'successful' ? '#2E7D32' : '#E65100'
+                      }}>
+                        {p.status?.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F4F2EC', paddingTop: '10px' }}>
+                      <div>
+                        <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#1F241C' }}>{p.customer_name}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#7E8775' }}>Verified Digital Receipt</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#85926B' }}>₹{p.amount}</div>
+                        <div style={{ fontSize: '0.76rem', color: '#7E8775' }}>Total Paid</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -2525,25 +3041,30 @@ export function AdminPortal({
         {/* 9. DELIVERIES TAB */}
         {activeTab === 'deliveries' && (
           <div>
-            <h2 style={{ fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25, marginBottom: '18px' }}>
-              Third-Party Delivery Dispatch
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Third-Party Delivery Dispatch</h2>
+                <div className="subtitle">
+                  Rider tracking, delivery logistics partner allocation, and order handoff status
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '18px' }}>
               {deliveries.map((del) => (
-                <div key={del.id} style={{ backgroundColor: '#FFFFFF', padding: '20px', borderRadius: '18px', border: '1px solid #ECE7DE', minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontWeight: 800, color: '#1F241C' }}>Order #{del.order_number}</span>
-                    <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: '#EBF0E4', color: '#475234' }}>
+                <div key={del.id} style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '18px', border: '1px solid #ECE7DE', minWidth: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>Order #{del.order_number}</span>
+                    <span style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, backgroundColor: '#EBF0E4', color: '#475234' }}>
                       {del.status}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.86rem', color: '#475234', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '0.94rem', color: '#475234', marginBottom: '8px' }}>
                     Provider: <strong>{del.provider}</strong>
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: '#7E8775', marginBottom: '4px' }}>
-                    Tracking Code: <code>{del.tracking_code}</code>
+                  <div style={{ fontSize: '0.88rem', color: '#7E8775', marginBottom: '6px' }}>
+                    Tracking Code: <code style={{ backgroundColor: '#F3F6EF', padding: '2px 6px', borderRadius: '4px', fontSize: '0.86rem' }}>{del.tracking_code}</code>
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>
+                  <div style={{ fontSize: '0.88rem', color: '#7E8775' }}>
                     Rider: {del.driver_name} ({del.driver_phone})
                   </div>
                 </div>
@@ -2750,7 +3271,7 @@ export function AdminPortal({
                 <button onClick={() => { setShowSlideModal(false); setEditingSlide(null); }} style={{ color: '#475234' }}><X size={18} /></button>
               </div>
 
-              {/* Real-time Hero Banner Live Preview */}
+              {/* Real-time Hero Banner Live Preview (Customer Look & Feel) */}
               <div style={{
                 backgroundColor: '#F7F8F5',
                 borderRadius: '16px',
@@ -2769,12 +3290,12 @@ export function AdminPortal({
 
                 <div style={{
                   backgroundColor: slideForm.bg_color || '#949E7C',
-                  borderRadius: '14px',
-                  padding: '16px 20px',
+                  borderRadius: '16px',
+                  padding: '18px 22px',
                   color: '#FFFFFF',
                   display: 'grid',
                   gridTemplateColumns: '1.2fr 1fr',
-                  gap: '14px',
+                  gap: '16px',
                   alignItems: 'center',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                   position: 'relative',
@@ -2783,55 +3304,59 @@ export function AdminPortal({
                   <div>
                     {slideForm.tag && (
                       <span style={{
-                        display: 'inline-block',
-                        backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        fontSize: '0.65rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '0.68rem',
                         fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        marginBottom: '4px'
+                        letterSpacing: '0.8px',
+                        marginBottom: '4px',
+                        textTransform: 'uppercase'
                       }}>
-                        {slideForm.tag}
+                        <Sparkles size={11} /> {slideForm.tag}
                       </span>
                     )}
                     {slideForm.script && (
-                      <div style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '1rem', color: '#FFF' }}>
+                      <div style={{ fontFamily: "'Caveat', cursive", fontSize: '1.6rem', lineHeight: 1.1, color: '#F4F8EC' }}>
                         {slideForm.script}
                       </div>
                     )}
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, lineHeight: 1.25, margin: '3px 0 5px 0' }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.2rem', fontWeight: 700, lineHeight: 1.25, margin: '2px 0 6px 0', color: '#FFFFFF' }}>
                       {slideForm.title || 'Your Headline Here'}
                     </div>
                     {slideForm.desc && (
-                      <div style={{ fontSize: '0.72rem', opacity: 0.9, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <div style={{ fontSize: '0.74rem', color: '#F0F4E8', opacity: 0.95, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {slideForm.desc}
                       </div>
                     )}
-                    <div style={{ marginTop: '8px' }}>
+                    <div style={{ marginTop: '10px' }}>
                       <span style={{
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
                         backgroundColor: '#FFFFFF',
                         color: '#1F241C',
-                        padding: '4px 10px',
+                        padding: '5px 14px',
                         borderRadius: '20px',
-                        fontSize: '0.72rem',
-                        fontWeight: 700
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                       }}>
-                        {slideForm.button_text || 'Order Now'} <ArrowRight size={11} />
+                        {slideForm.button_text || 'Explore Menu'} <ArrowRight size={11} />
                       </span>
                     </div>
                   </div>
 
                   {/* Preview Image */}
                   <div style={{
-                    height: '115px',
-                    borderRadius: '12px',
+                    height: '130px',
+                    borderRadius: '14px',
                     overflow: 'hidden',
-                    boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
-                    border: '2px solid rgba(255,255,255,0.4)',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.22)',
+                    border: '2.5px solid rgba(255,255,255,0.5)',
                     backgroundColor: 'rgba(0,0,0,0.1)',
                     display: 'flex',
                     alignItems: 'center',
@@ -2846,8 +3371,8 @@ export function AdminPortal({
                         onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       />
                     ) : (
-                      <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.8)', textAlign: 'center', padding: '8px' }}>
-                        Upload banner image below to preview
+                      <span style={{ fontSize: '0.74rem', color: 'rgba(255,255,255,0.85)', textAlign: 'center', padding: '10px' }}>
+                        Upload or paste image URL below
                       </span>
                     )}
                   </div>
@@ -3618,6 +4143,128 @@ export function AdminPortal({
                   </button>
                   <button type="submit" className="btn-primary" style={{ padding: '8px 20px' }}>
                     {editingOffer ? 'Update Banner' : 'Create Banner'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* ADD / EDIT HERO BANNER SLIDE MODAL */}
+        {showSlideModal && (
+          <div className="modal-overlay" style={{ zIndex: 1100 }}>
+            <div className="modal-container" style={{ maxWidth: '640px', width: '90%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', margin: 0 }}>
+                  {editingSlide ? `Edit Hero Slide #${editingSlide.id}` : 'Add New Hero Banner Slide'}
+                </h3>
+                <button onClick={() => setShowSlideModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#65705C' }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveHeroSlide} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Badge Tag (Uppercase) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. CHEF SIGNATURE"
+                      value={slideForm.tag}
+                      onChange={(e) => setSlideForm({ ...slideForm, tag: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Cursive Script Tag *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Savor Every Bite"
+                      value={slideForm.script}
+                      onChange={(e) => setSlideForm({ ...slideForm, script: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Slide Headline Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Flame-Grilled Juicy Smash Burgers"
+                    value={slideForm.title}
+                    onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Slide Description Text
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Describe the slide highlights..."
+                    value={slideForm.desc}
+                    onChange={(e) => setSlideForm({ ...slideForm, desc: e.target.value })}
+                    className="form-input"
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                <ImageUploadField
+                  label="Hero Slide Image (Food dish or beverage)"
+                  value={slideForm.image_url}
+                  onChange={(url) => setSlideForm({ ...slideForm, image_url: url })}
+                  placeholder="https://images.unsplash.com/..."
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Button CTA Text
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Order Now"
+                      value={slideForm.button_text}
+                      onChange={(e) => setSlideForm({ ...slideForm, button_text: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Target Category Filter
+                    </label>
+                    <select
+                      value={slideForm.target_category}
+                      onChange={(e) => setSlideForm({ ...slideForm, target_category: e.target.value })}
+                      className="form-select"
+                    >
+                      <option value="">All Categories</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px' }}>
+                  <button type="button" onClick={() => setShowSlideModal(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ padding: '8px 20px' }}>
+                    {editingSlide ? 'Update Hero Slide' : 'Create Hero Slide'}
                   </button>
                 </div>
               </form>

@@ -90,6 +90,7 @@ body {
 }
 
 /* Button & Pill Utilities */
+/* Button & Pill Utilities */
 button {
   font-family: inherit;
   cursor: pointer;
@@ -101,7 +102,7 @@ button {
 .btn-primary {
   background-color: var(--primary);
   color: #FFFFFF;
-  font-weight: 600;
+  font-weight: 700;
   padding: 12px 26px;
   border-radius: var(--radius-pill);
   display: inline-flex;
@@ -109,7 +110,7 @@ button {
   justify-content: center;
   gap: 10px;
   box-shadow: 0 4px 14px rgba(133, 146, 107, 0.35);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 .btn-primary:hover {
   background-color: var(--primary-hover);
@@ -120,13 +121,14 @@ button {
 .btn-accent {
   background-color: var(--accent);
   color: #FFFFFF;
-  font-weight: 600;
+  font-weight: 700;
   padding: 12px 26px;
   border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   gap: 10px;
   box-shadow: 0 4px 14px rgba(231, 111, 81, 0.35);
+  font-size: 1rem;
 }
 .btn-accent:hover {
   background-color: var(--accent-hover);
@@ -137,13 +139,14 @@ button {
 .btn-outline {
   border: 1.5px solid var(--primary);
   color: var(--primary-dark);
-  font-weight: 600;
+  font-weight: 700;
   padding: 10px 22px;
   border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   background: transparent;
+  font-size: 0.95rem;
 }
 .btn-outline:hover {
   background-color: var(--primary-light);
@@ -161,8 +164,8 @@ button {
 /* Typography Helpers */
 .font-cursive {
   font-family: var(--font-cursive);
-  font-size: 1.6rem;
-  line-height: 1.1;
+  font-size: 1.8rem;
+  line-height: 1.15;
   color: var(--primary);
 }
 
@@ -192,15 +195,15 @@ button {
 
 /* Badge Styles */
 .badge-pill {
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: var(--radius-pill);
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .badge-sage {
@@ -214,22 +217,22 @@ button {
 }
 
 .badge-veg {
-  border: 1px solid var(--veg-green);
+  border: 1.5px solid var(--veg-green);
   color: var(--veg-green);
   background: #E8F5E9;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .badge-nonveg {
-  border: 1px solid var(--nonveg-red);
+  border: 1.5px solid var(--nonveg-red);
   color: var(--nonveg-red);
   background: #FFEBEE;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
@@ -266,7 +269,7 @@ button {
   border: 1.5px solid #DCE3D4;
   border-radius: var(--radius-md);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--text-main);
   background: #FFFFFF;
   transition: var(--transition);
@@ -275,6 +278,45 @@ button {
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(133, 146, 107, 0.15);
+}
+
+/* Portal Section Header Bar (Responsive & Non-Squishing) */
+.portal-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: 100%;
+}
+
+.portal-header-title {
+  flex: 1 1 280px;
+  min-width: 240px;
+}
+
+.portal-header-title h2 {
+  font-size: clamp(1.4rem, 4vw, 1.85rem) !important;
+  font-weight: 800 !important;
+  color: #1F241C !important;
+  line-height: 1.25 !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.portal-header-title p, .portal-header-title .subtitle {
+  font-size: 0.94rem !important;
+  color: #65705C !important;
+  margin-top: 5px !important;
+  line-height: 1.4 !important;
+}
+
+.portal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* Responsive Navigation, Portals & Breakpoints */
@@ -350,9 +392,9 @@ button {
     display: flex !important;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     background: #F0F4E8;
     border: none;
     cursor: pointer;
@@ -370,21 +412,12 @@ button {
     display: none !important;
   }
 
-  /* Show mobile portal top bar */
+  /* Hide redundant mobile bar since main Navbar is sticky above */
   .portal-mobile-bar {
-    display: flex !important;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: #1C231B;
-    color: #FFFFFF;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    display: none !important;
   }
 
-  /* Show swipeable horizontal tabs */
+  /* Show swipeable horizontal tabs right below Navbar */
   .portal-mobile-tabs {
     display: flex !important;
     overflow-x: auto;
@@ -396,8 +429,8 @@ button {
     background: #252D21;
     border-bottom: 1px solid rgba(255,255,255,0.1);
     position: sticky;
-    top: 48px;
-    z-index: 40;
+    top: 64px;
+    z-index: 90;
   }
 
   .portal-mobile-tabs::-webkit-scrollbar {
@@ -410,10 +443,29 @@ button {
     padding: 20px 14px !important;
     overflow-x: hidden;
   }
+
+  .portal-header-title {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .portal-header-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .portal-header-actions > * {
+    flex: 1 1 auto;
+  }
 }
 
 /* Smartphone Breakpoints (<= 640px) */
 @media (max-width: 640px) {
+  html {
+    font-size: 15.5px;
+  }
+
   .container {
     padding: 0 14px;
   }
@@ -526,4 +578,71 @@ button {
     line-height: 1.35 !important;
   }
 }
+
+/* Universal Modals & Popups */
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  z-index: 1200 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  animation: fadeInModal 0.2s ease-out;
+}
+
+.modal-card, .modal-container {
+  background-color: #FFFFFF !important;
+  border-radius: 20px !important;
+  border: 1px solid #ECE7DE !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3) !important;
+  padding: 24px !important;
+  width: 100% !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  animation: scaleInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleInModal {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Responsive Table / Card Switcher */
+.responsive-table-view {
+  display: block;
+  width: 100%;
+}
+
+.responsive-cards-view {
+  display: none;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .responsive-table-view {
+    display: none !important;
+  }
+  .responsive-cards-view {
+    display: flex !important;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+  }
+}
+
 

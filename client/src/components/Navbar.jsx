@@ -149,7 +149,7 @@ export function Navbar({
 
         {/* Center: Navigation Links (Home, Menu, Search, Offers, Reviews) */}
         {(activePortal === 'user' || activePortal === 'landing') && (
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '22px' }} className="desktop-nav">
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '26px' }} className="desktop-nav">
             {navItems.map((item) => {
               const isActive = (currentPage === item.id) || (item.id === 'menu' && currentPage === 'category');
               return (
@@ -160,10 +160,10 @@ export function Navbar({
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: isActive ? '#85926B' : '#56604D',
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: '0.96rem',
-                    padding: '6px 2px',
+                    color: isActive ? '#85926B' : '#475234',
+                    fontWeight: isActive ? 800 : 600,
+                    fontSize: '1.02rem',
+                    padding: '8px 4px',
                     position: 'relative',
                     transition: 'color 0.2s ease'
                   }}
@@ -175,7 +175,7 @@ export function Navbar({
                       bottom: -2,
                       left: 0,
                       right: 0,
-                      height: '2.5px',
+                      height: '3px',
                       backgroundColor: '#85926B',
                       borderRadius: '2px'
                     }} />
@@ -187,24 +187,26 @@ export function Navbar({
         )}
 
         {/* Right Corner: Quick Search, Cart, Profile / Login */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
 
           {(activePortal === 'user' || activePortal === 'landing') && (
             <button
               onClick={onOpenSearch}
               title="Search food items"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '42px',
+                height: '42px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#4A5538',
-                backgroundColor: '#F0F4E8'
+                backgroundColor: '#F0F4E8',
+                cursor: 'pointer',
+                border: 'none'
               }}
             >
-              <Search size={18} />
+              <Search size={20} />
             </button>
           )}
 
@@ -218,27 +220,30 @@ export function Navbar({
                 gap: '8px',
                 backgroundColor: '#85926B',
                 color: '#FFFFFF',
-                padding: '8px 16px',
+                padding: '10px 18px',
                 borderRadius: '9999px',
-                fontWeight: 600,
-                fontSize: '0.88rem',
-                boxShadow: '0 4px 12px rgba(133, 146, 107, 0.3)'
+                fontWeight: 700,
+                fontSize: '0.96rem',
+                boxShadow: '0 4px 12px rgba(133, 146, 107, 0.3)',
+                cursor: 'pointer',
+                border: 'none'
               }}
             >
-              <ShoppingBag size={18} />
+              <ShoppingBag size={20} />
               <span className="desktop-only">Cart</span>
               {totalCount > 0 && (
                 <span style={{
                   backgroundColor: '#E76F51',
                   color: '#FFF',
-                  width: '20px',
-                  height: '20px',
+                  width: '22px',
+                  height: '22px',
                   borderRadius: '50%',
-                  fontSize: '0.72rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontWeight: 800
+                  marginLeft: '2px'
                 }}>
                   {totalCount}
                 </span>
@@ -246,7 +251,7 @@ export function Navbar({
             </button>
           )}
 
-          {/* User Profile / Auth State */}
+          {/* User profile dropdown button */}
           {user ? (
             <div style={{ position: 'relative' }}>
               <button
@@ -255,54 +260,49 @@ export function Navbar({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '6px 14px',
+                  backgroundColor: '#FAF8F5',
+                  border: '1.5px solid #DCE5D6',
                   borderRadius: '9999px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1.5px solid #DCE3D4',
-                  color: '#2A3324',
-                  fontWeight: 600,
-                  fontSize: '0.88rem'
+                  padding: '6px 14px 6px 8px',
+                  cursor: 'pointer'
                 }}
               >
                 <div style={{
-                  width: '24px',
-                  height: '24px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
-                  backgroundColor: user.role === 'admin' ? '#E76F51' : user.role === 'employee' ? '#85926B' : '#556149',
-                  color: '#FFF',
+                  backgroundColor: user.role === 'admin' ? '#E76F51' : (user.role === 'employee' ? '#4A7C59' : '#85926B'),
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.75rem',
-                  fontWeight: 700
+                  justifyContent: 'center'
                 }}>
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.name?.charAt(0).toUpperCase()}
                 </div>
-                <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user.name.split(' ')[0]}
+                <span className="desktop-only" style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1F241C', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.name}
                 </span>
-                <ChevronDown size={14} color="#7E8775" />
+                <ChevronDown size={15} color="#65705C" />
               </button>
 
               {userDropdown && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 8px)',
-                    width: '230px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    padding: '8px',
-                    zIndex: 200,
-                    animation: 'fadeIn 0.2s ease-out'
-                  }}
-                >
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid #F0F4E8' }}>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1F241C' }}>{user.name}</div>
-                    <div style={{ fontSize: '0.76rem', color: '#7E8775', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+                <div style={{
+                  position: 'absolute',
+                  top: '115%',
+                  right: 0,
+                  width: '240px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+                  border: '1px solid #EAE5DC',
+                  padding: '10px',
+                  zIndex: 200
+                }}>
+                  <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid #F0ECE4' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#1F241C' }}>{user.name}</div>
+                    <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>{user.email}</div>
                   </div>
 
                   {user.role === 'admin' && (
@@ -313,18 +313,18 @@ export function Navbar({
                       }}
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
+                        padding: '12px 14px',
                         textAlign: 'left',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
-                        color: '#475234',
-                        fontWeight: 600,
-                        fontSize: '0.88rem',
-                        borderRadius: '8px'
+                        color: '#E76F51',
+                        fontWeight: 700,
+                        fontSize: '0.94rem',
+                        borderRadius: '10px'
                       }}
                     >
-                      <Shield size={16} color="#E76F51" /> {activePortal === 'admin' ? 'Switch to Customer View' : 'Go to Admin Dashboard'}
+                      <Shield size={18} color="#E76F51" /> {activePortal === 'admin' ? 'Switch to Customer View' : 'Manager Admin Portal'}
                     </button>
                   )}
 
@@ -336,18 +336,18 @@ export function Navbar({
                       }}
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
+                        padding: '12px 14px',
                         textAlign: 'left',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
                         color: '#475234',
-                        fontWeight: 600,
-                        fontSize: '0.88rem',
-                        borderRadius: '8px'
+                        fontWeight: 700,
+                        fontSize: '0.94rem',
+                        borderRadius: '10px'
                       }}
                     >
-                      <UtensilsCrossed size={16} color="#85926B" /> {activePortal === 'employee' ? 'Switch to Customer View' : 'Go to Employee Portal'}
+                      <UtensilsCrossed size={18} color="#85926B" /> {activePortal === 'employee' ? 'Switch to Customer View' : 'Go to Employee Portal'}
                     </button>
                   )}
 
@@ -358,18 +358,18 @@ export function Navbar({
                     }}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 14px',
                       textAlign: 'left',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
                       color: '#475234',
-                      fontWeight: 500,
-                      fontSize: '0.88rem',
-                      borderRadius: '8px'
+                      fontWeight: 600,
+                      fontSize: '0.94rem',
+                      borderRadius: '10px'
                     }}
                   >
-                    <ShoppingBag size={16} color="#85926B" /> Order History & Tracking
+                    <ShoppingBag size={18} color="#85926B" /> Order History & Tracking
                   </button>
 
                   <button
@@ -379,18 +379,18 @@ export function Navbar({
                     }}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 14px',
                       textAlign: 'left',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
                       color: '#475234',
-                      fontWeight: 500,
-                      fontSize: '0.88rem',
-                      borderRadius: '8px'
+                      fontWeight: 600,
+                      fontSize: '0.94rem',
+                      borderRadius: '10px'
                     }}
                   >
-                    <User size={16} color="#85926B" /> Profile & Addresses
+                    <User size={18} color="#85926B" /> Profile & Addresses
                   </button>
 
                   <button
@@ -403,20 +403,20 @@ export function Navbar({
                     }}
                     style={{
                       width: '100%',
-                      padding: '10px 12px',
+                      padding: '12px 14px',
                       textAlign: 'left',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
                       color: '#C62828',
-                      fontWeight: 600,
-                      fontSize: '0.88rem',
-                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '0.94rem',
+                      borderRadius: '10px',
                       borderTop: '1px solid #F0F4E8',
                       marginTop: '4px'
                     }}
                   >
-                    <LogOut size={16} /> Sign Out
+                    <LogOut size={18} /> Sign Out
                   </button>
                 </div>
               )}
@@ -425,10 +425,10 @@ export function Navbar({
             <button
               onClick={onOpenAuth}
               className="btn-outline"
-              style={{ padding: '7px 12px', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ padding: '8px 16px', fontSize: '0.94rem', display: 'flex', alignItems: 'center', gap: '8px' }}
               title="Sign In / Register"
             >
-              <User size={16} /> <span className="desktop-only">Login</span>
+              <User size={18} /> <span className="desktop-only">Login</span>
             </button>
           )}
 
@@ -438,7 +438,7 @@ export function Navbar({
             className="mobile-toggle"
             title="Toggle Menu"
           >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
@@ -448,16 +448,16 @@ export function Navbar({
         <div style={{
           backgroundColor: '#FAF8F5',
           borderTop: '1px solid rgba(133, 146, 107, 0.15)',
-          padding: '16px 24px 24px',
+          padding: '18px 22px 28px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '14px',
+          gap: '16px',
           boxShadow: '0 12px 24px rgba(0,0,0,0.06)'
         }}>
           {/* Mobile Branch Selector */}
-          <div style={{ backgroundColor: '#EBF0E4', padding: '10px 14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475234', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MapPin size={14} /> Branch:
+          <div style={{ backgroundColor: '#EBF0E4', padding: '12px 16px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#475234', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={16} /> Outlet Branch:
             </span>
             <select
               value={selectedBranch?.id || ''}
@@ -469,11 +469,11 @@ export function Navbar({
               style={{
                 backgroundColor: '#FFFFFF',
                 color: '#1F241C',
-                border: '1px solid #C4D2B8',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                padding: '4px 8px'
+                border: '1.5px solid #C4D2B8',
+                borderRadius: '10px',
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                padding: '6px 12px'
               }}
             >
               {branches && branches.length > 0 ? (
@@ -488,7 +488,7 @@ export function Navbar({
             </select>
           </div>
           {(activePortal === 'user' || activePortal === 'landing') && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {navItems.map((item) => {
                 const isActive = (currentPage === item.id) || (item.id === 'menu' && currentPage === 'category');
                 return (
@@ -502,11 +502,11 @@ export function Navbar({
                       background: isActive ? '#EBF0E4' : 'none',
                       border: 'none',
                       textAlign: 'left',
-                      color: isActive ? '#85926B' : '#475234',
-                      fontWeight: isActive ? 700 : 500,
-                      fontSize: '0.96rem',
-                      padding: '8px 12px',
-                      borderRadius: '10px',
+                      color: isActive ? '#85926B' : '#2A3324',
+                      fontWeight: isActive ? 800 : 600,
+                      fontSize: '1.08rem',
+                      padding: '12px 16px',
+                      borderRadius: '12px',
                       cursor: 'pointer'
                     }}
                   >
@@ -517,10 +517,10 @@ export function Navbar({
             </div>
           )}
 
-          <div style={{ borderTop: '1px solid #E8EDE0', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ borderTop: '1px solid #E8EDE0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {user ? (
               <>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1F241C' }}>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#1F241C' }}>
                   {user.name}
                 </div>
                 {user.role === 'admin' && (
@@ -529,7 +529,7 @@ export function Navbar({
                       setActivePortal(activePortal === 'admin' ? 'user' : 'admin');
                       setMobileMenuOpen(false);
                     }}
-                    style={{ textAlign: 'left', padding: '6px 0', color: '#E76F51', fontWeight: 700, fontSize: '0.9rem' }}
+                    style={{ textAlign: 'left', padding: '10px 4px', color: '#E76F51', fontWeight: 800, fontSize: '1rem' }}
                   >
                     {activePortal === 'admin' ? 'Switch to Customer View' : 'Manager Admin Dashboard'}
                   </button>
@@ -540,7 +540,7 @@ export function Navbar({
                       setActivePortal(activePortal === 'employee' ? 'user' : 'employee');
                       setMobileMenuOpen(false);
                     }}
-                    style={{ textAlign: 'left', padding: '6px 0', color: '#85926B', fontWeight: 700, fontSize: '0.9rem' }}
+                    style={{ textAlign: 'left', padding: '10px 4px', color: '#85926B', fontWeight: 800, fontSize: '1rem' }}
                   >
                     {activePortal === 'employee' ? 'Switch to Customer View' : 'Employee Live Kitchen Portal'}
                   </button>
@@ -550,7 +550,7 @@ export function Navbar({
                     onOpenOrders();
                     setMobileMenuOpen(false);
                   }}
-                  style={{ textAlign: 'left', padding: '6px 0', color: '#475234', fontWeight: 600, fontSize: '0.9rem' }}
+                  style={{ textAlign: 'left', padding: '10px 4px', color: '#475234', fontWeight: 700, fontSize: '0.98rem' }}
                 >
                   My Orders & Live Tracking
                 </button>
@@ -559,7 +559,7 @@ export function Navbar({
                     onOpenProfile();
                     setMobileMenuOpen(false);
                   }}
-                  style={{ textAlign: 'left', padding: '6px 0', color: '#475234', fontWeight: 600, fontSize: '0.9rem' }}
+                  style={{ textAlign: 'left', padding: '10px 4px', color: '#475234', fontWeight: 700, fontSize: '0.98rem' }}
                 >
                   My Addresses & Profile
                 </button>
@@ -571,7 +571,7 @@ export function Navbar({
                       setActivePortal('user');
                     }
                   }}
-                  style={{ textAlign: 'left', padding: '6px 0', color: '#C62828', fontWeight: 700, fontSize: '0.9rem' }}
+                  style={{ textAlign: 'left', padding: '10px 4px', color: '#C62828', fontWeight: 800, fontSize: '0.98rem' }}
                 >
                   Sign Out
                 </button>
@@ -583,9 +583,9 @@ export function Navbar({
                   setMobileMenuOpen(false);
                 }}
                 className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center' }}
+                style={{ width: '100%', justifyContent: 'center', padding: '14px', fontSize: '1rem' }}
               >
-                <User size={16} /> Sign In / Register
+                <User size={18} /> Sign In / Register
               </button>
             )}
           </div>

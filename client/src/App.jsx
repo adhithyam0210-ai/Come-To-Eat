@@ -129,6 +129,19 @@ function MainApp() {
 
   useEffect(() => {
     fetchData();
+
+    const handleHeroSlidesSync = (e) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setHeroSlides(e.detail);
+      } else {
+        api.get('/hero-slides').then(res => {
+          if (res.success && res.slides) setHeroSlides(res.slides);
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
+    return () => window.removeEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
   }, []);
 
   const [pendingCheckoutAfterAuth, setPendingCheckoutAfterAuth] = useState(false);

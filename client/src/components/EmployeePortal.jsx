@@ -556,29 +556,27 @@ export function EmployeePortal({
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                  Live Kitchen Order Station
-                </h2>
-                <div style={{ fontSize: '0.84rem', color: '#65705C' }}>
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Live Kitchen Order Station</h2>
+                <div className="subtitle">
                   Realtime live reflection • Advance orders and verify payment collection
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', width: '100%', maxWidth: '420px', justifyContent: 'flex-start' }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
-                  <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#85926B' }} />
+              <div className="portal-header-actions">
+                <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+                  <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#85926B' }} />
                   <input
                     type="text"
-                    placeholder="Search by #order or customer..."
+                    placeholder="Search #order or customer..."
                     value={searchOrder}
                     onChange={(e) => setSearchOrder(e.target.value)}
                     style={{
-                      padding: '8px 12px 8px 36px',
+                      padding: '10px 14px 10px 42px',
                       borderRadius: '9999px',
-                      border: '1px solid #DCE3D4',
-                      fontSize: '0.84rem',
+                      border: '1.5px solid #DCE3D4',
+                      fontSize: '0.92rem',
                       outline: 'none',
                       width: '100%'
                     }}
@@ -590,35 +588,36 @@ export function EmployeePortal({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
+                    gap: '8px',
+                    padding: '10px 18px',
                     borderRadius: '9999px',
-                    border: '1px solid #DCE3D4',
+                    border: '1.5px solid #DCE3D4',
                     backgroundColor: '#FFFFFF',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
+                    fontSize: '0.92rem',
+                    fontWeight: 700,
                     color: '#475234'
                   }}
                 >
-                  <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
+                  <RefreshCw size={15} className={loading ? 'spin' : ''} /> Refresh
                 </button>
               </div>
             </div>
 
             {/* Status Filter Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', overflowX: 'auto', paddingBottom: '4px' }}>
               {['all', 'Order Placed', 'Confirmed', 'Preparing', 'Ready', 'Out for Delivery', 'Delivered'].map((st) => (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
                   style={{
-                    padding: '6px 14px',
+                    padding: '8px 16px',
                     borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
                     backgroundColor: statusFilter === st ? '#85926B' : '#FFFFFF',
                     color: statusFilter === st ? '#FFFFFF' : '#556149',
-                    border: '1px solid #DCE3D4',
+                    border: '1.5px solid #DCE3D4',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -843,49 +842,49 @@ export function EmployeePortal({
         {/* 2. DASHBOARD TAB (Operational Stats Only — Strictly NO Revenue) */}
         {activeTab === 'dashboard' && stats && (
           <div>
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                Kitchen Operational Overview
-              </h2>
-              <div style={{ fontSize: '0.84rem', color: '#65705C' }}>
-                Order fulfillment health and workload (financial revenue is restricted)
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Kitchen Operational Overview</h2>
+                <div className="subtitle">
+                  Order fulfillment health and workload (financial revenue is restricted)
+                </div>
               </div>
             </div>
 
             {/* Operational Metric Cards (No Revenue) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px' }}>
               <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.76rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Today's Orders</div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#1F241C', marginTop: '6px' }}>{stats.todayOrders}</div>
-                <div style={{ fontSize: '0.75rem', color: '#85926B', marginTop: '4px' }}>All-time total: {stats.totalOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Today's Orders</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#1F241C', marginTop: '6px' }}>{stats.todayOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#85926B', marginTop: '4px' }}>All-time total: {stats.totalOrders}</div>
               </div>
 
               <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.76rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Active Kitchen Orders</div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#E76F51', marginTop: '6px' }}>{stats.pendingOrders}</div>
-                <div style={{ fontSize: '0.75rem', color: '#E76F51', marginTop: '4px' }}>Needs prep / dispatch</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Kitchen Orders</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#E76F51', marginTop: '6px' }}>{stats.pendingOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#E76F51', marginTop: '4px' }}>Needs prep / dispatch</div>
               </div>
 
               <div style={{ backgroundColor: '#FFFFFF', padding: '22px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <div style={{ fontSize: '0.76rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase' }}>Completed Deliveries</div>
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#2E7D32', marginTop: '6px' }}>{stats.completedOrders}</div>
-                <div style={{ fontSize: '0.75rem', color: '#7E8775', marginTop: '4px' }}>Cancelled: {stats.cancelledOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completed Deliveries</div>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#2E7D32', marginTop: '6px' }}>{stats.completedOrders}</div>
+                <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '4px' }}>Cancelled: {stats.cancelledOrders}</div>
               </div>
             </div>
 
             {/* Popular Items & Recent Orders */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
               <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', color: '#1F241C', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F241C', marginBottom: '16px' }}>
                   Popular Food Items Today
                 </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {stats.popularItems?.map((p, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #F4F6F1' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#2A3324' }}>
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #F4F6F1' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.94rem', color: '#2A3324' }}>
                         #{idx + 1} {p.food_name}
                       </span>
-                      <span style={{ backgroundColor: '#EBF0E4', color: '#475234', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                      <span style={{ backgroundColor: '#EBF0E4', color: '#475234', padding: '3px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 800 }}>
                         {p.total_sold} sold
                       </span>
                     </div>
@@ -894,21 +893,21 @@ export function EmployeePortal({
               </div>
 
               <div style={{ backgroundColor: '#FFFFFF', padding: '24px', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-                <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', color: '#1F241C', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F241C', marginBottom: '16px' }}>
                   Recent Orders Flow
                 </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {stats.recentOrders?.slice(0, 5).map((ro) => (
-                    <div key={ro.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0' }}>
+                    <div key={ro.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1F241C' }}>#{ro.order_number}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#7E8775' }}>{ro.customer_name}</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.94rem', color: '#1F241C' }}>#{ro.order_number}</div>
+                        <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>{ro.customer_name}</div>
                       </div>
                       <span style={{
-                        fontSize: '0.72rem',
+                        fontSize: '0.78rem',
                         fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: '4px',
+                        padding: '3px 10px',
+                        borderRadius: '6px',
                         backgroundColor: ro.order_status === 'Delivered' ? '#E8F5E9' : '#FFF3E0',
                         color: ro.order_status === 'Delivered' ? '#2E7D32' : '#E65100'
                       }}>
@@ -925,23 +924,23 @@ export function EmployeePortal({
         {/* 3. FOOD AVAILABILITY TAB */}
         {activeTab === 'foods' && (
           <div>
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(1.3rem, 4.2vw, 1.8rem)', fontWeight: 700, color: '#1F241C', wordBreak: 'break-word', lineHeight: 1.25 }}>
-                Kitchen Food Item Availability
-              </h2>
-              <div style={{ fontSize: '0.84rem', color: '#65705C' }}>
-                Quickly toggle availability if ingredients run out in kitchen
+            <div className="portal-header-bar">
+              <div className="portal-header-title">
+                <h2>Kitchen Food Item Availability</h2>
+                <div className="subtitle">
+                  Quickly toggle availability if ingredients run out in kitchen
+                </div>
               </div>
             </div>
 
             <div className="table-responsive" style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #ECE7DE' }}>
-              <table style={{ width: '100%', minWidth: '520px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+              <table style={{ width: '100%', minWidth: '560px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.94rem' }}>
                 <thead>
                   <tr style={{ backgroundColor: '#FAF8F5', borderBottom: '1px solid #ECE7DE' }}>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Item</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Category</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700 }}>Status</th>
-                    <th style={{ padding: '14px 18px', color: '#475234', fontWeight: 700, textAlign: 'right' }}>Action</th>
+                    <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Item</th>
+                    <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Category</th>
+                    <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700 }}>Status</th>
+                    <th style={{ padding: '16px 20px', color: '#475234', fontWeight: 700, textAlign: 'right' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>

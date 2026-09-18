@@ -1,83 +1,81 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
+const supabaseUrl = env.VITE_SUPABASE_URL || 'https://nvvrtqgpwsbxiruwtbho.supabase.co';
+const supabaseKey = env.VITE_SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY || env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52dnJ0cWdwd3NieGlydXd0YmhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2MzgxMTAsImV4cCI6MjEwNTIxNDExMH0.YSZGMuYOXfjsaPRWxms9eLz1FM2zLZDcNd2PTwBGUfw';
 
 export let supabase = null;
-if (supabaseUrl && supabaseAnonKey) {
+
+if (supabaseUrl && supabaseKey) {
   try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('[Supabase] Client initialized for live reflection.');
+    supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    });
+    console.log('[Supabase] Initialized direct client using client/.env credentials.');
   } catch (err) {
     console.warn('[Supabase] Initialization error:', err.message);
+  }
+} else {
+  console.warn('[Supabase] Supabase credentials missing in client/.env');
+}
+
+/**
+ * Universal live reflection subscription connecting directly to Supabase Realtime
+ */
+export function subscribeToLiveOrders(onOrderUpdate) {
+  if (!supabase) return () => {};
+
+  try {
+    const channel = supabase
+      .channel('orders_realtime')
+      .on('broadcast', { event: '*' }, (payload) => {
+        if (payload && payload.payload) {
+          onOrderUpdate(payload.payload, payload.event);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        if (payload && payload.new) {
+          onOrderUpdate(payload.new, payload.eventType);
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Supabase Realtime] Connected to live orders stream.');
+        }
+      });
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {}
+    };
+  } catch (err) {
+    console.warn('[Supabase Realtime] Subscription error:', err.message);
+    return () => {};
   }
 }
 
 /**
- * Universal live reflection hook / subscription:
- * Seamlessly connects to Supabase Realtime channel if configured,
- * and maintains instant SSE live event streaming for zero-delay order reflection.
+ * Broadcast live order updates directly to all connected tabs/browsers
  */
-export function subscribeToLiveOrders(onOrderUpdate) {
-  const unsubscribers = [];
-
-  // 1. Supabase Realtime Channel
-  if (supabase) {
-    try {
-      const channel = supabase
-        .channel('orders_realtime')
-        .on('broadcast', { event: '*' }, (payload) => {
-          if (payload && payload.payload) {
-            onOrderUpdate(payload.payload, payload.event);
-          }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-          if (payload && payload.new) {
-            onOrderUpdate(payload.new, payload.eventType);
-          }
-        })
-        .subscribe((status) => {
-          console.log('[Supabase Realtime Status]:', status);
-        });
-
-      unsubscribers.push(() => {
-        supabase.removeChannel(channel);
-      });
-    } catch (err) {
-      console.warn('[Supabase Realtime Subscription Warning]:', err.message);
-    }
-  }
-
-  // 2. Server-Sent Events (SSE) Live Stream for local / immediate reflection
+export async function broadcastLiveOrder(orderData, eventType = 'ORDER_UPDATED') {
+  if (!supabase || !orderData) return;
   try {
-    const sseBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-    const eventSource = new EventSource(`${sseBase}/realtime/stream`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data && data.type !== 'CONNECTED' && data.data) {
-          onOrderUpdate(data.data, data.type);
-        }
-      } catch (e) {
-        // Ignore heartbeat/ping errors
-      }
-    };
-
-    eventSource.onerror = () => {
-      // EventSource handles automatic reconnection
-    };
-
-    unsubscribers.push(() => {
-      eventSource.close();
+    const channel = supabase.channel('orders_realtime');
+    await channel.send({
+      type: 'broadcast',
+      event: eventType,
+      payload: orderData
     });
   } catch (err) {
-    console.warn('[SSE Realtime stream error]:', err.message);
+    console.warn('[Supabase Realtime] Broadcast error:', err.message);
   }
-
-  return () => {
-    unsubscribers.forEach((fn) => {
-      try { fn(); } catch (e) {}
-    });
-  };
 }
