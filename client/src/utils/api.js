@@ -875,9 +875,14 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     let updated = null;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('hero_slides').update(payload).eq('id', id).select().single();
+        const slideId = isNaN(Number(id)) ? id : Number(id);
+        const { data, error } = await supabase
+          .from('hero_slides')
+          .upsert({ id: slideId, ...payload }, { onConflict: 'id' })
+          .select()
+          .single();
         if (!error && data) updated = data;
-        else if (error) console.warn('[Supabase Hero Slide Update Error]:', error.message);
+        else if (error) console.warn('[Supabase Hero Slide Upsert Error]:', error.message);
       } catch (e) {}
     }
     if (!updated) {
