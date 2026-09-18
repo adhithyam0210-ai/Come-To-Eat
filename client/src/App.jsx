@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { api } from './utils/api';
-import { subscribeToHeroSlides } from './utils/supabase';
+import { subscribeToHeroSlides, subscribeToFoods, subscribeToCategories } from './utils/supabase';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -141,9 +141,31 @@ function MainApp() {
       }
     };
 
-    window.addEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
+    const handleFoodsSync = (e) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setFoods(e.detail);
+      } else {
+        api.get('/foods').then(res => {
+          if (res.success && res.foods) setFoods(res.foods);
+        }).catch(() => {});
+      }
+    };
 
-    // Supabase Realtime channel subscription across all tabs / devices
+    const handleCategoriesSync = (e) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setCategories(e.detail);
+      } else {
+        api.get('/categories').then(res => {
+          if (res.success && res.categories) setCategories(res.categories);
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
+    window.addEventListener('cte:foods_updated', handleFoodsSync);
+    window.addEventListener('cte:categories_updated', handleCategoriesSync);
+
+    // Supabase Realtime channel subscriptions across all tabs / devices
     const unsubRealtimeHero = subscribeToHeroSlides((liveSlides) => {
       if (liveSlides && Array.isArray(liveSlides)) {
         setHeroSlides(liveSlides);
@@ -154,9 +176,33 @@ function MainApp() {
       }
     });
 
+    const unsubRealtimeFoods = subscribeToFoods((liveFoods) => {
+      if (liveFoods && Array.isArray(liveFoods)) {
+        setFoods(liveFoods);
+      } else {
+        api.get('/foods').then(res => {
+          if (res.success && res.foods) setFoods(res.foods);
+        }).catch(() => {});
+      }
+    });
+
+    const unsubRealtimeCategories = subscribeToCategories((liveCats) => {
+      if (liveCats && Array.isArray(liveCats)) {
+        setCategories(liveCats);
+      } else {
+        api.get('/categories').then(res => {
+          if (res.success && res.categories) setCategories(res.categories);
+        }).catch(() => {});
+      }
+    });
+
     return () => {
       window.removeEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
+      window.removeEventListener('cte:foods_updated', handleFoodsSync);
+      window.removeEventListener('cte:categories_updated', handleCategoriesSync);
       unsubRealtimeHero();
+      unsubRealtimeFoods();
+      unsubRealtimeCategories();
     };
   }, []);
 

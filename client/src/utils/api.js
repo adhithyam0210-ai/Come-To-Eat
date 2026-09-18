@@ -1,4 +1,15 @@
-import { supabase, broadcastLiveOrder, broadcastHeroSlides } from './supabase.js';
+import { supabase, broadcastLiveOrder, broadcastHeroSlides, broadcastFoods, broadcastCategories } from './supabase.js';
+
+function createSlug(text) {
+  if (!text) return `item-${Date.now()}`;
+  const base = String(text)
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return base || `item-${Date.now()}`;
+}
 
 export function getToken() {
   return localStorage.getItem('cte_token');
@@ -548,32 +559,65 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/categories' && method === 'POST') {
+    const slug = body.slug || createSlug(body.name);
+    const catPayload = {
+      name: body.name || 'New Category',
+      slug: slug,
+      description: body.description || '',
+      image_url: body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
+      sort_order: body.sort_order !== undefined ? Number(body.sort_order) : 99,
+      is_active: body.is_active !== undefined ? Number(body.is_active) : 1
+    };
+
+    let created = null;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('categories').insert([body]).select().single();
-        if (!error && data) return { success: true, category: data };
+        const { data: existingCats } = await supabase.from('categories').select('id');
+        const maxId = existingCats && existingCats.length > 0 ? Math.max(...existingCats.map(c => c.id || 0)) : 0;
+        const insertObj = maxId > 0 ? { id: maxId + 1, ...catPayload } : catPayload;
+        const { data, error } = await supabase.from('categories').insert([insertObj]).select().single();
+        if (!error && data) created = data;
       } catch (e) {}
     }
-    const newCat = { id: Date.now(), ...body };
+    if (!created) {
+      created = { id: Date.now(), ...catPayload };
+    }
     const current = getStore('categories', DEFAULT_CATEGORIES);
-    current.push(newCat);
+    current.push(created);
     setStore('categories', current);
-    return { success: true, category: newCat };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: current }));
+    }
+    broadcastCategories(current);
+    return { success: true, category: created };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'PUT') {
     const id = cleanPath.split('/')[2];
+    const updatePayload = { ...body };
+    if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
+    if (body.sort_order !== undefined) updatePayload.sort_order = Number(body.sort_order);
+    if (body.is_active !== undefined) updatePayload.is_active = Number(body.is_active);
+
+    let updated = null;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('categories').update(body).eq('id', id).select().single();
-        if (!error && data) return { success: true, category: data };
+        const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', id).select().single();
+        if (!error && data) updated = data;
       } catch (e) {}
+    }
+    if (!updated) {
+      updated = { id: Number(id) || id, ...updatePayload };
     }
     const current = getStore('categories', DEFAULT_CATEGORIES);
     const idx = current.findIndex(c => String(c.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...body };
+    if (idx >= 0) current[idx] = { ...current[idx], ...updated };
     setStore('categories', current);
-    return { success: true, category: { id: Number(id), ...body } };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: current }));
+    }
+    broadcastCategories(current);
+    return { success: true, category: updated };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'DELETE') {
@@ -585,6 +629,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const current = getStore('categories', DEFAULT_CATEGORIES).filter(c => String(c.id) !== String(id));
     setStore('categories', current);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: current }));
+    }
+    broadcastCategories(current);
     return { success: true, message: 'Category deleted' };
   }
 
@@ -604,13 +652,24 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
     const id = cleanPath.split('/')[2];
+    let nextAvailable = 1;
     if (supabase) {
       try {
         const { data: item } = await supabase.from('food_items').select('is_available').eq('id', id).single();
         if (item) {
-          const nextVal = item.is_available === 1 ? 0 : 1;
-          const { data } = await supabase.from('food_items').update({ is_available: nextVal }).eq('id', id).select().single();
-          return { success: true, food: data };
+          nextAvailable = item.is_available === 1 ? 0 : 1;
+          const { data } = await supabase.from('food_items').update({ is_available: nextAvailable }).eq('id', id).select().single();
+          if (data) {
+            const allFoodsRes = await supabase.from('food_items').select('*').order('id', { ascending: true });
+            if (allFoodsRes.data) {
+              setStore('foods', allFoodsRes.data);
+              broadcastFoods(allFoodsRes.data);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: allFoodsRes.data }));
+              }
+            }
+            return { success: true, food: data };
+          }
         }
       } catch (e) {}
     }
@@ -618,6 +677,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const item = current.find(f => String(f.id) === String(id));
     if (item) item.is_available = item.is_available === 1 ? 0 : 1;
     setStore('foods', current);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
+    }
+    broadcastFoods(current);
     return { success: true, message: 'Availability toggled', food: item };
   }
 
@@ -635,32 +698,81 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/foods' && method === 'POST') {
+    const slug = body.slug || createSlug(body.name);
+    const foodPayload = {
+      name: body.name || 'Delicious Dish',
+      slug: slug,
+      category_id: body.category_id ? Number(body.category_id) : 1,
+      price: Number(body.price) || 0,
+      discount_price: body.discount_price ? Number(body.discount_price) : null,
+      is_veg: body.is_veg !== undefined ? Number(body.is_veg) : 1,
+      is_available: body.is_available !== undefined ? Number(body.is_available) : 1,
+      prep_time: body.prep_time || '15 min',
+      image_url: body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
+      description: body.description || '',
+      is_featured: body.is_featured !== undefined ? Number(body.is_featured) : 0,
+      rating: body.rating ? Number(body.rating) : 4.8
+    };
+
+    let created = null;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('food_items').insert([body]).select().single();
-        if (!error && data) return { success: true, food: data };
+        const { data: existingFoods } = await supabase.from('food_items').select('id');
+        const maxId = existingFoods && existingFoods.length > 0 ? Math.max(...existingFoods.map(f => f.id || 0)) : 0;
+        const insertObj = maxId > 0 ? { id: maxId + 1, ...foodPayload } : foodPayload;
+        const { data, error } = await supabase.from('food_items').insert([insertObj]).select().single();
+        if (!error && data) created = data;
+        else if (error) console.warn('[Supabase Food Insert Error]:', error.message);
       } catch (e) {}
     }
-    const newFood = { id: Date.now(), ...body };
+
+    if (!created) {
+      created = { id: Date.now(), ...foodPayload };
+    }
+
     const current = getStore('foods', DEFAULT_FOODS);
-    current.push(newFood);
+    current.push(created);
     setStore('foods', current);
-    return { success: true, food: newFood };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
+    }
+    broadcastFoods(current);
+    return { success: true, food: created };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'PUT') {
     const id = cleanPath.split('/')[2];
+    const updatePayload = { ...body };
+    if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
+    if (body.category_id !== undefined) updatePayload.category_id = Number(body.category_id);
+    if (body.price !== undefined) updatePayload.price = Number(body.price);
+    if (body.discount_price !== undefined) updatePayload.discount_price = body.discount_price ? Number(body.discount_price) : null;
+    if (body.is_veg !== undefined) updatePayload.is_veg = Number(body.is_veg);
+    if (body.is_available !== undefined) updatePayload.is_available = Number(body.is_available);
+    if (body.is_featured !== undefined) updatePayload.is_featured = Number(body.is_featured);
+
+    let updated = null;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('food_items').update(body).eq('id', id).select().single();
-        if (!error && data) return { success: true, food: data };
+        const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', id).select().single();
+        if (!error && data) updated = data;
+        else if (error) console.warn('[Supabase Food Update Error]:', error.message);
       } catch (e) {}
     }
+
+    if (!updated) {
+      updated = { id: Number(id) || id, ...updatePayload };
+    }
+
     const current = getStore('foods', DEFAULT_FOODS);
     const idx = current.findIndex(f => String(f.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...body };
+    if (idx >= 0) current[idx] = { ...current[idx], ...updated };
     setStore('foods', current);
-    return { success: true, food: { id: Number(id), ...body } };
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
+    }
+    broadcastFoods(current);
+    return { success: true, food: updated };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'DELETE') {
@@ -672,6 +784,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const current = getStore('foods', DEFAULT_FOODS).filter(f => String(f.id) !== String(id));
     setStore('foods', current);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
+    }
+    broadcastFoods(current);
     return { success: true, message: 'Food item deleted' };
   }
 

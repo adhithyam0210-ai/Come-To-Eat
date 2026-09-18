@@ -124,3 +124,91 @@ export async function broadcastHeroSlides(slidesData) {
   } catch (err) {}
 }
 
+/**
+ * Universal live reflection subscription connecting directly to Supabase Realtime for Food Items
+ */
+export function subscribeToFoods(onFoodsUpdate) {
+  if (!supabase) return () => {};
+
+  try {
+    const channel = supabase
+      .channel('foods_realtime')
+      .on('broadcast', { event: '*' }, (payload) => {
+        if (payload && payload.payload) {
+          onFoodsUpdate(payload.payload);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'food_items' }, () => {
+        onFoodsUpdate();
+      })
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {}
+    };
+  } catch (err) {
+    return () => {};
+  }
+}
+
+/**
+ * Broadcast live food items updates to all clients instantly
+ */
+export async function broadcastFoods(foodsData) {
+  if (!supabase || !foodsData) return;
+  try {
+    const channel = supabase.channel('foods_realtime');
+    await channel.send({
+      type: 'broadcast',
+      event: 'FOODS_UPDATED',
+      payload: foodsData
+    });
+  } catch (err) {}
+}
+
+/**
+ * Universal live reflection subscription connecting directly to Supabase Realtime for Categories
+ */
+export function subscribeToCategories(onCategoriesUpdate) {
+  if (!supabase) return () => {};
+
+  try {
+    const channel = supabase
+      .channel('categories_realtime')
+      .on('broadcast', { event: '*' }, (payload) => {
+        if (payload && payload.payload) {
+          onCategoriesUpdate(payload.payload);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        onCategoriesUpdate();
+      })
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {}
+    };
+  } catch (err) {
+    return () => {};
+  }
+}
+
+/**
+ * Broadcast live categories updates to all clients instantly
+ */
+export async function broadcastCategories(catsData) {
+  if (!supabase || !catsData) return;
+  try {
+    const channel = supabase.channel('categories_realtime');
+    await channel.send({
+      type: 'broadcast',
+      event: 'CATEGORIES_UPDATED',
+      payload: catsData
+    });
+  } catch (err) {}
+}
+
