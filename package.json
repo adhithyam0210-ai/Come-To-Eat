@@ -1,14 +1,13 @@
 {
   "name": "come-to-eat",
   "version": "1.0.0",
-  "description": "Come To Eat - Modern Responsive Full-Stack Food Ordering Platform",
+  "description": "Come To Eat - Modern Responsive Restaurant Platform powered by Supabase Cloud",
   "scripts": {
     "build": "cd client && npm install && npm run build",
-    "server": "cd server && npm start",
-    "client": "cd client && npm run dev",
-    "seed": "cd server && npm run seed"
+    "dev": "cd client && npm run dev",
+    "start": "cd client && npm run dev"
   },
-  "keywords": ["restaurant", "food-ordering", "react", "express", "sqlite"],
+  "keywords": ["restaurant", "food-ordering", "react", "supabase", "vite"],
   "author": "",
   "license": "ISC"
 }
