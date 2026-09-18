@@ -88,73 +88,58 @@ export function MenuPage({
             </div>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: '24px'
-          }}>
+          <div className="card-grid-responsive">
             {categories.map((cat) => {
               const count = foods.filter((f) => f.category_id === cat.id || f.category_slug === cat.slug).length;
               return (
                 <div
                   key={cat.id || cat.slug}
                   onClick={() => onSelectCategory(cat)}
+                  className="food-card-responsive"
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    border: '1px solid #ECE7DE',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
                     cursor: 'pointer',
-                    transition: 'all 0.25s ease',
                     position: 'relative'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.09)';
-                    e.currentTarget.style.borderColor = '#85926B';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.03)';
-                    e.currentTarget.style.borderColor = '#ECE7DE';
-                  }}
                 >
-                  <div style={{ position: 'relative', height: '160px', width: '100%', backgroundColor: '#F0F4E8' }}>
+                  <div className="food-card-img-box category-card-img-box" style={{ backgroundColor: '#F0F4E8' }}>
                     <img
                       src={cat.image_url}
                       alt={cat.name}
+                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'; }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     <div style={{
                       position: 'absolute',
-                      bottom: '10px',
-                      right: '10px',
+                      bottom: '8px',
+                      right: '8px',
                       backgroundColor: 'rgba(30, 37, 27, 0.85)',
                       backdropFilter: 'blur(6px)',
                       color: '#FFF',
-                      fontSize: '0.72rem',
+                      fontSize: '0.68rem',
                       fontWeight: 700,
-                      padding: '3px 10px',
-                      borderRadius: '12px'
+                      padding: '2px 8px',
+                      borderRadius: '10px'
                     }}>
                       {count} {count === 1 ? 'Dish' : 'Dishes'}
                     </div>
                   </div>
 
-                  <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1F241C', margin: '0 0 4px' }}>
+                      <h4
+                        className="category-card-title-text"
+                        style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1F241C', margin: '0 0 2px' }}
+                      >
                         {cat.name}
                       </h4>
-                      <div style={{ fontSize: '0.8rem', color: '#85926B', fontWeight: 600 }}>
-                        Click to explore category →
+                      <div style={{ fontSize: '0.76rem', color: '#85926B', fontWeight: 600 }}>
+                        Explore category →
                       </div>
                     </div>
 
                     <div style={{
-                      width: '34px',
-                      height: '34px',
+                      width: '28px',
+                      height: '28px',
                       borderRadius: '50%',
                       backgroundColor: '#EBF0E4',
                       color: '#85926B',
@@ -163,7 +148,7 @@ export function MenuPage({
                       justifyContent: 'center',
                       flexShrink: 0
                     }}>
-                      <ArrowRight size={16} />
+                      <ArrowRight size={14} />
                     </div>
                   </div>
                 </div>

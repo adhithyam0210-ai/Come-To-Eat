@@ -79,3 +79,48 @@ export async function broadcastLiveOrder(orderData, eventType = 'ORDER_UPDATED')
     console.warn('[Supabase Realtime] Broadcast error:', err.message);
   }
 }
+
+/**
+ * Universal live reflection subscription connecting directly to Supabase Realtime for Hero Slides
+ */
+export function subscribeToHeroSlides(onSlidesUpdate) {
+  if (!supabase) return () => {};
+
+  try {
+    const channel = supabase
+      .channel('hero_slides_realtime')
+      .on('broadcast', { event: '*' }, (payload) => {
+        if (payload && payload.payload) {
+          onSlidesUpdate(payload.payload);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_slides' }, () => {
+        onSlidesUpdate();
+      })
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {}
+    };
+  } catch (err) {
+    return () => {};
+  }
+}
+
+/**
+ * Broadcast live hero slides updates to all clients instantly
+ */
+export async function broadcastHeroSlides(slidesData) {
+  if (!supabase || !slidesData) return;
+  try {
+    const channel = supabase.channel('hero_slides_realtime');
+    await channel.send({
+      type: 'broadcast',
+      event: 'HERO_SLIDES_UPDATED',
+      payload: slidesData
+    });
+  } catch (err) {}
+}
+

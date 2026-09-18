@@ -280,11 +280,7 @@ export function CategoryPage({
 
         {/* Dishes Grid */}
         {filteredFoods.length > 0 ? (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: '24px'
-          }}>
+          <div className={`highlights-container-dynamic ${filteredFoods.length === 1 ? 'count-1' : filteredFoods.length === 2 ? 'count-2' : 'count-many'}`}>
             {filteredFoods.map((item) => {
               const hasDiscount = item.discount_price && item.discount_price < item.price;
               const isAdded = addedItemIds.includes(item.id);
@@ -293,55 +289,38 @@ export function CategoryPage({
                 <div
                   key={item.id}
                   onClick={() => onOpenItemDetail(item)}
+                  className="food-card-responsive"
                   style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    border: '1px solid #ECE7DE',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                    display: 'flex',
-                    flexDirection: 'column',
                     cursor: 'pointer',
-                    transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.03)';
+                    opacity: item.is_available ? 1 : 0.75
                   }}
                 >
                   {/* Food Image & Badges */}
-                  <div style={{ position: 'relative', width: '100%', height: '180px', backgroundColor: '#F0F4E8' }}>
+                  <div className="food-card-img-box">
                     <img
                       src={item.image_url}
                       alt={item.name}
+                      onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'; }}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
                         filter: item.is_available ? 'none' : 'grayscale(80%)'
                       }}
                     />
 
                     {/* Veg / Non-Veg Indicator */}
-                    <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                      <DietaryBadge isVeg={item.is_veg} />
+                    <div style={{ position: 'absolute', top: '8px', left: '8px' }}>
+                      <DietaryBadge isVeg={item.is_veg} size={12} />
                     </div>
 
                     {/* Rating Badge */}
                     <div style={{
                       position: 'absolute',
-                      top: '12px',
-                      right: '12px',
+                      top: '8px',
+                      right: '8px',
                       backgroundColor: 'rgba(255, 255, 255, 0.94)',
                       backdropFilter: 'blur(6px)',
-                      padding: '3px 8px',
-                      borderRadius: '12px',
-                      fontSize: '0.74rem',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      fontSize: '0.7rem',
                       fontWeight: 700,
                       display: 'flex',
                       alignItems: 'center',
@@ -349,7 +328,7 @@ export function CategoryPage({
                       color: '#2A3324',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                     }}>
-                      <Star size={12} fill="#F59E0B" color="#F59E0B" />
+                      <Star size={11} fill="#F59E0B" color="#F59E0B" />
                       <span>{item.rating || '4.8'}</span>
                     </div>
 
@@ -364,38 +343,41 @@ export function CategoryPage({
                         justifyContent: 'center',
                         color: '#FFF',
                         fontWeight: 700,
-                        fontSize: '0.88rem'
+                        fontSize: '0.8rem'
                       }}>
-                        Sold Out Today
+                        Sold Out
                       </div>
                     )}
                   </div>
 
                   {/* Card Content */}
-                  <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <h3 style={{
-                      fontSize: '1.05rem',
-                      fontWeight: 700,
-                      color: '#1F241C',
-                      margin: '0 0 6px',
-                      lineHeight: 1.3
-                    }}>
-                      {item.name}
-                    </h3>
+                  <div className="food-card-body-box">
+                    <div>
+                      <h3
+                        className="food-card-title-text"
+                        style={{
+                          fontSize: '1.05rem',
+                          fontWeight: 700,
+                          color: '#1F241C',
+                          margin: '0 0 4px',
+                          lineHeight: 1.25
+                        }}
+                      >
+                        {item.name}
+                      </h3>
 
-                    <p style={{
-                      fontSize: '0.82rem',
-                      color: '#65705C',
-                      lineHeight: 1.5,
-                      margin: '0 0 16px',
-                      flex: 1,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}>
-                      {item.description}
-                    </p>
+                      <p
+                        className="food-card-desc-text"
+                        style={{
+                          fontSize: '0.8rem',
+                          color: '#65705C',
+                          lineHeight: 1.4,
+                          margin: '0 0 10px'
+                        }}
+                      >
+                        {item.description}
+                      </p>
+                    </div>
 
                     {/* Price and Add to Cart */}
                     <div style={{
@@ -403,15 +385,16 @@ export function CategoryPage({
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       borderTop: '1px solid #F0EFEB',
-                      paddingTop: '12px'
+                      paddingTop: '8px',
+                      marginTop: 'auto'
                     }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                          <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1F241C' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                          <span className="food-card-price-text" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1F241C' }}>
                             ₹{item.discount_price || item.price}
                           </span>
                           {hasDiscount && (
-                            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', textDecoration: 'line-through' }}>
+                            <span style={{ fontSize: '0.76rem', color: '#9CA3AF', textDecoration: 'line-through' }}>
                               ₹{item.price}
                             </span>
                           )}
@@ -421,29 +404,30 @@ export function CategoryPage({
                       <button
                         onClick={(e) => handleQuickAdd(item, e)}
                         disabled={!item.is_available}
+                        className="food-card-add-btn"
                         style={{
                           backgroundColor: isAdded ? '#2E7D32' : item.is_available ? '#85926B' : '#CCCCCC',
                           color: '#FFFFFF',
                           border: 'none',
-                          padding: '8px 16px',
+                          padding: '6px 14px',
                           borderRadius: '20px',
-                          fontSize: '0.82rem',
+                          fontSize: '0.8rem',
                           fontWeight: 700,
                           cursor: item.is_available ? 'pointer' : 'not-allowed',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '6px',
+                          gap: '4px',
                           transition: 'all 0.2s ease',
-                          boxShadow: item.is_available ? '0 3px 10px rgba(133, 146, 107, 0.3)' : 'none'
+                          boxShadow: item.is_available ? '0 2px 8px rgba(133, 146, 107, 0.25)' : 'none'
                         }}
                       >
                         {isAdded ? (
                           <>
-                            <Check size={14} /> Added
+                            <Check size={13} /> Added
                           </>
                         ) : (
                           <>
-                            <Plus size={14} /> Add
+                            <Plus size={13} /> Add
                           </>
                         )}
                       </button>

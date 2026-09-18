@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, Heart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../utils/api';
 
 const DEFAULT_SLIDES = [
@@ -53,7 +53,11 @@ export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClic
     } catch (e) {}
     return DEFAULT_SLIDES;
   });
+
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Sync with prop slides or fetch
   useEffect(() => {
@@ -94,14 +98,52 @@ export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClic
     return () => window.removeEventListener('cte:hero_slides_updated', handleLiveSlidesUpdate);
   }, []);
 
-  // Auto slide timer
-  useEffect(() => {
+  // Safe slide navigation
+  const nextSlide = () => {
     if (slides.length <= 1) return;
+    setIsTransitioning(true);
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+    setTimeout(() => setIsTransitioning(false), 400);
+  };
+
+  const prevSlide = () => {
+    if (slides.length <= 1) return;
+    setIsTransitioning(true);
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    setTimeout(() => setIsTransitioning(false), 400);
+  };
+
+  const goToSlide = (index) => {
+    if (index === currentSlide) return;
+    setIsTransitioning(true);
+    setCurrentSlide(index);
+    setTimeout(() => setIsTransitioning(false), 400);
+  };
+
+  // Auto slide timer (pauses on user hover)
+  useEffect(() => {
+    if (slides.length <= 1 || isPaused) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6500);
+      nextSlide();
+    }, 5500);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, isPaused, currentSlide]);
+
+  // Touch Swipe Handlers for Mobile
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (diff > 45) {
+      nextSlide();
+    } else if (diff < -45) {
+      prevSlide();
+    }
+    setTouchStartX(null);
+  };
 
   const slide = slides[currentSlide] || slides[0] || DEFAULT_SLIDES[0];
 
@@ -116,41 +158,19 @@ export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClic
   return (
     <section 
       id="home"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="hero-section-box"
       style={{
-        position: 'relative',
         backgroundColor: slide.bg_color || '#85926B',
-        color: '#FFFFFF',
+        backgroundImage: `radial-gradient(circle at 90% 10%, rgba(255, 245, 215, 0.25) 0%, transparent 45%), radial-gradient(circle at 10% 90%, rgba(0, 0, 0, 0.14) 0%, transparent 50%)`,
         overflow: 'hidden',
-        transition: 'background-color 0.8s ease',
-        padding: 'clamp(28px, 3.5vw, 42px) 0 clamp(30px, 4vw, 46px)',
-        borderBottomLeftRadius: 'clamp(24px, 4vw, 36px)',
-        borderBottomRightRadius: 'clamp(24px, 4vw, 36px)'
+        width: '100%',
+        maxWidth: '100%'
       }}
     >
-      {/* Ambient Lighting Glows */}
-      <div style={{
-        position: 'absolute',
-        top: '-15%',
-        right: '10%',
-        width: '450px',
-        height: '450px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255, 245, 215, 0.28) 0%, transparent 65%)',
-        filter: 'blur(35px)',
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute',
-        bottom: '8%',
-        left: '5%',
-        width: '380px',
-        height: '380px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 0, 0, 0.12) 0%, transparent 70%)',
-        filter: 'blur(40px)',
-        pointerEvents: 'none'
-      }} />
-
       {/* Decorative Botanical Grid */}
       <div style={{
         position: 'absolute',
@@ -162,136 +182,172 @@ export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClic
       }} />
 
       <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          alignItems: 'center',
-          gap: 'clamp(24px, 4vw, 56px)'
-        }}>
+        <div className="hero-main-grid">
           {/* Left Column: Typography & CTAs */}
-          <div style={{ maxWidth: '720px' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              backgroundColor: 'rgba(255, 255, 255, 0.22)',
-              backdropFilter: 'blur(8px)',
-              padding: '5px 14px',
-              borderRadius: '20px',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              letterSpacing: '1px',
-              marginBottom: '14px',
-              textTransform: 'uppercase'
-            }}>
-              <Sparkles size={13} /> {slide.tag}
-            </div>
+          <div 
+            className="hero-text-container"
+            style={{ 
+              opacity: isTransitioning ? 0.75 : 1,
+              transform: isTransitioning ? 'translateY(4px)' : 'translateY(0)',
+              transition: 'opacity 0.35s ease, transform 0.35s ease'
+            }}
+          >
+            {slide.tag && (
+              <div className="hero-tag-badge">
+                <Sparkles size={13} /> {slide.tag}
+              </div>
+            )}
 
             {/* Cursive script headline */}
-            <div style={{
-              fontFamily: "'Caveat', cursive",
-              fontSize: 'clamp(2.4rem, 6vw, 4.2rem)',
-              color: '#F4F8EC',
-              lineHeight: 1.05,
-              marginBottom: '6px',
-              textShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-              {slide.script}
-            </div>
+            {slide.script && (
+              <div className="hero-script-heading">
+                {slide.script}
+              </div>
+            )}
 
             {/* Bold serif title */}
-            <h1 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 'clamp(1.9rem, 4.5vw, 3.2rem)',
-              fontWeight: 700,
-              lineHeight: 1.16,
-              letterSpacing: '-0.5px',
-              color: '#FFFFFF',
-              marginBottom: '14px'
-            }}>
+            <h1 className="hero-title-heading">
               {slide.title}
             </h1>
 
-            <p style={{
-              fontSize: 'clamp(0.92rem, 2vw, 1.05rem)',
-              lineHeight: 1.6,
-              color: '#F0F4E8',
-              opacity: 0.95,
-              marginBottom: '28px'
-            }}>
-              {slide.desc}
-            </p>
+            {(slide.desc || slide.desc_text) && (
+              <p className="hero-desc-para">
+                {slide.desc || slide.desc_text}
+              </p>
+            )}
 
             {/* CTA & Slide Indicators */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            <div className="hero-actions-container">
               <button
                 onClick={handleButtonClick}
                 style={{
                   backgroundColor: '#E76F51',
                   color: '#FFFFFF',
-                  padding: '13px 30px',
+                  padding: '12px 28px',
                   borderRadius: '9999px',
                   fontWeight: 700,
-                  fontSize: '0.96rem',
+                  fontSize: '0.94rem',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px',
                   boxShadow: '0 8px 24px rgba(231, 111, 81, 0.45)',
-                  transition: 'all 0.25s ease'
+                  transition: 'all 0.25s ease',
+                  cursor: 'pointer',
+                  border: 'none',
+                  flexShrink: 0
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
               >
                 <span>{slide.button_text || 'Order Now'}</span>
                 <div style={{
-                  width: '24px',
-                  height: '24px',
+                  width: '22px',
+                  height: '22px',
                   borderRadius: '50%',
                   backgroundColor: 'rgba(255, 255, 255, 0.25)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={13} />
                 </div>
               </button>
+
+              {/* Navigation Indicators & Prev/Next Arrows */}
+              {slides.length > 1 && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  {/* Prev Button */}
+                  <button
+                    onClick={prevSlide}
+                    aria-label="Previous Slide"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      backdropFilter: 'blur(6px)',
+                      border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.38)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)')}
+                  >
+                    <ChevronLeft size={17} />
+                  </button>
+
+                  {/* Bullet Dots */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    {slides.map((s, idx) => (
+                      <button
+                        key={s.id || idx}
+                        onClick={() => goToSlide(idx)}
+                        aria-label={`Go to slide ${idx + 1}`}
+                        style={{
+                          width: currentSlide === idx ? '24px' : '8px',
+                          height: '8px',
+                          borderRadius: '10px',
+                          backgroundColor: currentSlide === idx ? '#FFFFFF' : 'rgba(255, 255, 255, 0.4)',
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.35s ease',
+                          padding: 0
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={nextSlide}
+                    aria-label="Next Slide"
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      backdropFilter: 'blur(6px)',
+                      border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.38)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)')}
+                  >
+                    <ChevronRight size={17} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right Column: Visual Showcase (Image-Adaptive Card) */}
-          <div style={{
-            position: 'relative',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            order: window.innerWidth < 640 ? -1 : 0
-          }}>
-            <div style={{
-              position: 'relative',
-              width: 'fit-content',
-              maxWidth: 'min(100%, 680px)',
-              margin: '0 auto',
-              borderRadius: 'clamp(18px, 3.2vw, 26px)',
-              overflow: 'hidden',
-              boxShadow: '0 16px 44px rgba(20, 28, 16, 0.38)',
-              border: '2.5px solid rgba(255, 255, 255, 0.65)',
-              backgroundColor: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
+          {/* Right Column: Visual Showcase Card */}
+          <div className="hero-img-container">
+            <div 
+              className="hero-img-wrapper"
+              style={{
+                opacity: isTransitioning ? 0.75 : 1,
+                transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
+                transition: 'opacity 0.35s ease, transform 0.35s ease'
+              }}
+            >
               <img
+                key={slide.id || currentSlide}
                 src={slide.image_url || slide.image}
                 alt={slide.title}
-                style={{
-                  width: 'auto',
-                  maxWidth: '100%',
-                  height: 'auto',
-                  maxHeight: 'clamp(280px, 58vh, 540px)',
-                  objectFit: 'contain',
-                  display: 'block',
-                  borderRadius: 'clamp(16px, 3vw, 24px)'
+                loading="eager"
+                onError={(e) => {
+                  e.target.src = 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=900&q=80';
                 }}
               />
             </div>
@@ -301,3 +357,4 @@ export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClic
     </section>
   );
 }
+

@@ -1,4 +1,4 @@
-import { supabase, broadcastLiveOrder } from './supabase.js';
+import { supabase, broadcastLiveOrder, broadcastHeroSlides } from './supabase.js';
 
 export function getToken() {
   return localStorage.getItem('cte_token');
@@ -687,7 +687,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data && data.length) {
           const formatted = data.map(s => ({
             ...s,
-            desc: s.desc || s.desc_text || '',
+            desc: s.desc_text || s.desc || '',
             desc_text: s.desc_text || s.desc || ''
           }));
           return { success: true, slides: formatted };
@@ -698,7 +698,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const localSlides = rawLocal !== null && Array.isArray(rawLocal) ? rawLocal : DEFAULT_HERO_SLIDES;
     const mapped = localSlides.map(s => ({
       ...s,
-      desc: s.desc || s.desc_text || '',
+      desc: s.desc_text || s.desc || '',
       desc_text: s.desc_text || s.desc || ''
     }));
     return { success: true, slides: cleanPath === '/hero-slides' ? mapped.filter(s => s.is_active !== 0) : mapped };
@@ -706,23 +706,30 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
     const payload = {
-      ...body,
-      desc: body.desc || body.desc_text || '',
-      desc_text: body.desc || body.desc_text || '',
-      sort_order: body.sort_order || 99,
-      is_active: body.is_active !== undefined ? body.is_active : 1
+      tag: body.tag || 'CHEF SPECIAL',
+      script: body.script || 'Delicious & Fresh',
+      title: body.title || 'Special Signature',
+      desc_text: body.desc_text || body.desc || '',
+      image_url: body.image_url || body.image || '',
+      button_text: body.button_text || 'Order Now',
+      bg_color: body.bg_color || '#85926B',
+      accent_text: body.accent_text || '',
+      target_category: body.target_category || 'Burgers and Sandwiches',
+      sort_order: body.sort_order !== undefined ? Number(body.sort_order) : 99,
+      is_active: body.is_active !== undefined ? Number(body.is_active) : 1
     };
     let created = null;
     if (supabase) {
       try {
         const { data, error } = await supabase.from('hero_slides').insert([payload]).select().single();
         if (!error && data) created = data;
+        else if (error) console.warn('[Supabase Hero Slide Error]:', error.message);
       } catch (e) {}
     }
     if (!created) {
       created = { id: Date.now(), ...payload };
     }
-    const normalized = { ...created, desc: created.desc || created.desc_text || '', desc_text: created.desc_text || created.desc || '' };
+    const normalized = { ...created, desc: created.desc_text || created.desc || '', desc_text: created.desc_text || created.desc || '' };
     const rawCurrent = getStore('hero_slides', null);
     const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? [...rawCurrent] : [...DEFAULT_HERO_SLIDES];
     current.push(normalized);
@@ -730,27 +737,37 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: current }));
     }
+    broadcastHeroSlides(current);
     return { success: true, slide: normalized };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'PUT') {
     const id = cleanPath.split('/')[2];
-    const payload = {
-      ...body,
-      desc: body.desc || body.desc_text || '',
-      desc_text: body.desc || body.desc_text || ''
-    };
+    const payload = {};
+    if (body.tag !== undefined) payload.tag = body.tag;
+    if (body.script !== undefined) payload.script = body.script;
+    if (body.title !== undefined) payload.title = body.title;
+    if (body.desc !== undefined || body.desc_text !== undefined) payload.desc_text = body.desc_text || body.desc || '';
+    if (body.image_url !== undefined || body.image !== undefined) payload.image_url = body.image_url || body.image || '';
+    if (body.button_text !== undefined) payload.button_text = body.button_text;
+    if (body.bg_color !== undefined) payload.bg_color = body.bg_color;
+    if (body.accent_text !== undefined) payload.accent_text = body.accent_text;
+    if (body.target_category !== undefined) payload.target_category = body.target_category;
+    if (body.sort_order !== undefined) payload.sort_order = Number(body.sort_order);
+    if (body.is_active !== undefined) payload.is_active = Number(body.is_active);
+
     let updated = null;
     if (supabase) {
       try {
         const { data, error } = await supabase.from('hero_slides').update(payload).eq('id', id).select().single();
         if (!error && data) updated = data;
+        else if (error) console.warn('[Supabase Hero Slide Update Error]:', error.message);
       } catch (e) {}
     }
     if (!updated) {
       updated = { id: isNaN(Number(id)) ? id : Number(id), ...payload };
     }
-    const normalized = { ...updated, desc: updated.desc || updated.desc_text || '', desc_text: updated.desc_text || updated.desc || '' };
+    const normalized = { ...updated, desc: updated.desc_text || updated.desc || '', desc_text: updated.desc_text || updated.desc || '' };
     const rawCurrent = getStore('hero_slides', null);
     const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? [...rawCurrent] : [...DEFAULT_HERO_SLIDES];
     const idx = current.findIndex(s => String(s.id) === String(id));
@@ -763,6 +780,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: current }));
     }
+    broadcastHeroSlides(current);
     return { success: true, slide: normalized };
   }
 
@@ -780,6 +798,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: filtered }));
     }
+    broadcastHeroSlides(filtered);
     return { success: true, message: 'Slide deleted' };
   }
 
@@ -843,89 +862,170 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // -------------------------------------------------------------
   // 6. COUPONS
   // -------------------------------------------------------------
-  if (cleanPath === '/coupons/active' || cleanPath === '/coupons/admin') {
+  if (cleanPath === '/coupons' || cleanPath === '/coupons/active' || cleanPath === '/coupons/admin') {
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('coupons').select('*');
-        if (!error && data && data.length) return { success: true, coupons: data };
+        let q = supabase.from('coupons').select('*').order('id', { ascending: false });
+        if (cleanPath === '/coupons/active' || cleanPath === '/coupons') {
+          q = q.eq('is_active', 1);
+        }
+        const { data, error } = await q;
+        if (!error && data && data.length) {
+          return { success: true, coupons: data };
+        }
       } catch (e) {}
     }
     const localCoupons = getStore('coupons', DEFAULT_COUPONS);
-    return { success: true, coupons: localCoupons };
+    if (cleanPath === '/coupons/admin') {
+      return { success: true, coupons: localCoupons };
+    }
+    return { success: true, coupons: localCoupons.filter(c => c.is_active !== 0) };
   }
 
   if (cleanPath === '/coupons/validate') {
-    const { code, totalAmount } = body;
-    const cleanCode = (code || '').trim().toUpperCase();
+    const rawCode = body.code || '';
+    const cleanCode = rawCode.trim().toUpperCase();
+    const orderTotal = Number(body.order_amount ?? body.totalAmount ?? body.orderTotal ?? 0);
+
+    if (!cleanCode) {
+      throw new Error('Please enter a coupon code.');
+    }
 
     let coupon = null;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('coupons').select('*').eq('code', cleanCode).eq('is_active', 1).maybeSingle();
+        const { data, error } = await supabase
+          .from('coupons')
+          .select('*')
+          .eq('code', cleanCode)
+          .maybeSingle();
         if (!error && data) coupon = data;
       } catch (e) {}
     }
     if (!coupon) {
       const localCoupons = getStore('coupons', DEFAULT_COUPONS);
-      coupon = localCoupons.find(c => c.code === cleanCode);
+      coupon = localCoupons.find(c => c.code.toUpperCase() === cleanCode);
     }
 
     if (!coupon) {
-      throw new Error('Invalid coupon code.');
+      throw new Error(`Coupon "${cleanCode}" is invalid or does not exist.`);
     }
 
-    const orderTotal = Number(totalAmount) || 0;
-    if (coupon.min_order_value && orderTotal < Number(coupon.min_order_value)) {
-      throw new Error(`Minimum order value of ₹${coupon.min_order_value} required for this coupon.`);
+    if (coupon.is_active === 0 || coupon.is_active === false) {
+      throw new Error(`Coupon "${cleanCode}" is currently inactive.`);
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (coupon.start_date && coupon.start_date > todayStr) {
+      throw new Error(`This coupon offer begins on ${coupon.start_date}.`);
+    }
+    if (coupon.end_date && coupon.end_date < todayStr) {
+      throw new Error(`This coupon offer expired on ${coupon.end_date}.`);
+    }
+    if (coupon.expires_at && coupon.expires_at < todayStr) {
+      throw new Error(`This coupon offer expired on ${coupon.expires_at}.`);
+    }
+
+    const minVal = Number(coupon.min_order_value || 0);
+    if (minVal > 0 && orderTotal < minVal) {
+      throw new Error(`Minimum order value of ₹${minVal} required to apply coupon "${coupon.code}". (Your item total: ₹${orderTotal})`);
     }
 
     let discount = 0;
+    const discVal = Number(coupon.discount_value || 0);
+    const maxDisc = Number(coupon.max_discount || 0);
+
     if (coupon.discount_type === 'percentage') {
-      discount = (orderTotal * Number(coupon.discount_value)) / 100;
-      if (coupon.max_discount && discount > Number(coupon.max_discount)) {
-        discount = Number(coupon.max_discount);
+      discount = (orderTotal * discVal) / 100;
+      if (maxDisc > 0 && discount > maxDisc) {
+        discount = maxDisc;
       }
     } else {
-      discount = Number(coupon.discount_value);
+      discount = discVal;
+      if (maxDisc > 0 && discount > maxDisc) {
+        discount = maxDisc;
+      }
     }
+
+    discount = Math.min(discount, orderTotal);
+    discount = parseFloat(discount.toFixed(2));
+
+    const couponObj = {
+      id: coupon.id,
+      code: coupon.code,
+      discount_type: coupon.discount_type || 'percentage',
+      discount_value: discVal,
+      min_order_value: minVal,
+      max_discount: maxDisc || discount,
+      start_date: coupon.start_date || null,
+      end_date: coupon.end_date || coupon.expires_at || null,
+      is_active: coupon.is_active !== 0 ? 1 : 0
+    };
 
     return {
       success: true,
       valid: true,
+      coupon: couponObj,
       code: coupon.code,
-      discount: Math.round(discount),
-      discountType: coupon.discount_type,
-      discountValue: coupon.discount_value
+      discount: discount,
+      discountAmount: discount,
+      discountType: couponObj.discount_type,
+      discountValue: discVal,
+      message: `Coupon ${coupon.code} applied successfully!`
     };
   }
 
   if (cleanPath === '/coupons' && method === 'POST') {
+    const newCouponData = {
+      code: (body.code || '').trim().toUpperCase(),
+      discount_type: body.discount_type || 'percentage',
+      discount_value: Number(body.discount_value || 0),
+      min_order_value: Number(body.min_order_value || 0),
+      max_discount: Number(body.max_discount || 0),
+      start_date: body.start_date || null,
+      end_date: body.end_date || null,
+      is_active: body.is_active !== undefined ? Number(body.is_active) : 1,
+      times_used: 0
+    };
+
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('coupons').insert([body]).select().single();
+        const { data, error } = await supabase.from('coupons').insert([newCouponData]).select().single();
         if (!error && data) return { success: true, coupon: data };
       } catch (e) {}
     }
-    const newCoupon = { id: Date.now(), ...body };
+    const newCoupon = { id: Date.now(), ...newCouponData };
     const current = getStore('coupons', DEFAULT_COUPONS);
-    current.push(newCoupon);
+    current.unshift(newCoupon);
     setStore('coupons', current);
     return { success: true, coupon: newCoupon };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'PUT') {
     const id = cleanPath.split('/')[2];
+    const updateData = {
+      ...body,
+      code: body.code ? body.code.trim().toUpperCase() : undefined,
+      discount_value: body.discount_value !== undefined ? Number(body.discount_value) : undefined,
+      min_order_value: body.min_order_value !== undefined ? Number(body.min_order_value) : undefined,
+      max_discount: body.max_discount !== undefined ? Number(body.max_discount) : undefined,
+      is_active: body.is_active !== undefined ? Number(body.is_active) : undefined
+    };
+
+    // Remove undefined
+    Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);
+
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('coupons').update(body).eq('id', id).select().single();
+        const { data, error } = await supabase.from('coupons').update(updateData).eq('id', id).select().single();
         if (!error && data) return { success: true, coupon: data };
       } catch (e) {}
     }
     const current = getStore('coupons', DEFAULT_COUPONS);
     const idx = current.findIndex(c => String(c.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...body };
+    if (idx >= 0) current[idx] = { ...current[idx], ...updateData };
     setStore('coupons', current);
-    return { success: true, coupon: { id: Number(id), ...body } };
+    return { success: true, coupon: { id: Number(id), ...updateData } };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'DELETE') {
@@ -1157,6 +1257,22 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     if (!createdOrder) {
       createdOrder = { id: Date.now(), ...orderRecord };
+    }
+
+    // Increment times_used on coupon if applicable
+    if (body.coupon_code) {
+      const appliedCode = body.coupon_code.trim().toUpperCase();
+      if (supabase) {
+        try {
+          await supabase.rpc('increment_coupon_usage', { coupon_code_param: appliedCode }).catch(() => {});
+        } catch (e) {}
+      }
+      const localCoupons = getStore('coupons', DEFAULT_COUPONS);
+      const cpIdx = localCoupons.findIndex(c => c.code.toUpperCase() === appliedCode);
+      if (cpIdx >= 0) {
+        localCoupons[cpIdx].times_used = (localCoupons[cpIdx].times_used || 0) + 1;
+        setStore('coupons', localCoupons);
+      }
     }
 
     saveStoredOrder({ ...createdOrder, items: body.items || [] });

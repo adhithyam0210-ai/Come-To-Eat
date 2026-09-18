@@ -25,7 +25,7 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
     setIsProcessing(true);
 
     try {
-      // 1. Prepare items payload (server will strictly recalculate prices from DB)
+      // 1. Prepare items payload
       const orderPayload = {
         customer_name: checkoutData.customer_name,
         customer_email: checkoutData.customer_email,
@@ -35,6 +35,13 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
         branch_id: checkoutData?.branch_id || 1,
         branch_name: checkoutData?.branch_name || 'Indiranagar (Flagship)',
         coupon_code: appliedCoupon ? appliedCoupon.code : null,
+        total_amount: priceBreakdown.itemTotal,
+        item_total: priceBreakdown.itemTotal,
+        discount_amount: priceBreakdown.discountAmount || 0,
+        tax_amount: priceBreakdown.taxes || 0,
+        taxes: priceBreakdown.taxes || 0,
+        delivery_fee: priceBreakdown.deliveryFee || 0,
+        final_amount: priceBreakdown.finalAmount,
         payment_method: paymentMethod,
         payment_details: {
           vpa: paymentMethod === 'UPI' ? upiVpa : undefined,
@@ -42,7 +49,11 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
           bankName: paymentMethod === 'Net Banking' ? selectedBank : undefined
         },
         items: cartItems.map((item) => ({
-          food_id: item.food_id,
+          food_id: item.food_id || item.id,
+          name: item.name,
+          price: item.price,
+          unit_price: item.price,
+          subtotal: item.subtotal,
           quantity: item.quantity,
           selected_addons: item.selected_addons || []
         }))

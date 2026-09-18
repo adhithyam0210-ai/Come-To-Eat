@@ -49,43 +49,20 @@ export function Navbar({
       transition: 'all 0.3s ease'
     }}>
       {/* Single Unified Header Bar (per Notebook Drawing) */}
-      <div style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px clamp(16px, 3.5vw, 44px)',
-        gap: '16px'
-      }}>
+      <div className="navbar-header-bar">
         {/* Left: Brand Logo & Name + Branch Dropdown in Same Line */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 1.8vw, 20px)', flexShrink: 0 }}>
+        <div className="navbar-brand-col">
           <div 
             onClick={() => handleNavClick('home')}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}
           >
             <img
               src="/logo.jpg"
               alt="Come To Eat"
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '2px solid #85926B',
-                boxShadow: '0 3px 10px rgba(133, 146, 107, 0.3)',
-                flexShrink: 0,
-                backgroundColor: '#FFFFFF'
-              }}
+              className="navbar-brand-logo"
             />
             <div>
-              <div style={{
-                fontSize: 'clamp(1.15rem, 3.6vw, 1.45rem)',
-                fontWeight: 800,
-                color: '#2A3324',
-                lineHeight: 1.1,
-                letterSpacing: '-0.3px',
-                whiteSpace: 'nowrap'
-              }}>
+              <div className="navbar-brand-name">
                 Come To Eat
               </div>
               <div style={{
@@ -187,64 +164,27 @@ export function Navbar({
         )}
 
         {/* Right Corner: Quick Search, Cart, Profile / Login */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-
+        <div className="navbar-actions-col">
           {(activePortal === 'user' || activePortal === 'landing') && (
             <button
               onClick={onOpenSearch}
               title="Search food items"
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#4A5538',
-                backgroundColor: '#F0F4E8',
-                cursor: 'pointer',
-                border: 'none'
-              }}
+              className="navbar-icon-btn"
             >
-              <Search size={20} />
+              <Search size={18} />
             </button>
           )}
 
           {(activePortal === 'user' || activePortal === 'landing') && (
             <button
               onClick={() => setIsCartOpen(true)}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: '#85926B',
-                color: '#FFFFFF',
-                padding: '10px 18px',
-                borderRadius: '9999px',
-                fontWeight: 700,
-                fontSize: '0.96rem',
-                boxShadow: '0 4px 12px rgba(133, 146, 107, 0.3)',
-                cursor: 'pointer',
-                border: 'none'
-              }}
+              className="navbar-cart-btn"
+              title="View Bag"
             >
-              <ShoppingBag size={20} />
-              <span className="desktop-only">Cart</span>
+              <ShoppingBag size={18} />
+              <span className="desktop-only" style={{ fontWeight: 700, fontSize: '0.94rem' }}>Cart</span>
               {totalCount > 0 && (
-                <span style={{
-                  backgroundColor: '#E76F51',
-                  color: '#FFF',
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '50%',
-                  fontSize: '0.78rem',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: '2px'
-                }}>
+                <span className="navbar-cart-badge">
                   {totalCount}
                 </span>
               )}
@@ -256,35 +196,23 @@ export function Navbar({
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setUserDropdown(!userDropdown)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  backgroundColor: '#FAF8F5',
-                  border: '1.5px solid #DCE5D6',
-                  borderRadius: '9999px',
-                  padding: '6px 14px 6px 8px',
-                  cursor: 'pointer'
-                }}
+                className="navbar-icon-btn"
+                title={user.name}
               >
                 <div style={{
-                  width: '32px',
-                  height: '32px',
+                  width: '26px',
+                  height: '26px',
                   borderRadius: '50%',
                   backgroundColor: user.role === 'admin' ? '#E76F51' : (user.role === 'employee' ? '#4A7C59' : '#85926B'),
                   color: '#FFFFFF',
                   fontWeight: 800,
-                  fontSize: '0.92rem',
+                  fontSize: '0.84rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
-                <span className="desktop-only" style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1F241C', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {user.name}
-                </span>
-                <ChevronDown size={15} color="#65705C" />
               </button>
 
               {userDropdown && (
@@ -424,21 +352,20 @@ export function Navbar({
           ) : (
             <button
               onClick={onOpenAuth}
-              className="btn-outline"
-              style={{ padding: '8px 16px', fontSize: '0.94rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+              className="navbar-icon-btn"
               title="Sign In / Register"
             >
-              <User size={18} /> <span className="desktop-only">Login</span>
+              <User size={18} />
             </button>
           )}
 
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="mobile-toggle"
+            className="navbar-icon-btn mobile-toggle"
             title="Toggle Menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>

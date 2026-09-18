@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { X, Trash2, Plus, Minus, Tag, ShoppingBag, ArrowRight, Check, AlertCircle, Truck, Package } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Trash2, Plus, Minus, Tag, ShoppingBag, ArrowRight, Check, AlertCircle, Truck, Package, Sparkles } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { DietaryBadge } from './DietaryBadge';
+import { api } from '../utils/api';
 
 export function CartDrawer({ onProceedToCheckout }) {
   const {
@@ -22,15 +23,30 @@ export function CartDrawer({ onProceedToCheckout }) {
 
   const [couponInput, setCouponInput] = useState('');
   const [isApplying, setIsApplying] = useState(false);
+  const [availableCoupons, setAvailableCoupons] = useState([]);
+
+  useEffect(() => {
+    if (isCartOpen) {
+      api.get('/coupons/active')
+        .then((res) => {
+          if (res.success && res.coupons) {
+            setAvailableCoupons(res.coupons);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isCartOpen]);
 
   if (!isCartOpen) return null;
 
-  const handleApplyCoupon = async (e) => {
-    e.preventDefault();
-    if (!couponInput.trim()) return;
+  const handleApplyCoupon = async (e, codeToApply) => {
+    if (e) e.preventDefault();
+    const code = codeToApply || couponInput;
+    if (!code || !code.trim()) return;
     setIsApplying(true);
-    await applyCoupon(couponInput);
+    await applyCoupon(code);
     setIsApplying(false);
+    if (!codeToApply) setCouponInput('');
   };
 
   return (
@@ -304,8 +320,15 @@ export function CartDrawer({ onProceedToCheckout }) {
                 borderRadius: '16px',
                 border: '1px solid #ECE7DE'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '0.92rem', fontWeight: 700, color: '#475234' }}>
-                  <Tag size={17} color="#85926B" /> Have a Promo Coupon?
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.92rem', fontWeight: 700, color: '#475234' }}>
+                    <Tag size={17} color="#85926B" /> Have a Promo Coupon?
+                  </div>
+                  {appliedCoupon && (
+                    <span style={{ fontSize: '0.78rem', color: '#2E7D32', fontWeight: 700, backgroundColor: '#E8F5E9', padding: '2px 8px', borderRadius: '12px' }}>
+                      Active
+                    </span>
+                  )}
                 </div>
 
                 {appliedCoupon ? (
@@ -315,7 +338,7 @@ export function CartDrawer({ onProceedToCheckout }) {
                     justifyContent: 'space-between',
                     backgroundColor: '#EBF0E4',
                     border: '1.5px dashed #85926B',
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                     borderRadius: '12px'
                   }}>
                     <div>
@@ -328,35 +351,75 @@ export function CartDrawer({ onProceedToCheckout }) {
                     </div>
                     <button
                       onClick={removeCoupon}
-                      style={{ fontSize: '0.86rem', color: '#C62828', fontWeight: 800, border: 'none', background: 'none', cursor: 'pointer' }}
+                      style={{ fontSize: '0.86rem', color: '#C62828', fontWeight: 800, border: 'none', background: 'none', cursor: 'pointer', padding: '4px 8px' }}
                     >
                       Remove
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="text"
-                      value={couponInput}
-                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                      placeholder="e.g. WELCOME50, COMETO20"
-                      className="form-input"
-                      style={{ padding: '10px 14px', fontSize: '0.94rem', textTransform: 'uppercase', flex: 1 }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={isApplying}
-                      className="btn-primary"
-                      style={{ padding: '10px 20px', fontSize: '0.92rem' }}
-                    >
-                      {isApplying ? '...' : 'Apply'}
-                    </button>
-                  </form>
+                  <>
+                    <form onSubmit={(e) => handleApplyCoupon(e)} style={{ display: 'flex', gap: '8px', marginBottom: availableCoupons.length > 0 ? '12px' : '0' }}>
+                      <input
+                        type="text"
+                        value={couponInput}
+                        onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                        placeholder="e.g. WELCOME50, FEAST100"
+                        className="form-input"
+                        style={{ padding: '10px 14px', fontSize: '0.94rem', textTransform: 'uppercase', flex: 1, fontFamily: 'monospace', fontWeight: 600 }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isApplying || !couponInput.trim()}
+                        className="btn-primary"
+                        style={{ padding: '10px 20px', fontSize: '0.92rem' }}
+                      >
+                        {isApplying ? '...' : 'Apply'}
+                      </button>
+                    </form>
+
+                    {/* Quick Available Coupon Chips */}
+                    {availableCoupons.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#7E8775', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Available Promo Codes:
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {availableCoupons.slice(0, 3).map((cp) => (
+                            <button
+                              key={cp.id || cp.code}
+                              type="button"
+                              onClick={() => handleApplyCoupon(null, cp.code)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '5px 10px',
+                                borderRadius: '8px',
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid #DCE3D4',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                color: '#475234',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={`Apply ${cp.code} (${cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value} OFF`})`}
+                            >
+                              <span style={{ fontFamily: 'monospace', color: '#85926B' }}>{cp.code}</span>
+                              <span style={{ fontSize: '0.72rem', color: '#E76F51' }}>
+                                {cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value}`}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {couponError && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C62828', fontSize: '0.82rem', marginTop: '8px' }}>
-                    <AlertCircle size={15} /> {couponError}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C62828', fontSize: '0.82rem', marginTop: '10px' }}>
+                    <AlertCircle size={15} style={{ flexShrink: 0 }} /> {couponError}
                   </div>
                 )}
               </div>

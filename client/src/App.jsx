@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { api } from './utils/api';
+import { subscribeToHeroSlides } from './utils/supabase';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -131,7 +132,7 @@ function MainApp() {
     fetchData();
 
     const handleHeroSlidesSync = (e) => {
-      if (e.detail && Array.isArray(e.detail)) {
+      if (e?.detail && Array.isArray(e.detail)) {
         setHeroSlides(e.detail);
       } else {
         api.get('/hero-slides').then(res => {
@@ -141,7 +142,22 @@ function MainApp() {
     };
 
     window.addEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
-    return () => window.removeEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
+
+    // Supabase Realtime channel subscription across all tabs / devices
+    const unsubRealtimeHero = subscribeToHeroSlides((liveSlides) => {
+      if (liveSlides && Array.isArray(liveSlides)) {
+        setHeroSlides(liveSlides);
+      } else {
+        api.get('/hero-slides').then(res => {
+          if (res.success && res.slides) setHeroSlides(res.slides);
+        }).catch(() => {});
+      }
+    });
+
+    return () => {
+      window.removeEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
+      unsubRealtimeHero();
+    };
   }, []);
 
   const [pendingCheckoutAfterAuth, setPendingCheckoutAfterAuth] = useState(false);

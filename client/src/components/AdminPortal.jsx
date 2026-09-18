@@ -380,10 +380,10 @@ export function AdminPortal({
     try {
       if (editingCoupon) {
         const res = await api.put(`/coupons/${editingCoupon.id}`, couponForm);
-        if (res.success) setMessage('Coupon modified successfully.');
+        if (res.success) setMessage(`Coupon "${couponForm.code}" modified successfully.`);
       } else {
         const res = await api.post('/coupons', couponForm);
-        if (res.success) setMessage('New coupon created successfully.');
+        if (res.success) setMessage(`New coupon "${couponForm.code}" created successfully.`);
       }
       setShowCouponModal(false);
       setEditingCoupon(null);
@@ -391,6 +391,20 @@ export function AdminPortal({
       if (onDataUpdate) onDataUpdate();
     } catch (err) {
       alert(err.message || 'Failed to save coupon.');
+    }
+  };
+
+  const handleToggleCouponStatus = async (cp) => {
+    try {
+      const nextActive = (cp.is_active === 1 || cp.is_active === true) ? 0 : 1;
+      const res = await api.put(`/coupons/${cp.id}`, { ...cp, is_active: nextActive });
+      if (res.success) {
+        setMessage(`Coupon "${cp.code}" is now ${nextActive === 1 ? 'Active' : 'Inactive'}.`);
+        fetchCoupons();
+        if (onDataUpdate) onDataUpdate();
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to update coupon status.');
     }
   };
 
@@ -767,13 +781,13 @@ export function AdminPortal({
   const openEditSlide = (slide) => {
     setEditingSlide(slide);
     setSlideForm({
-      tag: slide.tag,
-      script: slide.script,
-      title: slide.title,
-      desc: slide.desc,
-      image_url: slide.image_url,
-      button_text: slide.button_text,
-      bg_color: slide.bg_color,
+      tag: slide.tag || 'CHEF SIGNATURE',
+      script: slide.script || 'Savor Every Bite',
+      title: slide.title || '',
+      desc: slide.desc || slide.desc_text || '',
+      image_url: slide.image_url || slide.image || '',
+      button_text: slide.button_text || 'Order Now',
+      bg_color: slide.bg_color || '#85926B',
       accent_text: slide.accent_text || '',
       target_category: slide.target_category || 'Burgers and Sandwiches'
     });
@@ -782,7 +796,13 @@ export function AdminPortal({
 
   const filteredOrders = (orders || []).filter((o) => {
     if (!o) return false;
-    if (orderStatusFilter !== 'all' && o.order_status !== orderStatusFilter) return false;
+    if (orderStatusFilter !== 'all') {
+      if (orderStatusFilter === 'Placed' || orderStatusFilter === 'Order Placed') {
+        if (o.order_status !== 'Placed' && o.order_status !== 'Order Placed') return false;
+      } else if (o.order_status !== orderStatusFilter) {
+        return false;
+      }
+    }
     if (orderSearch.trim()) {
       const q = orderSearch.toLowerCase();
       const matchNum = (o.order_number || '').toLowerCase().includes(q);
@@ -1301,109 +1321,278 @@ export function AdminPortal({
               ))}
             </div>
 
-            {/* Orders Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
-              {filteredOrders.length === 0 ? (
-                <div style={{
-                  gridColumn: '1 / -1',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '16px',
-                  border: '1px dashed #DCE3D4',
-                  padding: '48px 24px',
-                  textAlign: 'center',
-                  color: '#65705C'
-                }}>
-                  <ShoppingBag size={42} style={{ margin: '0 auto 12px', color: '#85926B', opacity: 0.7 }} />
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>No orders found</h3>
-                  <p style={{ fontSize: '0.85rem', margin: 0 }}>There are currently no live orders matching your branch or status filter.</p>
-                </div>
-              ) : (
-                filteredOrders.map((order) => {
-                  const orderItems = order.items && order.items.length > 0
-                    ? order.items
-                    : (order.items_json ? (typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json) : []);
+            {/* Live Orders Highlighted Table View */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              border: '1px solid #ECE7DE',
+              overflow: 'hidden',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.04)'
+            }}>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', minWidth: '1020px', borderCollapse: 'collapse', fontSize: '1.05rem' }}>
+                  <thead style={{ backgroundColor: '#F8F6F1', borderBottom: '2px solid #E3DC CE', color: '#323B25' }}>
+                    <tr>
+                      <th style={{ padding: '18px 22px', textAlign: 'left', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Order # & Time
+                      </th>
+                      <th style={{ padding: '18px 22px', textAlign: 'left', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Customer & Address
+                      </th>
+                      <th style={{ padding: '18px 22px', textAlign: 'left', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Branch Outlet
+                      </th>
+                      <th style={{ padding: '18px 22px', textAlign: 'left', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Items Ordered
+                      </th>
+                      <th style={{ padding: '18px 22px', textAlign: 'right', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Total Amount
+                      </th>
+                      <th style={{ padding: '18px 22px', textAlign: 'center', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Payment
+                      </th>
+                      <th style={{ padding: '18px 22px', textAlign: 'center', fontWeight: 800, fontSize: '0.98rem', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                        Live Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ padding: '56px 24px', textAlign: 'center', color: '#65705C' }}>
+                          <ShoppingBag size={48} style={{ margin: '0 auto 14px', color: '#85926B', opacity: 0.8 }} />
+                          <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1F241C', marginBottom: '8px' }}>No orders found</h3>
+                          <p style={{ fontSize: '1rem', margin: 0 }}>There are currently no live orders matching your branch or status filter.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((order, idx) => {
+                        const orderItems = order.items && order.items.length > 0
+                          ? order.items
+                          : (order.items_json ? (typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json) : []);
 
-                  return (
-                    <div
-                      key={order.id}
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '16px',
-                        border: '1px solid #ECE7DE',
-                        padding: '20px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        minWidth: 0
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontWeight: 800, fontSize: '1.05rem', color: '#1F241C' }}>
+                        const getStatusBadge = (status) => {
+                          switch (status) {
+                            case 'Order Placed':
+                            case 'Placed':
+                              return { bg: '#FFF3E0', text: '#E65100', border: '#FFE0B2', accent: '#FF9800' };
+                            case 'Preparing':
+                              return { bg: '#E1F5FE', text: '#0288D1', border: '#B3E5FC', accent: '#03A9F4' };
+                            case 'Ready':
+                              return { bg: '#E0F2F1', text: '#00796B', border: '#B2DFDB', accent: '#009688' };
+                            case 'Out for Delivery':
+                              return { bg: '#EDE7F6', text: '#5E35B1', border: '#D1C4E9', accent: '#7E57C2' };
+                            case 'Delivered':
+                              return { bg: '#E8F5E9', text: '#2E7D32', border: '#C8E6C9', accent: '#4CAF50' };
+                            case 'Cancelled':
+                              return { bg: '#FFEBEE', text: '#C62828', border: '#FFCDD2', accent: '#E53935' };
+                            default:
+                              return { bg: '#F5F5F5', text: '#424242', border: '#E0E0E0', accent: '#9E9E9E' };
+                          }
+                        };
+
+                        const badge = getStatusBadge(order.order_status);
+
+                        return (
+                          <tr
+                            key={order.id}
+                            style={{
+                              borderBottom: '1px solid #ECE7DE',
+                              borderLeft: `6px solid ${badge.accent}`,
+                              backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FAFBF8',
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#F4F7EF';
+                              e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = idx % 2 === 0 ? '#FFFFFF' : '#FAFBF8';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          >
+                            {/* 1. Order Number & Time */}
+                            <td style={{ padding: '20px 22px', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: 900, fontSize: '1.22rem', color: '#1F241C', letterSpacing: '-0.3px' }}>
                                 #{order.order_number}
-                              </span>
+                              </div>
+                              <div style={{ fontSize: '0.94rem', fontWeight: 600, color: '#556149', marginTop: '4px' }}>
+                                🕒 {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                              <div style={{ fontSize: '0.86rem', color: '#85926B', marginTop: '2px', fontWeight: 600 }}>
+                                📅 {new Date(order.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </div>
+                            </td>
+
+                            {/* 2. Customer & Address */}
+                            <td style={{ padding: '20px 22px', verticalAlign: 'top', maxWidth: '280px' }}>
+                              <div style={{ fontWeight: 800, color: '#1F241C', fontSize: '1.14rem', lineHeight: 1.25 }}>
+                                {order.customer_name}
+                              </div>
+                              <div style={{ color: '#475234', fontSize: '0.96rem', fontWeight: 600, marginTop: '4px' }}>
+                                📞 {order.customer_phone || 'No phone'}
+                              </div>
+                              <div style={{
+                                marginTop: '8px',
+                                fontSize: '0.92rem',
+                                color: '#3A442E',
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '6px',
+                                lineHeight: 1.4,
+                                backgroundColor: 'rgba(133, 146, 107, 0.08)',
+                                padding: '6px 10px',
+                                borderRadius: '8px'
+                              }}>
+                                <span style={{ fontSize: '1.05rem', flexShrink: 0 }}>{order.delivery_type === 'pickup' ? '🏬' : '📍'}</span>
+                                <span style={{ wordBreak: 'break-word', fontWeight: 600 }}>
+                                  {order.delivery_type === 'pickup' ? 'Takeaway Counter Pickup' : (order.delivery_address || 'Home Delivery')}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* 3. Branch */}
+                            <td style={{ padding: '20px 22px', verticalAlign: 'top' }}>
                               <span style={{
-                                fontSize: '0.7rem',
-                                fontWeight: 700,
-                                padding: '1px 6px',
-                                borderRadius: '4px',
-                                backgroundColor: '#EAF0E2',
-                                color: '#475234',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '3px'
+                                gap: '6px',
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                backgroundColor: '#EAF0E2',
+                                color: '#2B3818',
+                                fontSize: '0.92rem',
+                                fontWeight: 800,
+                                border: '1px solid #D1DCC6',
+                                whiteSpace: 'nowrap'
                               }}>
-                                <Building size={10} /> {order.branch_name || 'Indiranagar'}
+                                <Building size={15} />
+                                {order.branch_name || 'Indiranagar (Flagship)'}
                               </span>
-                            </div>
-                            <div style={{ fontSize: '0.78rem', color: '#7E8775', marginTop: '2px' }}>
-                              {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          </div>
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.74rem',
-                            fontWeight: 700,
-                            backgroundColor: order.order_status === 'Delivered' ? '#E8F5E9' : '#FFF3E0',
-                            color: order.order_status === 'Delivered' ? '#2E7D32' : '#E65100'
-                          }}>
-                            {order.order_status}
-                          </span>
-                        </div>
+                            </td>
 
-                        <div style={{ borderTop: '1px solid #F2EFE9', paddingTop: '10px', marginBottom: '10px', fontSize: '0.84rem' }}>
-                          <div style={{ fontWeight: 600, color: '#1F241C' }}>{order.customer_name}</div>
-                          <div style={{ color: '#7E8775', fontSize: '0.78rem' }}>{order.customer_phone || 'No phone'}</div>
-                          <div style={{ color: '#556149', fontSize: '0.78rem', marginTop: '4px' }}>
-                            📍 {order.delivery_type === 'pickup' ? 'Takeaway Pickup at Counter' : (order.delivery_address || 'Home Delivery')}
-                          </div>
-                        </div>
+                            {/* 4. Items Ordered */}
+                            <td style={{ padding: '20px 22px', verticalAlign: 'top', maxWidth: '340px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {orderItems && orderItems.length > 0 ? (
+                                  orderItems.map((item, i) => (
+                                    <div
+                                      key={i}
+                                      style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        fontSize: '1rem',
+                                        color: '#242D1C',
+                                        padding: '4px 0',
+                                        borderBottom: i < orderItems.length - 1 ? '1px dashed #E5E0D5' : 'none'
+                                      }}
+                                    >
+                                      <span style={{ fontWeight: 700 }}>
+                                        <strong style={{
+                                          color: '#FFFFFF',
+                                          backgroundColor: '#85926B',
+                                          padding: '2px 7px',
+                                          borderRadius: '6px',
+                                          fontSize: '0.85rem',
+                                          marginRight: '6px'
+                                        }}>
+                                          {item.quantity}x
+                                        </strong>
+                                        {item.food_name || item.name}
+                                      </span>
+                                      <span style={{ color: '#475234', marginLeft: '12px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                                        ₹{(item.price || item.unit_price || 0) * (item.quantity || 1)}
+                                      </span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span style={{ fontSize: '0.95rem', color: '#7E8775', fontStyle: 'italic' }}>
+                                    Items recorded in receipt
+                                  </span>
+                                )}
+                              </div>
+                            </td>
 
-                        <div style={{ fontSize: '0.82rem', color: '#475234', marginBottom: '10px' }}>
-                          {orderItems?.map((item, idx) => (
-                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-                              <span>{item.quantity}x {item.food_name || item.name}</span>
-                              <span>₹{(item.price || item.unit_price || 0) * (item.quantity || 1)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                            {/* 5. Total Amount */}
+                            <td style={{ padding: '20px 22px', textAlign: 'right', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: 900, fontSize: '1.35rem', color: '#1F241C', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.3px' }}>
+                                ₹{Number(order.final_amount || order.total_amount || 0).toFixed(2)}
+                              </div>
+                              {order.discount_amount > 0 && (
+                                <div style={{
+                                  display: 'inline-block',
+                                  fontSize: '0.84rem',
+                                  color: '#E76F51',
+                                  fontWeight: 800,
+                                  backgroundColor: '#FBE9E7',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  marginTop: '4px'
+                                }}>
+                                  -₹{order.discount_amount} coupon
+                                </div>
+                              )}
+                            </td>
 
-                      <div style={{ borderTop: '1px solid #F2EFE9', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1F241C' }}>
-                          Total: ₹{order.final_amount}
-                        </span>
-                        <span style={{ fontStyle: 'italic', color: '#85926B', fontSize: '0.76rem' }}>
-                          Admin View-Only • Kitchen Managed
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                            {/* 6. Payment */}
+                            <td style={{ padding: '20px 22px', textAlign: 'center', verticalAlign: 'top' }}>
+                              <div style={{
+                                display: 'inline-flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}>
+                                <span style={{
+                                  padding: '5px 12px',
+                                  borderRadius: '8px',
+                                  fontSize: '0.88rem',
+                                  fontWeight: 800,
+                                  backgroundColor: '#F0EFEA',
+                                  color: '#263238',
+                                  border: '1px solid #D8D4CA'
+                                }}>
+                                  {order.payment_method || 'UPI'}
+                                </span>
+                                <span style={{
+                                  fontSize: '0.84rem',
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.3px',
+                                  color: order.payment_status === 'completed' || order.payment_status === 'paid' ? '#2E7D32' : '#E65100'
+                                }}>
+                                  ● {order.payment_status || 'completed'}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* 7. Live Order Status */}
+                            <td style={{ padding: '20px 22px', textAlign: 'center', verticalAlign: 'top' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '7px 18px',
+                                borderRadius: '24px',
+                                fontSize: '0.94rem',
+                                fontWeight: 900,
+                                backgroundColor: badge.bg,
+                                color: badge.text,
+                                border: `1.5px solid ${badge.border}`,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.06)'
+                              }}>
+                                {order.order_status || 'Order Placed'}
+                              </span>
+                              <div style={{ fontSize: '0.8rem', color: '#85926B', marginTop: '6px', fontWeight: 600 }}>
+                                Kitchen Managed
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -2296,16 +2485,34 @@ export function AdminPortal({
                       <span style={{ fontSize: '0.82rem', color: '#7E8775' }}>
                         Redeemed: <strong>{cp.times_used || 0} times</strong>
                       </span>
-                      <span style={{
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        padding: '3px 10px',
-                        borderRadius: '6px',
-                        backgroundColor: cp.is_active ? '#E8F5E9' : '#F5F5F5',
-                        color: cp.is_active ? '#2E7D32' : '#9E9E9E'
-                      }}>
-                        {cp.is_active ? 'ACTIVE' : 'INACTIVE'}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCouponStatus(cp)}
+                        style={{
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          padding: '4px 12px',
+                          borderRadius: '8px',
+                          backgroundColor: (cp.is_active === 1 || cp.is_active === true) ? '#E8F5E9' : '#F5F5F5',
+                          color: (cp.is_active === 1 || cp.is_active === true) ? '#2E7D32' : '#757575',
+                          border: '1px solid ' + ((cp.is_active === 1 || cp.is_active === true) ? '#A5D6A7' : '#E0E0E0'),
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                        title="Click to toggle Active / Inactive"
+                      >
+                        {(cp.is_active === 1 || cp.is_active === true) ? (
+                          <>
+                            <CheckCircle2 size={13} color="#2E7D32" /> ACTIVE
+                          </>
+                        ) : (
+                          <>
+                            <X size={13} color="#757575" /> INACTIVE
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -2323,22 +2530,14 @@ export function AdminPortal({
                 <div className="portal-header-title">
                   <h2>1. Hero Banner Slides</h2>
                   <div className="subtitle">
-                    Add dynamic hero slides with custom tags, titles, cursive script, button actions, and background colors
+                    Create dynamic promotional hero slides with custom tags, titles, cursive script, button actions, and background themes
                   </div>
                 </div>
                 <div className="portal-header-actions">
                   <button
-                    onClick={fetchHeroSlides}
-                    className="btn-secondary"
-                    style={{ padding: '10px 18px', fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                    title="Reload slides"
-                  >
-                    <RefreshCw size={16} /> Refresh
-                  </button>
-                  <button
                     onClick={openAddSlide}
                     className="btn-primary"
-                    style={{ padding: '10px 20px', fontSize: '0.92rem', whiteSpace: 'nowrap' }}
+                    style={{ padding: '10px 22px', fontSize: '0.94rem', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                   >
                     <Plus size={18} /> Add Hero Slide
                   </button>
@@ -2359,10 +2558,7 @@ export function AdminPortal({
                     Create custom promotional slides displayed on the customer landing and home pages.
                   </p>
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                    <button onClick={handleReloadDefaultSlides} className="btn-secondary" style={{ padding: '10px 20px', fontSize: '0.92rem' }}>
-                      <RefreshCw size={15} /> Reload Default Slides
-                    </button>
-                    <button onClick={openAddSlide} className="btn-primary" style={{ padding: '10px 20px', fontSize: '0.92rem' }}>
+                    <button onClick={openAddSlide} className="btn-primary" style={{ padding: '10px 22px', fontSize: '0.94rem' }}>
                       <Plus size={16} /> Add Hero Slide
                     </button>
                   </div>
@@ -2467,27 +2663,152 @@ export function AdminPortal({
             </div>
 
             {/* Section 2: Chef's Recommendation Management */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #ECE7DE', padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1F241C', marginBottom: '4px' }}>
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #ECE7DE', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '6px' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1F241C', margin: 0 }}>
                     2. Chef's Recommendation Highlights
                   </h3>
-                  <p style={{ fontSize: '0.9rem', color: '#65705C', margin: 0 }}>
-                    Select dishes from any category or search by name to feature on the Landing Page.
-                  </p>
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    backgroundColor: '#EAF0E2',
+                    color: '#3B4826',
+                    fontSize: '0.82rem',
+                    fontWeight: 700
+                  }}>
+                    {foods.filter((f) => f.is_featured === 1).length} Dishes Featured
+                  </span>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <p style={{ fontSize: '0.9rem', color: '#65705C', margin: 0 }}>
+                  These signature dishes appear prominently on the customer landing and home pages.
+                </p>
+              </div>
+
+              {/* 2A. Currently Added Chef's Recommendations */}
+              <div>
+                <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#3A442E', marginBottom: '12px', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+                  ⭐ Active Featured Dishes ({foods.filter((f) => f.is_featured === 1).length})
+                </h4>
+
+                {foods.filter((f) => f.is_featured === 1).length === 0 ? (
+                  <div style={{
+                    backgroundColor: '#FAF8F5',
+                    borderRadius: '14px',
+                    border: '1.5px dashed #DCE3D4',
+                    padding: '28px 20px',
+                    textAlign: 'center',
+                    color: '#65705C'
+                  }}>
+                    <UtensilsCrossed size={32} style={{ margin: '0 auto 8px', color: '#85926B', opacity: 0.8 }} />
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1F241C', marginBottom: '4px' }}>
+                      No Chef's Recommendations added yet
+                    </div>
+                    <p style={{ fontSize: '0.84rem', margin: 0 }}>
+                      Search below to add signature dishes to the highlights section.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
+                    {foods.filter((f) => f.is_featured === 1).map((food) => {
+                      const category = categories.find((c) => c.id === food.category_id);
+                      return (
+                        <div
+                          key={food.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px 14px',
+                            borderRadius: '14px',
+                            border: '1.5px solid #85926B',
+                            backgroundColor: '#F7FAF3',
+                            boxShadow: '0 2px 6px rgba(133, 146, 107, 0.1)'
+                          }}
+                        >
+                          <img
+                            src={food.image_url}
+                            alt=""
+                            style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#1F241C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {food.name}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#65705C', marginTop: '1px' }}>
+                              {category?.name || 'Signature'} • <strong style={{ color: '#85926B' }}>₹{food.price}</strong>
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.put(`/foods/${food.id}`, { is_featured: 0 });
+                                fetchFoods();
+                                setMessage(`Removed "${food.name}" from Chef's Recommendations.`);
+                              } catch (e) {
+                                alert('Failed to remove recommendation');
+                              }
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              backgroundColor: '#FFEBEE',
+                              color: '#C62828',
+                              border: '1px solid #FFCDD2',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                              transition: 'all 0.15s ease'
+                            }}
+                            title="Remove from featured highlights"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 2B. Search & Add More Dishes */}
+              <div style={{ borderTop: '1px solid #ECE7DE', paddingTop: '20px' }}>
+                <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#3A442E', marginBottom: '12px', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+                  🔍 Search & Add Food Dishes to Recommendations
+                </h4>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#85926B' }} />
+                    <input
+                      type="text"
+                      placeholder="Search dish by name to add..."
+                      value={chefSearchTerm}
+                      onChange={(e) => setChefSearchTerm(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px 10px 36px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #DCE3D4',
+                        fontSize: '0.92rem',
+                        outline: 'none',
+                        backgroundColor: '#FAF8F5'
+                      }}
+                    />
+                  </div>
+
                   <select
                     value={chefCatFilter}
                     onChange={(e) => setChefCatFilter(e.target.value)}
                     style={{
                       padding: '10px 14px',
                       borderRadius: '10px',
-                      border: '1px solid #DCE3D4',
+                      border: '1.5px solid #DCE3D4',
                       fontSize: '0.9rem',
                       fontWeight: 600,
-                      backgroundColor: '#FAF8F5'
+                      backgroundColor: '#FAF8F5',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="all">All Categories</option>
@@ -2495,77 +2816,86 @@ export function AdminPortal({
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
-                  <input
-                    type="text"
-                    placeholder="Search dish..."
-                    value={chefSearchTerm}
-                    onChange={(e) => setChefSearchTerm(e.target.value)}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: '10px',
-                      border: '1px solid #DCE3D4',
-                      fontSize: '0.9rem',
-                      width: '180px'
-                    }}
-                  />
                 </div>
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
-                {foods.filter((f) => {
-                  if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
-                  if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
-                  return true;
-                }).map((food) => (
-                  <div
-                    key={food.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '14px',
-                      border: food.is_featured ? '1.5px solid #85926B' : '1px solid #ECE7DE',
-                      backgroundColor: food.is_featured ? '#F5F7F2' : '#FFFFFF'
-                    }}
-                  >
-                    <img
-                      src={food.image_url}
-                      alt=""
-                      style={{ width: '44px', height: '44px', borderRadius: '10px', objectFit: 'cover' }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#1F241C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {food.name}
-                      </div>
-                      <div style={{ fontSize: '0.82rem', color: '#85926B', fontWeight: 600 }}>₹{food.price}</div>
+                {/* Unfeatured Dishes Available to Add */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', maxHeight: '280px', overflowY: 'auto', paddingRight: '4px' }}>
+                  {foods
+                    .filter((f) => {
+                      if (f.is_featured === 1) return false; // hide already added dishes
+                      if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
+                      if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
+                      return true;
+                    })
+                    .map((food) => {
+                      const category = categories.find((c) => c.id === food.category_id);
+                      return (
+                        <div
+                          key={food.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            border: '1px solid #ECE7DE',
+                            backgroundColor: '#FFFFFF',
+                            transition: 'border-color 0.15s ease'
+                          }}
+                        >
+                          <img
+                            src={food.image_url}
+                            alt=""
+                            style={{ width: '42px', height: '42px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1F241C', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {food.name}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#7E8775' }}>
+                              {category?.name || 'Dish'} • <strong style={{ color: '#475234' }}>₹{food.price}</strong>
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.put(`/foods/${food.id}`, { is_featured: 1 });
+                                fetchFoods();
+                                setMessage(`Added "${food.name}" to Chef's Recommendations.`);
+                              } catch (e) {
+                                alert('Failed to add recommendation');
+                              }
+                            }}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              backgroundColor: '#EAEFE6',
+                              color: '#3B4725',
+                              border: '1px solid #DCE3D4',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            + Add
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                  {foods.filter((f) => {
+                    if (f.is_featured === 1) return false;
+                    if (chefCatFilter !== 'all' && f.category_id !== Number(chefCatFilter)) return false;
+                    if (chefSearchTerm.trim() && !f.name.toLowerCase().includes(chefSearchTerm.toLowerCase())) return false;
+                    return true;
+                  }).length === 0 && (
+                    <div style={{ gridColumn: '1 / -1', padding: '18px', textAlign: 'center', color: '#7E8775', fontSize: '0.86rem', fontStyle: 'italic' }}>
+                      {chefSearchTerm.trim() ? `No unadded dishes matching "${chefSearchTerm}" found.` : 'All available dishes in this category are already added to Chef’s Recommendations.'}
                     </div>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await api.put(`/foods/${food.id}`, { is_featured: food.is_featured ? 0 : 1 });
-                          fetchFoods();
-                          setMessage(food.is_featured ? `Removed "${food.name}" from featured highlights.` : `Added "${food.name}" to featured highlights.`);
-                        } catch (e) {
-                          alert('Failed to update recommendation status');
-                        }
-                      }}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '8px',
-                        fontSize: '0.82rem',
-                        fontWeight: 700,
-                        backgroundColor: food.is_featured ? '#FFEBEE' : '#EAEFE6',
-                        color: food.is_featured ? '#C62828' : '#475234',
-                        border: food.is_featured ? '1px solid #FFCDD2' : '1px solid #DCE3D4',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      {food.is_featured ? 'Remove' : '+ Add'}
-                    </button>
-                  </div>
-                ))}
+                  )}
+                </div>
               </div>
             </div>
 
@@ -4151,15 +4481,111 @@ export function AdminPortal({
         )}
         {/* ADD / EDIT HERO BANNER SLIDE MODAL */}
         {showSlideModal && (
-          <div className="modal-overlay" style={{ zIndex: 1100 }}>
-            <div className="modal-container" style={{ maxWidth: '640px', width: '90%' }}>
+          <div className="modal-overlay" onClick={() => setShowSlideModal(false)} style={{ zIndex: 1100 }}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', margin: 0 }}>
-                  {editingSlide ? `Edit Hero Slide #${editingSlide.id}` : 'Add New Hero Banner Slide'}
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F241C', margin: 0 }}>
+                  {editingSlide ? `Edit Hero Slide #${editingSlide.id}` : 'Create New Hero Banner Slide'}
                 </h3>
-                <button onClick={() => setShowSlideModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#65705C' }}>
+                <button
+                  onClick={() => setShowSlideModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#65705C' }}
+                >
                   <X size={20} />
                 </button>
+              </div>
+
+              {/* Live Banner Preview Card */}
+              <div style={{
+                backgroundColor: slideForm.bg_color || '#85926B',
+                borderRadius: '16px',
+                padding: '20px',
+                color: '#FFFFFF',
+                position: 'relative',
+                overflow: 'hidden',
+                marginBottom: '18px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '16px',
+                minHeight: '140px'
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(255,255,255,0.22)',
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.8px',
+                    marginBottom: '6px',
+                    textTransform: 'uppercase'
+                  }}>
+                    {slideForm.tag || 'CHEF SIGNATURE'}
+                  </div>
+                  <div style={{
+                    fontFamily: "'Caveat', cursive",
+                    fontSize: '1.8rem',
+                    color: '#F4F8EC',
+                    lineHeight: 1.1,
+                    marginBottom: '4px'
+                  }}>
+                    {slideForm.script || 'Savor Every Bite'}
+                  </div>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '1.15rem',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    marginBottom: '6px'
+                  }}>
+                    {slideForm.title || 'Slide Headline Title'}
+                  </div>
+                  <p style={{
+                    fontSize: '0.8rem',
+                    color: '#F0F4E8',
+                    opacity: 0.9,
+                    margin: '0 0 10px',
+                    lineHeight: 1.4,
+                    maxWidth: '380px'
+                  }}>
+                    {slideForm.desc || 'Slide description text...'}
+                  </p>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    backgroundColor: '#E76F51',
+                    color: '#FFFFFF',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700
+                  }}>
+                    {slideForm.button_text || 'Order Now'} &rarr;
+                  </div>
+                </div>
+
+                {slideForm.image_url && (
+                  <div style={{
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '14px',
+                    overflow: 'hidden',
+                    border: '2px solid rgba(255,255,255,0.6)',
+                    flexShrink: 0,
+                    backgroundColor: 'rgba(255,255,255,0.1)'
+                  }}>
+                    <img
+                      src={slideForm.image_url}
+                      alt="Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                )}
               </div>
 
               <form onSubmit={handleSaveHeroSlide} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -4228,6 +4654,58 @@ export function AdminPortal({
                   placeholder="https://images.unsplash.com/..."
                 />
 
+                {/* Theme Background Color Selection */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '6px' }}>
+                    Banner Background Theme Color
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {[
+                      { hex: '#85926B', label: 'Flagship Green' },
+                      { hex: '#949E7C', label: 'Organic Sage' },
+                      { hex: '#8B9474', label: 'Forest Olive' },
+                      { hex: '#969F82', label: 'Matcha Herb' },
+                      { hex: '#E76F51', label: 'Terracotta Coral' },
+                      { hex: '#3E4D38', label: 'Dark Botanical' }
+                    ].map((color) => (
+                      <button
+                        key={color.hex}
+                        type="button"
+                        onClick={() => setSlideForm({ ...slideForm, bg_color: color.hex })}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: color.hex,
+                          border: slideForm.bg_color === color.hex ? '3px solid #1F241C' : '2px solid rgba(0,0,0,0.1)',
+                          cursor: 'pointer',
+                          boxShadow: slideForm.bg_color === color.hex ? '0 0 0 2px #FFFFFF' : 'none',
+                          transition: 'transform 0.15s ease'
+                        }}
+                        title={color.label}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={slideForm.bg_color || '#85926B'}
+                      onChange={(e) => setSlideForm({ ...slideForm, bg_color: e.target.value })}
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        padding: 0,
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        backgroundColor: 'transparent'
+                      }}
+                      title="Custom Color"
+                    />
+                    <span style={{ fontSize: '0.82rem', color: '#65705C', fontWeight: 600 }}>
+                      {slideForm.bg_color || '#85926B'}
+                    </span>
+                  </div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
@@ -4263,8 +4741,217 @@ export function AdminPortal({
                   <button type="button" onClick={() => setShowSlideModal(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary" style={{ padding: '8px 20px' }}>
+                  <button type="submit" className="btn-primary" style={{ padding: '8px 22px' }}>
                     {editingSlide ? 'Update Hero Slide' : 'Create Hero Slide'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ADD / EDIT COUPON MODAL */}
+        {showCouponModal && (
+          <div className="modal-overlay" onClick={() => setShowCouponModal(false)} style={{ zIndex: 1100 }}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1F241C', margin: 0 }}>
+                  {editingCoupon ? `Edit Coupon: ${editingCoupon.code}` : 'Create New Promo Coupon'}
+                </h3>
+                <button
+                  onClick={() => setShowCouponModal(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#65705C' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Live Coupon Preview */}
+              <div style={{
+                backgroundColor: '#FAF8F5',
+                border: '1.5px dashed #85926B',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                marginBottom: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px'
+              }}>
+                <div>
+                  <span style={{
+                    fontFamily: 'monospace',
+                    fontWeight: 800,
+                    fontSize: '1.2rem',
+                    backgroundColor: '#EBF0E4',
+                    color: '#324022',
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    display: 'inline-block',
+                    marginBottom: '6px'
+                  }}>
+                    {couponForm.code || 'COUPONCODE'}
+                  </span>
+                  <div style={{ fontWeight: 800, fontSize: '1.15rem', color: '#E76F51' }}>
+                    {couponForm.discount_type === 'percentage'
+                      ? `${couponForm.discount_value || 0}% OFF`
+                      : `₹${couponForm.discount_value || 0} FLAT DISCOUNT`}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#65705C', marginTop: '2px' }}>
+                    Min Cart Total: ₹{couponForm.min_order_value || 0}
+                    {couponForm.max_discount ? ` • Max Cap: ₹${couponForm.max_discount}` : ''}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    backgroundColor: (couponForm.is_active === 1 || couponForm.is_active === true) ? '#E8F5E9' : '#FFEBEE',
+                    color: (couponForm.is_active === 1 || couponForm.is_active === true) ? '#2E7D32' : '#C62828'
+                  }}>
+                    {(couponForm.is_active === 1 || couponForm.is_active === true) ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSaveCoupon} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    Coupon Code (Uppercase) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. FESTIVE30, SUPERSAVER"
+                    value={couponForm.code}
+                    onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                    className="form-input"
+                    style={{ textTransform: 'uppercase', fontFamily: 'monospace', fontWeight: 700 }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Discount Type *
+                    </label>
+                    <select
+                      value={couponForm.discount_type}
+                      onChange={(e) => setCouponForm({ ...couponForm, discount_type: e.target.value })}
+                      className="form-select"
+                    >
+                      <option value="percentage">Percentage (%)</option>
+                      <option value="fixed">Fixed Amount (₹)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Discount Value * {couponForm.discount_type === 'percentage' ? '(%)' : '(₹)'}
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      step="any"
+                      placeholder={couponForm.discount_type === 'percentage' ? 'e.g. 20' : 'e.g. 100'}
+                      value={couponForm.discount_value}
+                      onChange={(e) => setCouponForm({ ...couponForm, discount_value: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Minimum Order Value (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 299 (0 for none)"
+                      value={couponForm.min_order_value}
+                      onChange={(e) => setCouponForm({ ...couponForm, min_order_value: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Max Discount Cap (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 150 (leave empty for unlimited)"
+                      value={couponForm.max_discount}
+                      onChange={(e) => setCouponForm({ ...couponForm, max_discount: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Valid From (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={couponForm.start_date || ''}
+                      onChange={(e) => setCouponForm({ ...couponForm, start_date: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      Valid Until / Expiry (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={couponForm.end_date || ''}
+                      onChange={(e) => setCouponForm({ ...couponForm, end_date: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  padding: '10px 14px',
+                  backgroundColor: '#FAF8F5',
+                  borderRadius: '10px',
+                  border: '1px solid #ECE7DE'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={couponForm.is_active === 1 || couponForm.is_active === true}
+                    onChange={(e) => setCouponForm({ ...couponForm, is_active: e.target.checked ? 1 : 0 })}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1F241C' }}>
+                      Coupon is Active
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: '#65705C' }}>
+                      When active, customers can apply this code during checkout
+                    </div>
+                  </div>
+                </label>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px' }}>
+                  <button type="button" onClick={() => setShowCouponModal(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ padding: '8px 22px' }}>
+                    {editingCoupon ? 'Update Coupon' : 'Create Coupon'}
                   </button>
                 </div>
               </form>

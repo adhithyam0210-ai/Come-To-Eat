@@ -35,19 +35,30 @@ export function OffersPage({ onNavigateToMenu, onSelectCategory, selectedBranch 
       bg_color: '#E76F51'
     }
   ]);
+  const [coupons, setCoupons] = useState([]);
+  const [copiedCode, setCopiedCode] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const branchParam = selectedBranch?.id ? `?branch_id=${selectedBranch.id}` : '';
-    api.get(`/offers${branchParam}`)
-      .then((res) => {
-        if (res.success && res.offers && res.offers.length > 0) {
-          setOfferBanners(res.offers);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      api.get(`/offers${branchParam}`).catch(() => ({ success: false })),
+      api.get('/coupons/active').catch(() => ({ success: false }))
+    ]).then(([offersRes, couponsRes]) => {
+      if (offersRes && offersRes.success && offersRes.offers && offersRes.offers.length > 0) {
+        setOfferBanners(offersRes.offers);
+      }
+      if (couponsRes && couponsRes.success && couponsRes.coupons) {
+        setCoupons(couponsRes.coupons);
+      }
+    }).finally(() => setLoading(false));
   }, [selectedBranch]);
+
+  const handleCopyCode = (code) => {
+    navigator.clipboard?.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(''), 3000);
+  };
 
   const handleBannerAction = (banner) => {
     if (banner.target_category && onSelectCategory) {
@@ -307,6 +318,135 @@ export function OffersPage({ onNavigateToMenu, onSelectCategory, selectedBranch 
             </div>
           ))}
         </div>
+
+        {/* Active Promo Codes Section */}
+        {coupons.length > 0 && (
+          <div style={{ marginTop: '56px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: '#EBF0E4',
+                color: '#475234',
+                padding: '4px 14px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                marginBottom: '10px'
+              }}>
+                <Tag size={14} color="#85926B" /> Instant Checkout Promos
+              </div>
+              <h2 style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+                color: '#1F241C',
+                fontWeight: 800,
+                margin: 0
+              }}>
+                Available Café Coupons
+              </h2>
+              <p style={{ color: '#65705C', fontSize: '0.92rem', marginTop: '6px' }}>
+                Copy any promo code below and apply it in your bag for immediate bill discounts
+              </p>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '20px'
+            }}>
+              {coupons.map((cp) => (
+                <div
+                  key={cp.id || cp.code}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '18px',
+                    border: '1.5px dashed #85926B',
+                    padding: '22px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                    position: 'relative'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{
+                        fontFamily: 'monospace',
+                        fontWeight: 800,
+                        fontSize: '1.25rem',
+                        backgroundColor: '#F3F6EE',
+                        color: '#324022',
+                        padding: '6px 14px',
+                        borderRadius: '10px',
+                        letterSpacing: '1px'
+                      }}>
+                        {cp.code}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyCode(cp.code)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '10px',
+                          backgroundColor: copiedCode === cp.code ? '#2E7D32' : '#85926B',
+                          color: '#FFFFFF',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          border: 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {copiedCode === cp.code ? 'Copied!' : 'Copy Code'}
+                      </button>
+                    </div>
+
+                    <div style={{
+                      fontWeight: 800,
+                      fontSize: '1.35rem',
+                      color: '#E76F51',
+                      marginBottom: '6px'
+                    }}>
+                      {cp.discount_type === 'percentage'
+                        ? `Flat ${cp.discount_value}% OFF`
+                        : `Flat ₹${cp.discount_value} OFF`}
+                    </div>
+
+                    <p style={{ fontSize: '0.86rem', color: '#65705C', margin: 0, lineHeight: 1.45 }}>
+                      {cp.min_order_value > 0
+                        ? `Valid on orders above ₹${cp.min_order_value}`
+                        : 'Valid on all order amounts'}
+                      {cp.max_discount > 0 && cp.discount_type === 'percentage'
+                        ? ` (Max savings ₹${cp.max_discount})`
+                        : ''}
+                    </p>
+                  </div>
+
+                  <div style={{
+                    marginTop: '16px',
+                    paddingTop: '12px',
+                    borderTop: '1px solid #F0F4E8',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '0.78rem',
+                    color: '#7E8775'
+                  }}>
+                    <span>
+                      {(cp.end_date || cp.expires_at)
+                        ? `Expires: ${cp.end_date || cp.expires_at}`
+                        : 'Limited Time Café Offer'}
+                    </span>
+                    <span style={{ color: '#2E7D32', fontWeight: 700 }}>● Active</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

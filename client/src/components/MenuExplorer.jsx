@@ -400,11 +400,7 @@ export function MenuExplorer({
         )}
 
         {/* Food Items Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-          gap: '24px'
-        }}>
+        <div className="card-grid-responsive">
           {filteredFoods.map((item) => {
             const hasAddons = item.addons && item.addons.length > 0;
             const isSoldOut = !item.is_available;
@@ -412,81 +408,51 @@ export function MenuExplorer({
             return (
               <div
                 key={item.id}
+                className="food-card-responsive"
                 style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '24px',
-                  overflow: 'hidden',
-                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.04)',
-                  border: '1px solid rgba(133, 146, 107, 0.16)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  opacity: isSoldOut ? 0.75 : 1,
-                  transition: 'transform 0.25s ease, box-shadow 0.25s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSoldOut) {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(133, 146, 107, 0.18)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.04)';
+                  opacity: isSoldOut ? 0.75 : 1
                 }}
               >
                 {/* Food Image Container */}
                 <div
                   onClick={() => onOpenItemDetail(item)}
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: '190px',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    backgroundColor: '#F0F4E8'
-                  }}
+                  className="food-card-img-box"
                 >
                   <img
                     src={item.image_url}
                     alt={item.name}
                     loading="lazy"
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80'; }}
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      filter: isSoldOut ? 'grayscale(80%)' : 'none',
-                      transition: 'transform 0.5s ease'
+                      filter: isSoldOut ? 'grayscale(80%)' : 'none'
                     }}
-                    onMouseEnter={(e) => { if (!isSoldOut) e.currentTarget.style.transform = 'scale(1.06)'; }}
-                    onMouseLeave={(e) => { if (!isSoldOut) e.currentTarget.style.transform = 'scale(1)'; }}
                   />
 
                   {/* Top Badges */}
                   <div style={{
                     position: 'absolute',
-                    top: '12px',
-                    left: '12px',
+                    top: '8px',
+                    left: '8px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '6px'
+                    gap: '4px'
                   }}>
                     <div style={{
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      padding: '3px 8px',
+                      padding: '2px 6px',
                       borderRadius: '6px',
                       backdropFilter: 'blur(4px)',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                     }}>
-                      <DietaryBadge isVeg={item.is_veg} showText={true} size={12} />
+                      <DietaryBadge isVeg={item.is_veg} showText={true} size={11} />
                     </div>
                     {item.discount_price && !isSoldOut && (
                       <span style={{
                         backgroundColor: '#E76F51',
                         color: '#FFF',
-                        padding: '2px 8px',
+                        padding: '2px 6px',
                         borderRadius: '4px',
-                        fontSize: '0.7rem',
+                        fontSize: '0.65rem',
                         fontWeight: 800
                       }}>
                         SAVE ₹{item.price - item.discount_price}
@@ -507,11 +473,10 @@ export function MenuExplorer({
                       justifyContent: 'center',
                       color: '#FFFFFF'
                     }}>
-                      <AlertCircle size={24} color="#FFCDD2" />
-                      <span style={{ fontWeight: 800, fontSize: '0.88rem', marginTop: '6px', letterSpacing: '0.5px' }}>
-                        SOLD OUT TODAY
+                      <AlertCircle size={20} color="#FFCDD2" />
+                      <span style={{ fontWeight: 800, fontSize: '0.8rem', marginTop: '4px', letterSpacing: '0.5px' }}>
+                        SOLD OUT
                       </span>
-                      <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>Back in kitchen soon</span>
                     </div>
                   )}
 
@@ -519,104 +484,104 @@ export function MenuExplorer({
                   {!isSoldOut && (
                     <div style={{
                       position: 'absolute',
-                      bottom: '10px',
-                      right: '10px',
+                      bottom: '8px',
+                      right: '8px',
                       backgroundColor: 'rgba(255, 255, 255, 0.92)',
                       backdropFilter: 'blur(4px)',
-                      padding: '3px 8px',
-                      borderRadius: '12px',
-                      fontSize: '0.72rem',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      fontSize: '0.68rem',
                       fontWeight: 700,
                       color: '#475234',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px'
+                      gap: '3px'
                     }}>
-                      <Clock size={12} /> {item.prep_time}
+                      <Clock size={11} /> {item.prep_time}
                     </div>
                   )}
                 </div>
 
                 {/* Content */}
-                <div style={{ padding: '16px 18px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  {/* Category Name & Rating */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '6px'
-                  }}>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.8px',
-                      color: '#85926B',
-                      fontWeight: 700
+                <div className="food-card-body-box">
+                  <div>
+                    {/* Category Name & Rating */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '4px'
                     }}>
-                      {item.category_name}
-                    </span>
+                      <span style={{
+                        fontSize: '0.68rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.6px',
+                        color: '#85926B',
+                        fontWeight: 700
+                      }}>
+                        {item.category_name}
+                      </span>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#D97706', fontSize: '0.82rem', fontWeight: 700 }}>
-                      <Star size={14} fill="#F59E0B" color="#F59E0B" />
-                      <span>{item.rating}</span>
-                      <span style={{ color: '#97A38C', fontWeight: 400 }}>({item.rating_count})</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#D97706', fontSize: '0.78rem', fontWeight: 700 }}>
+                        <Star size={12} fill="#F59E0B" color="#F59E0B" />
+                        <span>{item.rating || '4.8'}</span>
+                      </div>
                     </div>
+
+                    {/* Food Name */}
+                    <h4
+                      onClick={() => onOpenItemDetail(item)}
+                      className="food-card-title-text"
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: '1.08rem',
+                        fontWeight: 700,
+                        color: '#1F241C',
+                        marginBottom: '4px',
+                        cursor: 'pointer',
+                        lineHeight: 1.25
+                      }}
+                    >
+                      {item.name}
+                    </h4>
+
+                    {/* Short Description */}
+                    <p
+                      className="food-card-desc-text"
+                      style={{
+                        fontSize: '0.8rem',
+                        color: '#65705C',
+                        lineHeight: '1.38',
+                        marginBottom: '10px'
+                      }}
+                    >
+                      {item.description}
+                    </p>
                   </div>
-
-                  {/* Food Name */}
-                  <h4
-                    onClick={() => onOpenItemDetail(item)}
-                    style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: '1.15rem',
-                      fontWeight: 700,
-                      color: '#1F241C',
-                      marginBottom: '6px',
-                      cursor: 'pointer',
-                      lineHeight: 1.25
-                    }}
-                  >
-                    {item.name}
-                  </h4>
-
-                  {/* Short Description */}
-                  <p style={{
-                    fontSize: '0.84rem',
-                    color: '#65705C',
-                    lineHeight: 1.45,
-                    marginBottom: '14px',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    flex: 1
-                  }}>
-                    {item.description}
-                  </p>
 
                   {/* Price & Action Row */}
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    paddingTop: '12px',
+                    paddingTop: '8px',
                     borderTop: '1px solid #F3F6EE',
                     marginTop: 'auto'
                   }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                        <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#2A3324' }}>
-                          ₹{item.discount_price !== null ? item.discount_price : item.price}
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
+                        <span className="food-card-price-text" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#2A3324' }}>
+                          ₹{item.discount_price !== null && item.discount_price !== undefined ? item.discount_price : item.price}
                         </span>
-                        {item.discount_price !== null && (
-                          <span style={{ fontSize: '0.82rem', textDecoration: 'line-through', color: '#9AA590' }}>
+                        {item.discount_price !== null && item.discount_price !== undefined && (
+                          <span style={{ fontSize: '0.76rem', textDecoration: 'line-through', color: '#9AA590' }}>
                             ₹{item.price}
                           </span>
                         )}
                       </div>
                       {hasAddons && (
-                        <div style={{ fontSize: '0.68rem', color: '#85926B', fontWeight: 600 }}>
-                          + Customizations available
+                        <div style={{ fontSize: '0.64rem', color: '#85926B', fontWeight: 600 }}>
+                          + Options
                         </div>
                       )}
                     </div>
@@ -630,22 +595,23 @@ export function MenuExplorer({
                         }
                       }}
                       disabled={isSoldOut}
+                      className="food-card-add-btn"
                       style={{
                         backgroundColor: isSoldOut ? '#CBD4C0' : '#85926B',
                         color: '#FFFFFF',
-                        padding: '8px 16px',
+                        padding: '6px 14px',
                         borderRadius: '9999px',
                         fontWeight: 700,
-                        fontSize: '0.85rem',
+                        fontSize: '0.8rem',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
+                        gap: '4px',
                         cursor: isSoldOut ? 'not-allowed' : 'pointer',
-                        boxShadow: isSoldOut ? 'none' : '0 3px 10px rgba(133, 146, 107, 0.3)'
+                        boxShadow: isSoldOut ? 'none' : '0 2px 8px rgba(133, 146, 107, 0.25)'
                       }}
                     >
-                      <Plus size={15} />
-                      <span>{isSoldOut ? 'Unavailable' : hasAddons ? 'Customize' : 'Add'}</span>
+                      <Plus size={14} />
+                      <span>{isSoldOut ? 'Out' : hasAddons ? 'Customize' : 'Add'}</span>
                     </button>
                   </div>
                 </div>
