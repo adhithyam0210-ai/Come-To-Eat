@@ -306,35 +306,32 @@ const DEFAULT_ORDERS = [
   }
 ];
 
-// In-Memory & LocalStorage persistent stores
-function getStore(key, fallback) {
-  try {
-    const val = localStorage.getItem(`cte_${key}`);
-    return val ? JSON.parse(val) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-}
-
-function setStore(key, data) {
-  try {
-    localStorage.setItem(`cte_${key}`, JSON.stringify(data));
-  } catch (e) {}
-}
-
+// localStorage — used ONLY for user session data, orders, and addresses (never for admin-editable content)
 function getStoredOrders() {
-  return getStore('local_orders', DEFAULT_ORDERS);
+  try {
+    const raw = localStorage.getItem('cte_local_orders');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
 }
 
 function saveStoredOrder(order) {
-  const current = getStoredOrders();
-  const existingIdx = current.findIndex(o => o.id === order.id || o.order_number === order.order_number);
-  if (existingIdx >= 0) {
-    current[existingIdx] = { ...current[existingIdx], ...order };
-  } else {
-    current.unshift(order);
-  }
-  setStore('local_orders', current);
+  const all = getStoredOrders();
+  const idx = all.findIndex(o => o.id === order.id || o.order_number === order.order_number);
+  if (idx >= 0) { all[idx] = { ...all[idx], ...order }; } else { all.unshift(order); }
+  try { localStorage.setItem('cte_local_orders', JSON.stringify(all.slice(0, 50))); } catch (e) {}
+}
+
+/**
+ * After any Supabase write, re-fetch the entire table and broadcast to all clients.
+ * Guarantees the broadcast payload is always cloud-fresh — never a stale merged version.
+ */
+async function refetchAndBroadcast(table, broadcastFn, orderBy = 'id') {
+  if (!supabase) return [];
+  try {
+    const { data } = await supabase.from(table).select('*').order(orderBy, { ascending: true });
+    if (data && broadcastFn) broadcastFn(data);
+    return data || [];
+  } catch (e) { return []; }
 }
 
 // ==============================================================================
@@ -545,254 +542,140 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // -------------------------------------------------------------
   // 2. CATEGORIES
   // -------------------------------------------------------------
+  // ── CATEGORIES (Admin → Supabase → broadcast to all users) ──────────────────
   if (cleanPath === '/categories' || cleanPath === '/categories/admin') {
     if (supabase) {
       try {
-        let q = supabase.from('categories').select('*').order('sort_order', { ascending: true });
-        if (cleanPath === '/categories') q = q.eq('is_active', 1);
-        const { data, error } = await q;
-        if (!error && data && data.length) return { success: true, categories: data };
+        const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+        if (!error && data) {
+          // Client-side active filter handles both boolean true and integer 1
+          const result = cleanPath === '/categories'
+            ? data.filter(c => c.is_active !== false && c.is_active !== 0)
+            : data;
+          return { success: true, categories: result };
+        }
       } catch (e) {}
     }
-    const localCategories = getStore('categories', DEFAULT_CATEGORIES);
-    return { success: true, categories: cleanPath === '/categories' ? localCategories.filter(c => c.is_active !== 0) : localCategories };
+    return { success: true, categories: DEFAULT_CATEGORIES };
   }
 
   if (cleanPath === '/categories' && method === 'POST') {
-    const slug = body.slug || createSlug(body.name);
     const catPayload = {
       name: body.name || 'New Category',
-      slug: slug,
+      slug: body.slug || createSlug(body.name),
       description: body.description || '',
       image_url: body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
       sort_order: body.sort_order !== undefined ? Number(body.sort_order) : 99,
-      is_active: body.is_active !== undefined ? Number(body.is_active) : 1
+      is_active: body.is_active !== undefined ? body.is_active : true
     };
-
-    let created = null;
-    if (supabase) {
-      try {
-        const { data: existingCats } = await supabase.from('categories').select('id');
-        const maxId = existingCats && existingCats.length > 0 ? Math.max(...existingCats.map(c => c.id || 0)) : 0;
-        const insertObj = maxId > 0 ? { id: maxId + 1, ...catPayload } : catPayload;
-        const { data, error } = await supabase.from('categories').insert([insertObj]).select().single();
-        if (!error && data) created = data;
-      } catch (e) {}
-    }
-    if (!created) {
-      created = { id: Date.now(), ...catPayload };
-    }
-    const current = getStore('categories', DEFAULT_CATEGORIES);
-    current.push(created);
-    setStore('categories', current);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: current }));
-    }
-    broadcastCategories(current);
-    return { success: true, category: created };
+    if (!supabase) return { success: false, message: 'Database not connected' };
+    const { data, error } = await supabase.from('categories').insert([catPayload]).select().single();
+    if (error) throw new Error(error.message);
+    const fresh = await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: fresh }));
+    return { success: true, category: data };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'PUT') {
     const id = cleanPath.split('/')[2];
+    if (!supabase) return { success: false, message: 'Database not connected' };
     const updatePayload = { ...body };
     if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
-    if (body.sort_order !== undefined) updatePayload.sort_order = Number(body.sort_order);
-    if (body.is_active !== undefined) updatePayload.is_active = Number(body.is_active);
-
-    let updated = null;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', id).select().single();
-        if (!error && data) updated = data;
-      } catch (e) {}
-    }
-    if (!updated) {
-      updated = { id: Number(id) || id, ...updatePayload };
-    }
-    const current = getStore('categories', DEFAULT_CATEGORIES);
-    const idx = current.findIndex(c => String(c.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...updated };
-    setStore('categories', current);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: current }));
-    }
-    broadcastCategories(current);
-    return { success: true, category: updated };
+    const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', id).select().single();
+    if (error) throw new Error(error.message);
+    const fresh = await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: fresh }));
+    return { success: true, category: data };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'DELETE') {
     const id = cleanPath.split('/')[2];
-    if (supabase) {
-      try {
-        await supabase.from('categories').delete().eq('id', id);
-      } catch (e) {}
-    }
-    const current = getStore('categories', DEFAULT_CATEGORIES).filter(c => String(c.id) !== String(id));
-    setStore('categories', current);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: current }));
-    }
-    broadcastCategories(current);
+    if (supabase) { try { await supabase.from('categories').delete().eq('id', id); } catch (e) {} }
+    const fresh = await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: fresh }));
     return { success: true, message: 'Category deleted' };
   }
 
-  // -------------------------------------------------------------
-  // 3. FOOD ITEMS
-  // -------------------------------------------------------------
+  // ── FOODS (Admin → Supabase → broadcast to all users) ─────────────────────
   if (cleanPath === '/foods') {
     if (supabase) {
       try {
         const { data, error } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-        if (!error && data && data.length) return { success: true, foods: data };
+        if (!error && data) return { success: true, foods: data };
       } catch (e) {}
     }
-    const localFoods = getStore('foods', DEFAULT_FOODS);
-    return { success: true, foods: localFoods };
+    return { success: true, foods: DEFAULT_FOODS };
   }
 
   if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
     const id = cleanPath.split('/')[2];
-    let nextAvailable = 1;
     if (supabase) {
       try {
         const { data: item } = await supabase.from('food_items').select('is_available').eq('id', id).single();
         if (item) {
-          nextAvailable = item.is_available === 1 ? 0 : 1;
-          const { data } = await supabase.from('food_items').update({ is_available: nextAvailable }).eq('id', id).select().single();
-          if (data) {
-            const allFoodsRes = await supabase.from('food_items').select('*').order('id', { ascending: true });
-            if (allFoodsRes.data) {
-              setStore('foods', allFoodsRes.data);
-              broadcastFoods(allFoodsRes.data);
-              if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: allFoodsRes.data }));
-              }
-            }
-            return { success: true, food: data };
-          }
+          // Handle both boolean and integer column types
+          const isAvailable = item.is_available === true || item.is_available === 1;
+          const { data } = await supabase.from('food_items').update({ is_available: !isAvailable }).eq('id', id).select().single();
+          const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
+          return { success: true, food: data };
         }
       } catch (e) {}
     }
-    const current = getStore('foods', DEFAULT_FOODS);
-    const item = current.find(f => String(f.id) === String(id));
-    if (item) item.is_available = item.is_available === 1 ? 0 : 1;
-    setStore('foods', current);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
-    }
-    broadcastFoods(current);
-    return { success: true, message: 'Availability toggled', food: item };
+    return { success: true, message: 'Availability toggled' };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'GET') {
     const id = cleanPath.split('/')[2];
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('food_items').select('*').eq('id', id).single();
-        if (!error && data) return { success: true, food: data };
+        const { data } = await supabase.from('food_items').select('*').eq('id', id).single();
+        if (data) return { success: true, food: data };
       } catch (e) {}
     }
-    const localFoods = getStore('foods', DEFAULT_FOODS);
-    const match = localFoods.find(f => String(f.id) === String(id)) || localFoods[0];
-    return { success: true, food: match };
+    return { success: true, food: DEFAULT_FOODS.find(f => String(f.id) === String(id)) || DEFAULT_FOODS[0] };
   }
 
   if (cleanPath === '/foods' && method === 'POST') {
-    const slug = body.slug || createSlug(body.name);
+    if (!supabase) return { success: false, message: 'Database not connected' };
     const foodPayload = {
       name: body.name || 'Delicious Dish',
-      slug: slug,
+      slug: body.slug || createSlug(body.name),
       category_id: body.category_id ? Number(body.category_id) : 1,
       price: Number(body.price) || 0,
       discount_price: body.discount_price ? Number(body.discount_price) : null,
-      is_veg: body.is_veg !== undefined ? Number(body.is_veg) : 1,
-      is_available: body.is_available !== undefined ? Number(body.is_available) : 1,
+      is_veg: body.is_veg !== undefined ? Boolean(Number(body.is_veg)) : true,
+      is_available: body.is_available !== undefined ? Boolean(Number(body.is_available)) : true,
+      is_featured: body.is_featured !== undefined ? Boolean(Number(body.is_featured)) : false,
       prep_time: body.prep_time || '15 min',
       image_url: body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
       description: body.description || '',
-      is_featured: body.is_featured !== undefined ? Number(body.is_featured) : 0,
       rating: body.rating ? Number(body.rating) : 4.8
     };
-
-    let created = null;
-    if (supabase) {
-      try {
-        const { data: existingFoods } = await supabase.from('food_items').select('id');
-        const maxId = existingFoods && existingFoods.length > 0 ? Math.max(...existingFoods.map(f => f.id || 0)) : 0;
-        const insertObj = maxId > 0 ? { id: maxId + 1, ...foodPayload } : foodPayload;
-        const { data, error } = await supabase.from('food_items').insert([insertObj]).select().single();
-        if (!error && data) created = data;
-        else if (error) console.warn('[Supabase Food Insert Error]:', error.message);
-      } catch (e) {}
-    }
-
-    if (!created) {
-      created = { id: Date.now(), ...foodPayload };
-    }
-
-    // Re-fetch all foods from Supabase for guaranteed-fresh broadcast payload
-    let freshFoods = null;
-    if (supabase) {
-      try {
-        const { data: allFoods } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-        if (allFoods && allFoods.length > 0) freshFoods = allFoods;
-      } catch (e) {}
-    }
-    const current = freshFoods || (() => { const c = getStore('foods', DEFAULT_FOODS); c.push(created); return c; })();
-    setStore('foods', current);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
-    }
-    broadcastFoods(current);
-    return { success: true, food: created };
+    const { data, error } = await supabase.from('food_items').insert([foodPayload]).select().single();
+    if (error) throw new Error(error.message);
+    const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
+    return { success: true, food: data };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'PUT') {
     const id = cleanPath.split('/')[2];
+    if (!supabase) return { success: false, message: 'Database not connected' };
     const updatePayload = { ...body };
     if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
     if (body.category_id !== undefined) updatePayload.category_id = Number(body.category_id);
     if (body.price !== undefined) updatePayload.price = Number(body.price);
     if (body.discount_price !== undefined) updatePayload.discount_price = body.discount_price ? Number(body.discount_price) : null;
-    if (body.is_veg !== undefined) updatePayload.is_veg = Number(body.is_veg);
-    if (body.is_available !== undefined) updatePayload.is_available = Number(body.is_available);
-    if (body.is_featured !== undefined) updatePayload.is_featured = Number(body.is_featured);
-
-    let updated = null;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', id).select().single();
-        if (!error && data) updated = data;
-        else if (error) console.warn('[Supabase Food Update Error]:', error.message);
-      } catch (e) {}
-    }
-
-    if (!updated) {
-      updated = { id: Number(id) || id, ...updatePayload };
-    }
-
-    // Re-fetch all foods from Supabase for guaranteed-fresh broadcast payload
-    let freshFoodsAfterUpdate = null;
-    if (supabase) {
-      try {
-        const { data: allFoods } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-        if (allFoods && allFoods.length > 0) freshFoodsAfterUpdate = allFoods;
-      } catch (e) {}
-    }
-    let currentFoods;
-    if (freshFoodsAfterUpdate) {
-      currentFoods = freshFoodsAfterUpdate;
-    } else {
-      currentFoods = getStore('foods', DEFAULT_FOODS);
-      const idx = currentFoods.findIndex(f => String(f.id) === String(id));
-      if (idx >= 0) currentFoods[idx] = { ...currentFoods[idx], ...updated };
-    }
-    setStore('foods', currentFoods);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: currentFoods }));
-    }
-    broadcastFoods(currentFoods);
-    return { success: true, food: updated };
+    // Accept both number (0/1) and boolean for veg/availability/featured
+    if (body.is_veg !== undefined) updatePayload.is_veg = Boolean(Number(body.is_veg));
+    if (body.is_available !== undefined) updatePayload.is_available = Boolean(Number(body.is_available));
+    if (body.is_featured !== undefined) updatePayload.is_featured = Boolean(Number(body.is_featured));
+    const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', id).select().single();
+    if (error) throw new Error(error.message);
+    const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
+    return { success: true, food: data };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'DELETE') {
