@@ -129,6 +129,11 @@ function MainApp() {
   };
 
   useEffect(() => {
+    // Purge legacy content keys from localStorage so all devices use cloud Supabase data
+    ['cte_foods', 'cte_categories', 'cte_hero_slides', 'cte_offers', 'cte_coupons'].forEach(k => {
+      try { localStorage.removeItem(k); } catch (e) {}
+    });
+
     fetchData();
 
     const handleHeroSlidesSync = (e) => {

@@ -685,20 +685,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('food_items').delete().eq('id', id);
       } catch (e) {}
     }
-    // Re-fetch all foods from Supabase after delete
-    let freshFoodsAfterDelete = null;
-    if (supabase) {
-      try {
-        const { data: allFoods } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-        if (allFoods) freshFoodsAfterDelete = allFoods;
-      } catch (e) {}
-    }
-    const current = freshFoodsAfterDelete || getStore('foods', DEFAULT_FOODS).filter(f => String(f.id) !== String(id));
-    setStore('foods', current);
+    const fresh = await refetchAndBroadcast('food_items', broadcastFoods, 'id');
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
+      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
     }
-    broadcastFoods(current);
     return { success: true, message: 'Food item deleted' };
   }
 
@@ -708,8 +698,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/hero-slides' || cleanPath === '/hero-slides/admin') {
     if (supabase) {
       try {
-        // Fetch ALL slides, then filter client-side.
-        // This handles both boolean (true/false) and integer (1/0) is_active column types.
         const { data, error } = await supabase
           .from('hero_slides')
           .select('*')
@@ -717,7 +705,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
         if (!error && data && data.length) {
           let slides = data;
-          // For user-facing route, only show active slides
           if (cleanPath === '/hero-slides') {
             slides = data.filter(s => s.is_active !== false && s.is_active !== 0);
           }
@@ -726,7 +713,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
             desc: s.desc_text || s.desc || '',
             desc_text: s.desc_text || s.desc || ''
           }));
-          // If all slides were filtered out, return all slides anyway (avoid empty hero)
           if (formatted.length === 0 && data.length > 0) {
             const allFormatted = data.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
             return { success: true, slides: allFormatted };
@@ -735,16 +721,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         }
       } catch (e) {}
     }
-    const rawLocal = getStore('hero_slides', null);
-    const localSlides = rawLocal !== null && Array.isArray(rawLocal) ? rawLocal : DEFAULT_HERO_SLIDES;
-    const mapped = localSlides.map(s => ({
-      ...s,
-      desc: s.desc_text || s.desc || '',
-      desc_text: s.desc_text || s.desc || ''
-    }));
-    // Client-side filter for local fallback too
-    const filteredMapped = cleanPath === '/hero-slides' ? mapped.filter(s => s.is_active !== false && s.is_active !== 0) : mapped;
-    return { success: true, slides: filteredMapped.length > 0 ? filteredMapped : mapped };
+    const mapped = DEFAULT_HERO_SLIDES.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
+    return { success: true, slides: mapped };
   }
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
@@ -759,29 +737,17 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       accent_text: body.accent_text || '',
       target_category: body.target_category || 'Burgers and Sandwiches',
       sort_order: body.sort_order !== undefined ? Number(body.sort_order) : 99,
-      is_active: body.is_active !== undefined ? Number(body.is_active) : 1
+      is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1
     };
-    let created = null;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('hero_slides').insert([payload]).select().single();
-        if (!error && data) created = data;
-        else if (error) console.warn('[Supabase Hero Slide Error]:', error.message);
-      } catch (e) {}
-    }
-    if (!created) {
-      created = { id: Date.now(), ...payload };
-    }
-    const normalized = { ...created, desc: created.desc_text || created.desc || '', desc_text: created.desc_text || created.desc || '' };
-    const rawCurrent = getStore('hero_slides', null);
-    const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? [...rawCurrent] : [...DEFAULT_HERO_SLIDES];
-    current.push(normalized);
-    setStore('hero_slides', current);
+    if (!supabase) return { success: false, message: 'Database disconnected' };
+    const { data, error } = await supabase.from('hero_slides').insert([payload]).select().single();
+    if (error) throw new Error(error.message);
+    const fresh = await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    const normalized = fresh.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: current }));
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: normalized }));
     }
-    broadcastHeroSlides(current);
-    return { success: true, slide: normalized };
+    return { success: true, slide: data };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'PUT') {
@@ -797,62 +763,22 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (body.accent_text !== undefined) payload.accent_text = body.accent_text;
     if (body.target_category !== undefined) payload.target_category = body.target_category;
     if (body.sort_order !== undefined) payload.sort_order = Number(body.sort_order);
-    if (body.is_active !== undefined) payload.is_active = Number(body.is_active);
+    if (body.is_active !== undefined) payload.is_active = (body.is_active ? 1 : 0);
 
-    let updated = null;
-    if (supabase) {
-      try {
-        const slideId = isNaN(Number(id)) ? id : Number(id);
-        const { data, error } = await supabase
-          .from('hero_slides')
-          .upsert({ id: slideId, ...payload }, { onConflict: 'id' })
-          .select()
-          .single();
-        if (!error && data) updated = data;
-        else if (error) console.warn('[Supabase Hero Slide Upsert Error]:', error.message);
-      } catch (e) {}
-    }
-    if (!updated) {
-      updated = { id: isNaN(Number(id)) ? id : Number(id), ...payload };
-    }
-    const normalized = { ...updated, desc: updated.desc_text || updated.desc || '', desc_text: updated.desc_text || updated.desc || '' };
-
-    // Re-fetch ALL slides from Supabase to get guaranteed-fresh data for broadcast
-    let freshSlides = null;
-    if (supabase) {
-      try {
-        const { data: allSlides, error: fetchErr } = await supabase
-          .from('hero_slides')
-          .select('*')
-          .order('sort_order', { ascending: true });
-        if (!fetchErr && allSlides && allSlides.length > 0) {
-          freshSlides = allSlides.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
-        }
-      } catch (e) {}
-    }
-
-    // Build the final list: use fresh Supabase data if available, else merge into localStorage
-    let finalSlides;
-    if (freshSlides) {
-      finalSlides = freshSlides;
-    } else {
-      const rawCurrent = getStore('hero_slides', null);
-      const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? [...rawCurrent] : [...DEFAULT_HERO_SLIDES];
-      const idx = current.findIndex(s => String(s.id) === String(id));
-      if (idx >= 0) {
-        current[idx] = { ...current[idx], ...normalized };
-      } else {
-        current.push(normalized);
-      }
-      finalSlides = current;
-    }
-
-    setStore('hero_slides', finalSlides);
+    if (!supabase) return { success: false, message: 'Database disconnected' };
+    const slideId = isNaN(Number(id)) ? id : Number(id);
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .upsert({ id: slideId, ...payload }, { onConflict: 'id' })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    const fresh = await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    const normalized = fresh.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: finalSlides }));
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: normalized }));
     }
-    broadcastHeroSlides(finalSlides);
-    return { success: true, slide: normalized };
+    return { success: true, slide: data };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'DELETE') {
@@ -862,14 +788,11 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('hero_slides').delete().eq('id', id);
       } catch (e) {}
     }
-    const rawCurrent = getStore('hero_slides', null);
-    const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? rawCurrent : DEFAULT_HERO_SLIDES;
-    const filtered = current.filter(s => String(s.id) !== String(id));
-    setStore('hero_slides', filtered);
+    const fresh = await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    const normalized = fresh.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: filtered }));
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: normalized }));
     }
-    broadcastHeroSlides(filtered);
     return { success: true, message: 'Slide deleted' };
   }
 
@@ -885,8 +808,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data && data.length) return { success: true, offers: data };
       } catch (e) {}
     }
-    const localOffers = getStore('offers', DEFAULT_OFFERS);
-    return { success: true, offers: cleanPath === '/offers' ? localOffers.filter(o => o.is_active !== 0) : localOffers };
+    return { success: true, offers: cleanPath === '/offers' ? DEFAULT_OFFERS.filter(o => o.is_active !== 0) : DEFAULT_OFFERS };
   }
 
   if (cleanPath === '/offers' && method === 'POST') {
@@ -896,11 +818,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, offer: data };
       } catch (e) {}
     }
-    const newOffer = { id: Date.now(), ...body };
-    const current = getStore('offers', DEFAULT_OFFERS);
-    current.push(newOffer);
-    setStore('offers', current);
-    return { success: true, offer: newOffer };
+    return { success: true, offer: { id: Date.now(), ...body } };
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'PUT') {
@@ -911,10 +829,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, offer: data };
       } catch (e) {}
     }
-    const current = getStore('offers', DEFAULT_OFFERS);
-    const idx = current.findIndex(o => String(o.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...body };
-    setStore('offers', current);
     return { success: true, offer: { id: Number(id), ...body } };
   }
 
@@ -925,8 +839,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('offer_banners').delete().eq('id', id);
       } catch (e) {}
     }
-    const current = getStore('offers', DEFAULT_OFFERS).filter(o => String(o.id) !== String(id));
-    setStore('offers', current);
     return { success: true, message: 'Offer deleted' };
   }
 
@@ -946,11 +858,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         }
       } catch (e) {}
     }
-    const localCoupons = getStore('coupons', DEFAULT_COUPONS);
     if (cleanPath === '/coupons/admin') {
-      return { success: true, coupons: localCoupons };
+      return { success: true, coupons: DEFAULT_COUPONS };
     }
-    return { success: true, coupons: localCoupons.filter(c => c.is_active !== 0) };
+    return { success: true, coupons: DEFAULT_COUPONS.filter(c => c.is_active !== 0) };
   }
 
   if (cleanPath === '/coupons/validate') {
@@ -974,8 +885,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       } catch (e) {}
     }
     if (!coupon) {
-      const localCoupons = getStore('coupons', DEFAULT_COUPONS);
-      coupon = localCoupons.find(c => c.code.toUpperCase() === cleanCode);
+      coupon = DEFAULT_COUPONS.find(c => c.code.toUpperCase() === cleanCode);
     }
 
     if (!coupon) {
@@ -1055,7 +965,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       max_discount: Number(body.max_discount || 0),
       start_date: body.start_date || null,
       end_date: body.end_date || null,
-      is_active: body.is_active !== undefined ? Number(body.is_active) : 1,
+      is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1,
       times_used: 0
     };
 
@@ -1065,11 +975,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, coupon: data };
       } catch (e) {}
     }
-    const newCoupon = { id: Date.now(), ...newCouponData };
-    const current = getStore('coupons', DEFAULT_COUPONS);
-    current.unshift(newCoupon);
-    setStore('coupons', current);
-    return { success: true, coupon: newCoupon };
+    return { success: true, coupon: { id: Date.now(), ...newCouponData } };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'PUT') {
@@ -1080,10 +986,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       discount_value: body.discount_value !== undefined ? Number(body.discount_value) : undefined,
       min_order_value: body.min_order_value !== undefined ? Number(body.min_order_value) : undefined,
       max_discount: body.max_discount !== undefined ? Number(body.max_discount) : undefined,
-      is_active: body.is_active !== undefined ? Number(body.is_active) : undefined
+      is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : undefined
     };
 
-    // Remove undefined
     Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);
 
     if (supabase) {
@@ -1092,10 +997,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, coupon: data };
       } catch (e) {}
     }
-    const current = getStore('coupons', DEFAULT_COUPONS);
-    const idx = current.findIndex(c => String(c.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...updateData };
-    setStore('coupons', current);
     return { success: true, coupon: { id: Number(id), ...updateData } };
   }
 
@@ -1106,8 +1007,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('coupons').delete().eq('id', id);
       } catch (e) {}
     }
-    const current = getStore('coupons', DEFAULT_COUPONS).filter(c => String(c.id) !== String(id));
-    setStore('coupons', current);
     return { success: true, message: 'Coupon deleted' };
   }
 
@@ -1121,8 +1020,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data && data.length) return { success: true, branches: data };
       } catch (e) {}
     }
-    const localBranches = getStore('branches', DEFAULT_BRANCHES);
-    return { success: true, branches: localBranches };
+    return { success: true, branches: DEFAULT_BRANCHES };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'GET') {
@@ -1133,9 +1031,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, branch: data };
       } catch (e) {}
     }
-    const localBranches = getStore('branches', DEFAULT_BRANCHES);
-    const b = localBranches.find(br => String(br.id) === String(id)) || localBranches[0];
-    return { success: true, branch: b };
+    return { success: true, branch: DEFAULT_BRANCHES.find(br => String(br.id) === String(id)) || DEFAULT_BRANCHES[0] };
   }
 
   if (cleanPath === '/branches' && method === 'POST') {
@@ -1145,11 +1041,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, branch: data };
       } catch (e) {}
     }
-    const newBranch = { id: Date.now(), ...body };
-    const current = getStore('branches', DEFAULT_BRANCHES);
-    current.push(newBranch);
-    setStore('branches', current);
-    return { success: true, branch: newBranch };
+    return { success: true, branch: { id: Date.now(), ...body } };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'PUT') {
@@ -1160,10 +1052,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!error && data) return { success: true, branch: data };
       } catch (e) {}
     }
-    const current = getStore('branches', DEFAULT_BRANCHES);
-    const idx = current.findIndex(b => String(b.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...body };
-    setStore('branches', current);
     return { success: true, branch: { id: Number(id), ...body } };
   }
 
@@ -1174,8 +1062,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('branches').delete().eq('id', id);
       } catch (e) {}
     }
-    const current = getStore('branches', DEFAULT_BRANCHES).filter(b => String(b.id) !== String(id));
-    setStore('branches', current);
     return { success: true, message: 'Branch deleted' };
   }
 
@@ -1194,8 +1080,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
           }
         } catch (e) {}
       }
-      const localSettings = getStore('settings', DEFAULT_SETTINGS);
-      return { success: true, settings: localSettings };
+      return { success: true, settings: DEFAULT_SETTINGS };
     }
 
     if (method === 'PUT') {
@@ -1206,7 +1091,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
           }
         } catch (e) {}
       }
-      setStore('settings', body);
       return { success: true, settings: body };
     }
   }
@@ -1227,11 +1111,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
           if (!error && data && data.length) return { success: true, reviews: data };
         } catch (e) {}
       }
-      const localReviews = getStore('reviews', [
+      return { success: true, reviews: [
         { id: 1, user_name: 'Ananya Sharma', rating: 5, comment: 'The Double Smash Burger is truly the best in Bengaluru!', created_at: new Date().toISOString() },
         { id: 2, user_name: 'Rahul Mehta', rating: 5, comment: 'Brown Sugar Tiger Boba is authentic Taiwanese quality.', created_at: new Date().toISOString() }
-      ]);
-      return { success: true, reviews: localReviews };
+      ] };
     }
 
     if (method === 'POST') {

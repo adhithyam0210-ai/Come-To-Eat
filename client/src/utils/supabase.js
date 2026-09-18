@@ -30,12 +30,21 @@ if (supabaseUrl && supabaseKey) {
 /**
  * Universal live reflection subscription connecting directly to Supabase Realtime
  */
+let _ordersChannel = null;
+function getOrdersChannel() {
+  if (!supabase) return null;
+  if (!_ordersChannel) {
+    _ordersChannel = supabase.channel('orders_channel');
+  }
+  return _ordersChannel;
+}
+
 export function subscribeToLiveOrders(onOrderUpdate) {
   if (!supabase) return () => {};
 
   try {
-    const channel = supabase
-      .channel('orders_realtime')
+    const channel = getOrdersChannel();
+    channel
       .on('broadcast', { event: '*' }, (payload) => {
         if (payload && payload.payload) {
           onOrderUpdate(payload.payload, payload.event);
@@ -45,18 +54,15 @@ export function subscribeToLiveOrders(onOrderUpdate) {
         if (payload && payload.new) {
           onOrderUpdate(payload.new, payload.eventType);
         }
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Supabase Realtime] Connected to live orders stream.');
-        }
       });
 
-    return () => {
-      try {
-        supabase.removeChannel(channel);
-      } catch (e) {}
-    };
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to live orders stream.');
+      }
+    });
+
+    return () => {};
   } catch (err) {
     console.warn('[Supabase Realtime] Subscription error:', err.message);
     return () => {};
@@ -69,26 +75,37 @@ export function subscribeToLiveOrders(onOrderUpdate) {
 export async function broadcastLiveOrder(orderData, eventType = 'ORDER_UPDATED') {
   if (!supabase || !orderData) return;
   try {
-    const channel = supabase.channel('orders_realtime');
-    await channel.send({
-      type: 'broadcast',
-      event: eventType,
-      payload: orderData
-    });
+    const channel = getOrdersChannel();
+    if (channel) {
+      await channel.send({
+        type: 'broadcast',
+        event: eventType,
+        payload: orderData
+      });
+    }
   } catch (err) {
     console.warn('[Supabase Realtime] Broadcast error:', err.message);
   }
 }
 
 /**
- * Universal live reflection subscription connecting directly to Supabase Realtime for Hero Slides
+ * Universal live reflection subscription for Hero Slides
  */
+let _heroSlidesChannel = null;
+function getHeroSlidesChannel() {
+  if (!supabase) return null;
+  if (!_heroSlidesChannel) {
+    _heroSlidesChannel = supabase.channel('hero_slides_channel');
+  }
+  return _heroSlidesChannel;
+}
+
 export function subscribeToHeroSlides(onSlidesUpdate) {
   if (!supabase) return () => {};
 
   try {
-    const channel = supabase
-      .channel('hero_slides_realtime')
+    const channel = getHeroSlidesChannel();
+    channel
       .on('broadcast', { event: 'HERO_SLIDES_UPDATED' }, (payload) => {
         if (payload && payload.payload) {
           onSlidesUpdate(payload.payload);
@@ -98,37 +115,22 @@ export function subscribeToHeroSlides(onSlidesUpdate) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hero_slides' }, () => {
         onSlidesUpdate();
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Supabase Realtime] Connected to hero_slides_realtime');
-        }
       });
 
-    return () => {
-      try {
-        supabase.removeChannel(channel);
-      } catch (e) {}
-    };
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to hero_slides_channel');
+      }
+    });
+
+    return () => {};
   } catch (err) {
     return () => {};
   }
 }
 
-// Persistent subscribed channel for broadcasting hero slides
-let _heroSlidesChannel = null;
-function getHeroSlidesChannel() {
-  if (!supabase) return null;
-  if (!_heroSlidesChannel) {
-    _heroSlidesChannel = supabase.channel('hero_slides_broadcast');
-    _heroSlidesChannel.subscribe();
-  }
-  return _heroSlidesChannel;
-}
-
 /**
  * Broadcast live hero slides updates to all clients instantly
- * Uses a persistent subscribed channel so broadcasts are guaranteed to deliver.
  */
 export async function broadcastHeroSlides(slidesData) {
   if (!supabase || !slidesData) return;
@@ -145,14 +147,23 @@ export async function broadcastHeroSlides(slidesData) {
 }
 
 /**
- * Universal live reflection subscription connecting directly to Supabase Realtime for Food Items
+ * Universal live reflection subscription for Food Items
  */
+let _foodsChannel = null;
+function getFoodsChannel() {
+  if (!supabase) return null;
+  if (!_foodsChannel) {
+    _foodsChannel = supabase.channel('foods_channel');
+  }
+  return _foodsChannel;
+}
+
 export function subscribeToFoods(onFoodsUpdate) {
   if (!supabase) return () => {};
 
   try {
-    const channel = supabase
-      .channel('foods_realtime')
+    const channel = getFoodsChannel();
+    channel
       .on('broadcast', { event: 'FOODS_UPDATED' }, (payload) => {
         if (payload && payload.payload) {
           onFoodsUpdate(payload.payload);
@@ -162,37 +173,22 @@ export function subscribeToFoods(onFoodsUpdate) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_items' }, () => {
         onFoodsUpdate();
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Supabase Realtime] Connected to foods_realtime');
-        }
       });
 
-    return () => {
-      try {
-        supabase.removeChannel(channel);
-      } catch (e) {}
-    };
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to foods_channel');
+      }
+    });
+
+    return () => {};
   } catch (err) {
     return () => {};
   }
 }
 
-// Persistent subscribed channel for broadcasting foods
-let _foodsChannel = null;
-function getFoodsChannel() {
-  if (!supabase) return null;
-  if (!_foodsChannel) {
-    _foodsChannel = supabase.channel('foods_broadcast');
-    _foodsChannel.subscribe();
-  }
-  return _foodsChannel;
-}
-
 /**
  * Broadcast live food items updates to all clients instantly
- * Uses a persistent subscribed channel so broadcasts are guaranteed to deliver.
  */
 export async function broadcastFoods(foodsData) {
   if (!supabase || !foodsData) return;
@@ -209,14 +205,23 @@ export async function broadcastFoods(foodsData) {
 }
 
 /**
- * Universal live reflection subscription connecting directly to Supabase Realtime for Categories
+ * Universal live reflection subscription for Categories
  */
+let _categoriesChannel = null;
+function getCategoriesChannel() {
+  if (!supabase) return null;
+  if (!_categoriesChannel) {
+    _categoriesChannel = supabase.channel('categories_channel');
+  }
+  return _categoriesChannel;
+}
+
 export function subscribeToCategories(onCategoriesUpdate) {
   if (!supabase) return () => {};
 
   try {
-    const channel = supabase
-      .channel('categories_realtime')
+    const channel = getCategoriesChannel();
+    channel
       .on('broadcast', { event: 'CATEGORIES_UPDATED' }, (payload) => {
         if (payload && payload.payload) {
           onCategoriesUpdate(payload.payload);
@@ -226,37 +231,22 @@ export function subscribeToCategories(onCategoriesUpdate) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
         onCategoriesUpdate();
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Supabase Realtime] Connected to categories_realtime');
-        }
       });
 
-    return () => {
-      try {
-        supabase.removeChannel(channel);
-      } catch (e) {}
-    };
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to categories_channel');
+      }
+    });
+
+    return () => {};
   } catch (err) {
     return () => {};
   }
 }
 
-// Persistent subscribed channel for broadcasting categories
-let _categoriesChannel = null;
-function getCategoriesChannel() {
-  if (!supabase) return null;
-  if (!_categoriesChannel) {
-    _categoriesChannel = supabase.channel('categories_broadcast');
-    _categoriesChannel.subscribe();
-  }
-  return _categoriesChannel;
-}
-
 /**
  * Broadcast live categories updates to all clients instantly
- * Uses a persistent subscribed channel so broadcasts are guaranteed to deliver.
  */
 export async function broadcastCategories(catsData) {
   if (!supabase || !catsData) return;

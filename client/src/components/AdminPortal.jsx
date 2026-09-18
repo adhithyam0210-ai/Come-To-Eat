@@ -286,12 +286,11 @@ export function AdminPortal({
 
   const handleReloadDefaultSlides = async () => {
     try {
-      localStorage.setItem('cte_hero_slides', JSON.stringify(DEFAULT_HERO_SLIDES));
-      setHeroSlides(DEFAULT_HERO_SLIDES);
-      setMessage('Default hero slides restored successfully.');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: DEFAULT_HERO_SLIDES }));
+      for (const slide of DEFAULT_HERO_SLIDES) {
+        await api.put(`/hero-slides/${slide.id}`, slide);
       }
+      setHeroSlides(DEFAULT_HERO_SLIDES);
+      setMessage('Default hero slides restored successfully in cloud database.');
       if (onDataUpdate) onDataUpdate();
     } catch (e) {
       alert('Failed to reload default slides');
