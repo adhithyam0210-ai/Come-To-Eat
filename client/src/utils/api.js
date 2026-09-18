@@ -730,8 +730,15 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       created = { id: Date.now(), ...foodPayload };
     }
 
-    const current = getStore('foods', DEFAULT_FOODS);
-    current.push(created);
+    // Re-fetch all foods from Supabase for guaranteed-fresh broadcast payload
+    let freshFoods = null;
+    if (supabase) {
+      try {
+        const { data: allFoods } = await supabase.from('food_items').select('*').order('id', { ascending: true });
+        if (allFoods && allFoods.length > 0) freshFoods = allFoods;
+      } catch (e) {}
+    }
+    const current = freshFoods || (() => { const c = getStore('foods', DEFAULT_FOODS); c.push(created); return c; })();
     setStore('foods', current);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
@@ -764,14 +771,27 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       updated = { id: Number(id) || id, ...updatePayload };
     }
 
-    const current = getStore('foods', DEFAULT_FOODS);
-    const idx = current.findIndex(f => String(f.id) === String(id));
-    if (idx >= 0) current[idx] = { ...current[idx], ...updated };
-    setStore('foods', current);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
+    // Re-fetch all foods from Supabase for guaranteed-fresh broadcast payload
+    let freshFoodsAfterUpdate = null;
+    if (supabase) {
+      try {
+        const { data: allFoods } = await supabase.from('food_items').select('*').order('id', { ascending: true });
+        if (allFoods && allFoods.length > 0) freshFoodsAfterUpdate = allFoods;
+      } catch (e) {}
     }
-    broadcastFoods(current);
+    let currentFoods;
+    if (freshFoodsAfterUpdate) {
+      currentFoods = freshFoodsAfterUpdate;
+    } else {
+      currentFoods = getStore('foods', DEFAULT_FOODS);
+      const idx = currentFoods.findIndex(f => String(f.id) === String(id));
+      if (idx >= 0) currentFoods[idx] = { ...currentFoods[idx], ...updated };
+    }
+    setStore('foods', currentFoods);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: currentFoods }));
+    }
+    broadcastFoods(currentFoods);
     return { success: true, food: updated };
   }
 
@@ -782,7 +802,15 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('food_items').delete().eq('id', id);
       } catch (e) {}
     }
-    const current = getStore('foods', DEFAULT_FOODS).filter(f => String(f.id) !== String(id));
+    // Re-fetch all foods from Supabase after delete
+    let freshFoodsAfterDelete = null;
+    if (supabase) {
+      try {
+        const { data: allFoods } = await supabase.from('food_items').select('*').order('id', { ascending: true });
+        if (allFoods) freshFoodsAfterDelete = allFoods;
+      } catch (e) {}
+    }
+    const current = freshFoodsAfterDelete || getStore('foods', DEFAULT_FOODS).filter(f => String(f.id) !== String(id));
     setStore('foods', current);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: current }));
@@ -889,19 +917,42 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       updated = { id: isNaN(Number(id)) ? id : Number(id), ...payload };
     }
     const normalized = { ...updated, desc: updated.desc_text || updated.desc || '', desc_text: updated.desc_text || updated.desc || '' };
-    const rawCurrent = getStore('hero_slides', null);
-    const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? [...rawCurrent] : [...DEFAULT_HERO_SLIDES];
-    const idx = current.findIndex(s => String(s.id) === String(id));
-    if (idx >= 0) {
-      current[idx] = { ...current[idx], ...normalized };
+
+    // Re-fetch ALL slides from Supabase to get guaranteed-fresh data for broadcast
+    let freshSlides = null;
+    if (supabase) {
+      try {
+        const { data: allSlides, error: fetchErr } = await supabase
+          .from('hero_slides')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (!fetchErr && allSlides && allSlides.length > 0) {
+          freshSlides = allSlides.map(s => ({ ...s, desc: s.desc_text || s.desc || '', desc_text: s.desc_text || s.desc || '' }));
+        }
+      } catch (e) {}
+    }
+
+    // Build the final list: use fresh Supabase data if available, else merge into localStorage
+    let finalSlides;
+    if (freshSlides) {
+      finalSlides = freshSlides;
     } else {
-      current.push(normalized);
+      const rawCurrent = getStore('hero_slides', null);
+      const current = (rawCurrent !== null && Array.isArray(rawCurrent)) ? [...rawCurrent] : [...DEFAULT_HERO_SLIDES];
+      const idx = current.findIndex(s => String(s.id) === String(id));
+      if (idx >= 0) {
+        current[idx] = { ...current[idx], ...normalized };
+      } else {
+        current.push(normalized);
+      }
+      finalSlides = current;
     }
-    setStore('hero_slides', current);
+
+    setStore('hero_slides', finalSlides);
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: current }));
+      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: finalSlides }));
     }
-    broadcastHeroSlides(current);
+    broadcastHeroSlides(finalSlides);
     return { success: true, slide: normalized };
   }
 

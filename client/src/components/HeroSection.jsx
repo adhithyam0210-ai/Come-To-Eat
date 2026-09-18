@@ -42,15 +42,9 @@ const DEFAULT_SLIDES = [
 ];
 
 export function HeroSection({ slides: slidesProp, onSelectCategory, onActionClick }) {
+  // Always start with prop data (from Supabase via App.jsx) or defaults — never localStorage
   const [slides, setSlides] = useState(() => {
     if (slidesProp && slidesProp.length > 0) return slidesProp;
-    try {
-      const saved = localStorage.getItem('cte_hero_slides');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
     return DEFAULT_SLIDES;
   });
 
