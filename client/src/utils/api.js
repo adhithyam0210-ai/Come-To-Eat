@@ -1,4 +1,14 @@
-import { supabase, broadcastLiveOrder, broadcastHeroSlides, broadcastFoods, broadcastCategories } from './supabase.js';
+import {
+  supabase,
+  broadcastLiveOrder,
+  broadcastHeroSlides,
+  broadcastFoods,
+  broadcastCategories,
+  broadcastOffers,
+  broadcastCoupons,
+  broadcastBranches,
+  broadcastSettings
+} from './supabase.js';
 
 function createSlug(text) {
   if (!text) return `item-${Date.now()}`;
@@ -796,6 +806,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = [...memoryCategories, createdCat];
     saveMemoryCategories(updated);
+    broadcastCategories(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
     return { success: true, category: createdCat, categories: updated };
   }
@@ -816,6 +827,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = memoryCategories.map(c => String(c.id) === String(rawId) ? { ...c, ...updatedCat } : c);
     saveMemoryCategories(updated);
+    broadcastCategories(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
     return { success: true, category: updatedCat, categories: updated };
   }
@@ -830,6 +842,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryCategories.filter(c => String(c.id) !== String(rawId));
     saveMemoryCategories(updated);
+    broadcastCategories(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
     return { success: true, message: 'Category deleted', categories: updated };
   }
@@ -876,6 +889,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       return f;
     });
     saveMemoryFoods(updated);
+    broadcastFoods(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
     return { success: true, message: 'Availability toggled', foods: updated };
   }
@@ -923,6 +937,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = [...memoryFoods, createdFood];
     saveMemoryFoods(updated);
+    broadcastFoods(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
     return { success: true, food: createdFood, foods: updated };
   }
@@ -949,6 +964,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = memoryFoods.map(f => String(f.id) === String(rawId) ? { ...f, ...updatedFood } : f);
     saveMemoryFoods(updated);
+    broadcastFoods(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
     return { success: true, food: updatedFood, foods: updated };
   }
@@ -963,6 +979,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryFoods.filter(f => String(f.id) !== String(rawId));
     saveMemoryFoods(updated);
+    broadcastFoods(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
     return { success: true, message: 'Food item deleted', foods: updated };
   }
@@ -1048,6 +1065,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = [...memoryHeroSlides, createdSlide];
     saveMemoryHeroSlides(updated);
+    broadcastHeroSlides(updated);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updated }));
     }
@@ -1089,8 +1107,19 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       } catch (e) {}
     }
 
-    const updatedList = memoryHeroSlides.map(s => String(s.id) === String(rawId) ? { ...s, ...updatedSlide } : s);
+    let found = false;
+    let updatedList = memoryHeroSlides.map(s => {
+      if (String(s.id) === String(rawId)) {
+        found = true;
+        return { ...s, ...updatedSlide };
+      }
+      return s;
+    });
+    if (!found) {
+      updatedList.push(updatedSlide);
+    }
     saveMemoryHeroSlides(updatedList);
+    broadcastHeroSlides(updatedList);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updatedList }));
     }
@@ -1109,6 +1138,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updatedList = memoryHeroSlides.filter(s => String(s.id) !== String(rawId));
     saveMemoryHeroSlides(updatedList);
+    broadcastHeroSlides(updatedList);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updatedList }));
     }
@@ -1141,6 +1171,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = [...memoryOffers, created];
     saveMemoryOffers(updated);
+    broadcastOffers(updated);
     return { success: true, offer: created, offers: updated };
   }
 
@@ -1156,6 +1187,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryOffers.map(o => String(o.id) === String(rawId) ? { ...o, ...updatedOffer } : o);
     saveMemoryOffers(updated);
+    broadcastOffers(updated);
     return { success: true, offer: updatedOffer, offers: updated };
   }
 
@@ -1169,6 +1201,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryOffers.filter(o => String(o.id) !== String(rawId));
     saveMemoryOffers(updated);
+    broadcastOffers(updated);
     return { success: true, message: 'Offer deleted', offers: updated };
   }
 
@@ -1176,12 +1209,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // 6. COUPONS
   // -------------------------------------------------------------
   if (cleanPath === '/coupons' || cleanPath === '/coupons/active' || cleanPath === '/coupons/admin') {
-    if (isCouponsUserModified) {
-      const filteredCoupons = cleanPath === '/coupons/admin'
-        ? memoryCoupons
-        : memoryCoupons.filter(c => c.is_active !== 0 && c.is_active !== false);
-      return { success: true, coupons: filteredCoupons };
-    }
     if (supabase) {
       try {
         let q = supabase.from('coupons').select('*').order('id', { ascending: false });
@@ -1313,6 +1340,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = [...memoryCoupons, createdCoupon];
     saveMemoryCoupons(updated);
+    broadcastCoupons(updated);
     return { success: true, coupon: createdCoupon, coupons: updated };
   }
 
@@ -1339,6 +1367,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     const updated = memoryCoupons.map(c => String(c.id) === String(rawId) ? { ...c, ...updatedCoupon } : c);
     saveMemoryCoupons(updated);
+    broadcastCoupons(updated);
     return { success: true, coupon: updatedCoupon, coupons: updated };
   }
 
@@ -1352,6 +1381,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryCoupons.filter(c => String(c.id) !== String(rawId));
     saveMemoryCoupons(updated);
+    broadcastCoupons(updated);
     return { success: true, message: 'Coupon deleted', coupons: updated };
   }
 
@@ -1359,9 +1389,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // 7. BRANCHES
   // -------------------------------------------------------------
   if (cleanPath === '/branches') {
-    if (isBranchesUserModified) {
-      return { success: true, branches: memoryBranches };
-    }
     if (supabase) {
       try {
         const { data, error } = await supabase.from('branches').select('*').order('id', { ascending: true });
@@ -1400,6 +1427,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = [...memoryBranches, createdBranch];
     saveMemoryBranches(updated);
+    broadcastBranches(updated);
     return { success: true, branch: createdBranch, branches: updated };
   }
 
@@ -1415,6 +1443,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryBranches.map(b => String(b.id) === String(rawId) ? { ...b, ...updatedBranch } : b);
     saveMemoryBranches(updated);
+    broadcastBranches(updated);
     return { success: true, branch: updatedBranch, branches: updated };
   }
 
@@ -1428,6 +1457,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     const updated = memoryBranches.filter(b => String(b.id) !== String(rawId));
     saveMemoryBranches(updated);
+    broadcastBranches(updated);
     return { success: true, message: 'Branch deleted', branches: updated };
   }
 
@@ -1436,9 +1466,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // -------------------------------------------------------------
   if (cleanPath === '/settings') {
     if (method === 'GET') {
-      if (isSettingsUserModified) {
-        return { success: true, settings: memorySettings };
-      }
       if (supabase) {
         try {
           const { data, error } = await supabase.from('restaurant_settings').select('*');
@@ -1457,6 +1484,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (method === 'PUT') {
       const merged = { ...memorySettings, ...body };
       saveMemorySettings(merged);
+      broadcastSettings(merged);
       if (supabase) {
         try {
           for (const [key, value] of Object.entries(body)) {

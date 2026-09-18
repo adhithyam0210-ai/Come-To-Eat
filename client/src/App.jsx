@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider, useCart } from './context/CartContext';
 import { api } from './utils/api';
-import { subscribeToHeroSlides, subscribeToFoods, subscribeToCategories } from './utils/supabase';
+import {
+  subscribeToHeroSlides,
+  subscribeToFoods,
+  subscribeToCategories,
+  subscribeToOffers,
+  subscribeToCoupons,
+  subscribeToBranches,
+  subscribeToSettings
+} from './utils/supabase';
 
 // Components
 import { Navbar } from './components/Navbar';
@@ -129,11 +137,6 @@ function MainApp() {
   };
 
   useEffect(() => {
-    // Purge legacy content keys from localStorage so all devices use cloud Supabase data
-    ['cte_foods', 'cte_categories', 'cte_hero_slides', 'cte_offers', 'cte_coupons'].forEach(k => {
-      try { localStorage.removeItem(k); } catch (e) {}
-    });
-
     fetchData();
 
     const handleHeroSlidesSync = (e) => {
@@ -201,6 +204,34 @@ function MainApp() {
       }
     });
 
+    const unsubRealtimeOffers = subscribeToOffers(() => {
+      fetchData();
+    });
+
+    const unsubRealtimeCoupons = subscribeToCoupons(() => {
+      fetchData();
+    });
+
+    const unsubRealtimeBranches = subscribeToBranches((liveBranches) => {
+      if (liveBranches && Array.isArray(liveBranches) && liveBranches.length > 0) {
+        setBranches(liveBranches);
+      } else {
+        api.get('/branches').then(res => {
+          if (res.success && res.branches) setBranches(res.branches);
+        }).catch(() => {});
+      }
+    });
+
+    const unsubRealtimeSettings = subscribeToSettings((liveSettings) => {
+      if (liveSettings && typeof liveSettings === 'object') {
+        setSettings(liveSettings);
+      } else {
+        api.get('/settings').then(res => {
+          if (res.success && res.settings) setSettings(res.settings);
+        }).catch(() => {});
+      }
+    });
+
     return () => {
       window.removeEventListener('cte:hero_slides_updated', handleHeroSlidesSync);
       window.removeEventListener('cte:foods_updated', handleFoodsSync);
@@ -208,6 +239,10 @@ function MainApp() {
       unsubRealtimeHero();
       unsubRealtimeFoods();
       unsubRealtimeCategories();
+      unsubRealtimeOffers();
+      unsubRealtimeCoupons();
+      unsubRealtimeBranches();
+      unsubRealtimeSettings();
     };
   }, []);
 

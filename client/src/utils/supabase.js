@@ -279,3 +279,184 @@ export async function broadcastCategories(catsData) {
   }
 }
 
+/**
+ * Universal live reflection subscription for Offers
+ */
+let _offersChannel = null;
+function getOffersChannel() {
+  if (!supabase) return null;
+  if (!_offersChannel) {
+    _offersChannel = supabase.channel('offers_channel');
+    _offersChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to offers_channel');
+      }
+    });
+  }
+  return _offersChannel;
+}
+
+export function subscribeToOffers(onOffersUpdate) {
+  if (!supabase) return () => {};
+  try {
+    const channel = getOffersChannel();
+    channel
+      .on('broadcast', { event: 'OFFERS_UPDATED' }, (payload) => {
+        onOffersUpdate(payload?.payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
+        onOffersUpdate();
+      });
+    return () => {};
+  } catch (err) {
+    return () => {};
+  }
+}
+
+export async function broadcastOffers(offersData) {
+  if (!supabase || !offersData) return;
+  try {
+    const channel = getOffersChannel();
+    if (channel) {
+      if (channel.state !== 'joined') await new Promise(r => setTimeout(r, 150));
+      await channel.send({ type: 'broadcast', event: 'OFFERS_UPDATED', payload: offersData });
+    }
+  } catch (err) {}
+}
+
+/**
+ * Universal live reflection subscription for Coupons
+ */
+let _couponsChannel = null;
+function getCouponsChannel() {
+  if (!supabase) return null;
+  if (!_couponsChannel) {
+    _couponsChannel = supabase.channel('coupons_channel');
+    _couponsChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to coupons_channel');
+      }
+    });
+  }
+  return _couponsChannel;
+}
+
+export function subscribeToCoupons(onCouponsUpdate) {
+  if (!supabase) return () => {};
+  try {
+    const channel = getCouponsChannel();
+    channel
+      .on('broadcast', { event: 'COUPONS_UPDATED' }, (payload) => {
+        onCouponsUpdate(payload?.payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, () => {
+        onCouponsUpdate();
+      });
+    return () => {};
+  } catch (err) {
+    return () => {};
+  }
+}
+
+export async function broadcastCoupons(couponsData) {
+  if (!supabase || !couponsData) return;
+  try {
+    const channel = getCouponsChannel();
+    if (channel) {
+      if (channel.state !== 'joined') await new Promise(r => setTimeout(r, 150));
+      await channel.send({ type: 'broadcast', event: 'COUPONS_UPDATED', payload: couponsData });
+    }
+  } catch (err) {}
+}
+
+/**
+ * Universal live reflection subscription for Branches
+ */
+let _branchesChannel = null;
+function getBranchesChannel() {
+  if (!supabase) return null;
+  if (!_branchesChannel) {
+    _branchesChannel = supabase.channel('branches_channel');
+    _branchesChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to branches_channel');
+      }
+    });
+  }
+  return _branchesChannel;
+}
+
+export function subscribeToBranches(onBranchesUpdate) {
+  if (!supabase) return () => {};
+  try {
+    const channel = getBranchesChannel();
+    channel
+      .on('broadcast', { event: 'BRANCHES_UPDATED' }, (payload) => {
+        onBranchesUpdate(payload?.payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'branches' }, () => {
+        onBranchesUpdate();
+      });
+    return () => {};
+  } catch (err) {
+    return () => {};
+  }
+}
+
+export async function broadcastBranches(branchesData) {
+  if (!supabase || !branchesData) return;
+  try {
+    const channel = getBranchesChannel();
+    if (channel) {
+      if (channel.state !== 'joined') await new Promise(r => setTimeout(r, 150));
+      await channel.send({ type: 'broadcast', event: 'BRANCHES_UPDATED', payload: branchesData });
+    }
+  } catch (err) {}
+}
+
+/**
+ * Universal live reflection subscription for Settings
+ */
+let _settingsChannel = null;
+function getSettingsChannel() {
+  if (!supabase) return null;
+  if (!_settingsChannel) {
+    _settingsChannel = supabase.channel('settings_channel');
+    _settingsChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[Supabase Realtime] Connected to settings_channel');
+      }
+    });
+  }
+  return _settingsChannel;
+}
+
+export function subscribeToSettings(onSettingsUpdate) {
+  if (!supabase) return () => {};
+  try {
+    const channel = getSettingsChannel();
+    channel
+      .on('broadcast', { event: 'SETTINGS_UPDATED' }, (payload) => {
+        onSettingsUpdate(payload?.payload);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'store_settings' }, () => {
+        onSettingsUpdate();
+      });
+    return () => {};
+  } catch (err) {
+    return () => {};
+  }
+}
+
+export async function broadcastSettings(settingsData) {
+  if (!supabase || !settingsData) return;
+  try {
+    const channel = getSettingsChannel();
+    if (channel) {
+      if (channel.state !== 'joined') await new Promise(r => setTimeout(r, 150));
+      await channel.send({ type: 'broadcast', event: 'SETTINGS_UPDATED', payload: settingsData });
+    }
+  } catch (err) {}
+}
+
+
