@@ -133,12 +133,16 @@ const DEFAULT_COUPONS = [
   { id: 3, code: 'FREESHIP', discount_type: 'fixed', discount_value: 40, min_order_value: 150, max_discount: 40, is_active: 1 }
 ];
 
+let isHeroSlidesUserModified = false;
 let memoryHeroSlides = (() => {
   try {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_hero_slides') : null;
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        isHeroSlidesUserModified = true;
+        return parsed;
+      }
     }
   } catch (e) {}
   return [...DEFAULT_HERO_SLIDES];
@@ -146,6 +150,7 @@ let memoryHeroSlides = (() => {
 
 const saveMemoryHeroSlides = (slides) => {
   memoryHeroSlides = slides;
+  isHeroSlidesUserModified = true;
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cte_hero_slides', JSON.stringify(slides));
@@ -153,12 +158,16 @@ const saveMemoryHeroSlides = (slides) => {
   } catch (e) {}
 };
 
+let isOffersUserModified = false;
 let memoryOffers = (() => {
   try {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_offers') : null;
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        isOffersUserModified = true;
+        return parsed;
+      }
     }
   } catch (e) {}
   return [...DEFAULT_OFFERS];
@@ -166,6 +175,7 @@ let memoryOffers = (() => {
 
 const saveMemoryOffers = (offers) => {
   memoryOffers = offers;
+  isOffersUserModified = true;
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cte_offers', JSON.stringify(offers));
@@ -173,12 +183,16 @@ const saveMemoryOffers = (offers) => {
   } catch (e) {}
 };
 
+let isCouponsUserModified = false;
 let memoryCoupons = (() => {
   try {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_coupons') : null;
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        isCouponsUserModified = true;
+        return parsed;
+      }
     }
   } catch (e) {}
   return [...DEFAULT_COUPONS];
@@ -186,12 +200,143 @@ let memoryCoupons = (() => {
 
 const saveMemoryCoupons = (coupons) => {
   memoryCoupons = coupons;
+  isCouponsUserModified = true;
   try {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cte_coupons', JSON.stringify(coupons));
     }
   } catch (e) {}
 };
+
+let isCategoriesUserModified = false;
+let memoryCategories = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_categories') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        isCategoriesUserModified = true;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return [...DEFAULT_CATEGORIES];
+})();
+
+const saveMemoryCategories = (cats) => {
+  memoryCategories = cats;
+  isCategoriesUserModified = true;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_categories', JSON.stringify(cats));
+    }
+  } catch (e) {}
+};
+
+let isFoodsUserModified = false;
+let memoryFoods = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_foods') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        isFoodsUserModified = true;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return [...DEFAULT_FOODS];
+})();
+
+const saveMemoryFoods = (foods) => {
+  memoryFoods = foods;
+  isFoodsUserModified = true;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_foods', JSON.stringify(foods));
+    }
+  } catch (e) {}
+};
+
+let isBranchesUserModified = false;
+let memoryBranches = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_branches') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        isBranchesUserModified = true;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return [...DEFAULT_BRANCHES];
+})();
+
+const saveMemoryBranches = (branches) => {
+  memoryBranches = branches;
+  isBranchesUserModified = true;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_branches', JSON.stringify(branches));
+    }
+  } catch (e) {}
+};
+
+let isEmployeesUserModified = false;
+let memoryEmployees = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_employees') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        isEmployeesUserModified = true;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return [
+    { id: 1, name: 'Executive Admin', email: 'admin@cometoeat.com', role: 'admin', branch_id: 1, branch_name: 'Indiranagar (Flagship)' },
+    { id: 2, name: 'Chef Vikram (Kitchen Staff)', email: 'chef@cometoeat.com', role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)' }
+  ];
+})();
+
+const saveMemoryEmployees = (employees) => {
+  memoryEmployees = employees;
+  isEmployeesUserModified = true;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_employees', JSON.stringify(employees));
+    }
+  } catch (e) {}
+};
+
+let isSettingsUserModified = false;
+let memorySettings = (() => {
+  try {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_settings') : null;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object') {
+        isSettingsUserModified = true;
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return { ...DEFAULT_SETTINGS };
+})();
+
+const saveMemorySettings = (settings) => {
+  memorySettings = settings;
+  isSettingsUserModified = true;
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cte_settings', JSON.stringify(settings));
+    }
+  } catch (e) {}
+};
+
+
 
 
 const DEFAULT_ORDERS = [
@@ -603,103 +748,156 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // -------------------------------------------------------------
   // 2. CATEGORIES
   // -------------------------------------------------------------
-  // ── CATEGORIES (Admin → Supabase → broadcast to all users) ──────────────────
   if (cleanPath === '/categories' || cleanPath === '/categories/admin') {
+    if (isCategoriesUserModified) {
+      const result = cleanPath === '/categories'
+        ? memoryCategories.filter(c => c.is_active !== false && c.is_active !== 0)
+        : memoryCategories;
+      return { success: true, categories: result };
+    }
     if (supabase) {
       try {
         const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
-        if (!error && data) {
-          // Client-side active filter handles both boolean true and integer 1
+        if (!error && data && data.length) {
           const result = cleanPath === '/categories'
             ? data.filter(c => c.is_active !== false && c.is_active !== 0)
             : data;
+          memoryCategories = data;
           return { success: true, categories: result };
         }
       } catch (e) {}
     }
-    return { success: true, categories: DEFAULT_CATEGORIES };
+    const result = cleanPath === '/categories'
+      ? memoryCategories.filter(c => c.is_active !== false && c.is_active !== 0)
+      : memoryCategories;
+    return { success: true, categories: result };
   }
 
   if (cleanPath === '/categories' && method === 'POST') {
+    const newId = Date.now();
     const catPayload = {
+      id: newId,
       name: body.name || 'New Category',
       slug: body.slug || createSlug(body.name),
       description: body.description || '',
       image_url: body.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800',
       sort_order: body.sort_order !== undefined ? Number(body.sort_order) : 99,
-      is_active: body.is_active !== undefined ? body.is_active : true
+      is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1
     };
-    if (!supabase) return { success: false, message: 'Database not connected' };
-    const { data, error } = await supabase.from('categories').insert([catPayload]).select().single();
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: fresh }));
-    return { success: true, category: data };
+
+    let createdCat = catPayload;
+    if (supabase) {
+      try {
+        const { id, ...dbPayload } = catPayload;
+        const { data, error } = await supabase.from('categories').insert([dbPayload]).select().single();
+        if (!error && data) createdCat = data;
+      } catch (e) {}
+    }
+
+    const updated = [...memoryCategories, createdCat];
+    saveMemoryCategories(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
+    return { success: true, category: createdCat, categories: updated };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'PUT') {
-    const id = cleanPath.split('/')[2];
-    if (!supabase) return { success: false, message: 'Database not connected' };
+    const rawId = cleanPath.split('/')[2];
+    const catId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     const updatePayload = { ...body };
     if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
-    const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', id).select().single();
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: fresh }));
-    return { success: true, category: data };
+
+    let updatedCat = { id: catId, ...updatePayload };
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', catId).select().single();
+        if (!error && data) updatedCat = data;
+      } catch (e) {}
+    }
+
+    const updated = memoryCategories.map(c => String(c.id) === String(rawId) ? { ...c, ...updatedCat } : c);
+    saveMemoryCategories(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
+    return { success: true, category: updatedCat, categories: updated };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'DELETE') {
-    const id = cleanPath.split('/')[2];
-    if (supabase) { try { await supabase.from('categories').delete().eq('id', id); } catch (e) {} }
-    const fresh = await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: fresh }));
-    return { success: true, message: 'Category deleted' };
+    const rawId = cleanPath.split('/')[2];
+    const catId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+    if (supabase) {
+      try {
+        await supabase.from('categories').delete().or(`id.eq.${catId},id.eq.${rawId}`);
+      } catch (e) {}
+    }
+    const updated = memoryCategories.filter(c => String(c.id) !== String(rawId));
+    saveMemoryCategories(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
+    return { success: true, message: 'Category deleted', categories: updated };
   }
 
-  // ── FOODS (Admin → Supabase → broadcast to all users) ─────────────────────
+  // ── FOODS ─────────────────────────────────────────────────────────────
   if (cleanPath === '/foods') {
+    if (isFoodsUserModified) {
+      return { success: true, foods: memoryFoods };
+    }
     if (supabase) {
       try {
         const { data, error } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-        if (!error && data) return { success: true, foods: data };
-      } catch (e) {}
-    }
-    return { success: true, foods: DEFAULT_FOODS };
-  }
-
-  if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
-    const id = cleanPath.split('/')[2];
-    if (supabase) {
-      try {
-        const { data: item } = await supabase.from('food_items').select('is_available').eq('id', id).single();
-        if (item) {
-          // Handle both boolean and integer column types
-          const isAvailable = item.is_available === true || item.is_available === 1;
-          const { data } = await supabase.from('food_items').update({ is_available: !isAvailable }).eq('id', id).select().single();
-          const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
-          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
-          return { success: true, food: data };
+        if (!error && data && data.length) {
+          memoryFoods = data;
+          return { success: true, foods: data };
         }
       } catch (e) {}
     }
-    return { success: true, message: 'Availability toggled' };
+    return { success: true, foods: memoryFoods };
+  }
+
+  if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
+    const rawId = cleanPath.split('/')[2];
+    const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+    let updatedItem = null;
+
+    if (supabase) {
+      try {
+        const { data: item } = await supabase.from('food_items').select('is_available').eq('id', foodId).maybeSingle();
+        if (item) {
+          const isAvailable = item.is_available === true || item.is_available === 1;
+          const { data } = await supabase.from('food_items').update({ is_available: isAvailable ? 0 : 1 }).eq('id', foodId).select().single();
+          if (data) updatedItem = data;
+        }
+      } catch (e) {}
+    }
+
+    const updated = memoryFoods.map(f => {
+      if (String(f.id) === String(rawId)) {
+        const currentAvail = f.is_available === true || f.is_available === 1;
+        const nextAvail = currentAvail ? 0 : 1;
+        return { ...f, is_available: nextAvail };
+      }
+      return f;
+    });
+    saveMemoryFoods(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
+    return { success: true, message: 'Availability toggled', foods: updated };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'GET') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const found = memoryFoods.find(f => String(f.id) === String(rawId));
+    if (found) return { success: true, food: found };
+
     if (supabase) {
       try {
-        const { data } = await supabase.from('food_items').select('*').eq('id', id).single();
+        const { data } = await supabase.from('food_items').select('*').eq('id', rawId).maybeSingle();
         if (data) return { success: true, food: data };
       } catch (e) {}
     }
-    return { success: true, food: DEFAULT_FOODS.find(f => String(f.id) === String(id)) || DEFAULT_FOODS[0] };
+    return { success: true, food: memoryFoods[0] };
   }
 
   if (cleanPath === '/foods' && method === 'POST') {
-    if (!supabase) return { success: false, message: 'Database not connected' };
+    const newId = Date.now();
     const foodPayload = {
+      id: newId,
       name: body.name || 'Delicious Dish',
       slug: body.slug || createSlug(body.name),
       category_id: body.category_id ? Number(body.category_id) : 1,
@@ -713,48 +911,78 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       description: body.description || '',
       rating: body.rating ? Number(body.rating) : 4.8
     };
-    const { data, error } = await supabase.from('food_items').insert([foodPayload]).select().single();
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
-    return { success: true, food: data };
+
+    let createdFood = foodPayload;
+    if (supabase) {
+      try {
+        const { id, ...dbPayload } = foodPayload;
+        const { data, error } = await supabase.from('food_items').insert([dbPayload]).select().single();
+        if (!error && data) createdFood = data;
+      } catch (e) {}
+    }
+
+    const updated = [...memoryFoods, createdFood];
+    saveMemoryFoods(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
+    return { success: true, food: createdFood, foods: updated };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'PUT') {
-    const id = cleanPath.split('/')[2];
-    if (!supabase) return { success: false, message: 'Database not connected' };
+    const rawId = cleanPath.split('/')[2];
+    const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     const updatePayload = { ...body };
     if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
     if (body.category_id !== undefined) updatePayload.category_id = Number(body.category_id);
     if (body.price !== undefined) updatePayload.price = Number(body.price);
     if (body.discount_price !== undefined) updatePayload.discount_price = body.discount_price ? Number(body.discount_price) : null;
-    // Cast integer 1/0 for postgresql compatibility
     if (body.is_veg !== undefined) updatePayload.is_veg = (body.is_veg === true || body.is_veg === 1 || body.is_veg === '1') ? 1 : 0;
     if (body.is_available !== undefined) updatePayload.is_available = (body.is_available === false || body.is_available === 0 || body.is_available === '0') ? 0 : 1;
     if (body.is_featured !== undefined) updatePayload.is_featured = (body.is_featured === true || body.is_featured === 1 || body.is_featured === '1') ? 1 : 0;
-    const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', id).select().single();
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('food_items', broadcastFoods);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
-    return { success: true, food: data };
+
+    let updatedFood = { id: foodId, ...updatePayload };
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', foodId).select().single();
+        if (!error && data) updatedFood = data;
+      } catch (e) {}
+    }
+
+    const updated = memoryFoods.map(f => String(f.id) === String(rawId) ? { ...f, ...updatedFood } : f);
+    saveMemoryFoods(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
+    return { success: true, food: updatedFood, foods: updated };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'DELETE') {
-    const id = cleanPath.split('/')[2];
-    if (!supabase) return { success: false, message: 'Database not connected' };
-    const { error } = await supabase.from('food_items').delete().eq('id', id);
-    if (error) throw new Error(error.message);
-    const fresh = await refetchAndBroadcast('food_items', broadcastFoods, 'id');
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: fresh }));
+    const rawId = cleanPath.split('/')[2];
+    const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+    if (supabase) {
+      try {
+        await supabase.from('food_items').delete().or(`id.eq.${foodId},id.eq.${rawId}`);
+      } catch (e) {}
     }
-    return { success: true, message: 'Food item deleted' };
+    const updated = memoryFoods.filter(f => String(f.id) !== String(rawId));
+    saveMemoryFoods(updated);
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
+    return { success: true, message: 'Food item deleted', foods: updated };
   }
 
   // -------------------------------------------------------------
   // 4. HERO SLIDES
   // -------------------------------------------------------------
   if (cleanPath === '/hero-slides' || cleanPath === '/hero-slides/admin') {
+    if (isHeroSlidesUserModified) {
+      const filteredMemory = cleanPath === '/hero-slides' 
+        ? memoryHeroSlides.filter(s => s.is_active !== false && s.is_active !== 0)
+        : memoryHeroSlides;
+      const formattedMemory = filteredMemory.map(s => ({
+        ...s,
+        desc: s.desc_text || s.desc || '',
+        desc_text: s.desc_text || s.desc || ''
+      }));
+      return { success: true, slides: formattedMemory };
+    }
+
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -772,6 +1000,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
             desc: s.desc_text || s.desc || '',
             desc_text: s.desc_text || s.desc || ''
           }));
+          // Save to memory store
+          memoryHeroSlides = formatted;
           return { success: true, slides: formatted };
         }
       } catch (e) {}
@@ -946,6 +1176,12 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // 6. COUPONS
   // -------------------------------------------------------------
   if (cleanPath === '/coupons' || cleanPath === '/coupons/active' || cleanPath === '/coupons/admin') {
+    if (isCouponsUserModified) {
+      const filteredCoupons = cleanPath === '/coupons/admin'
+        ? memoryCoupons
+        : memoryCoupons.filter(c => c.is_active !== 0 && c.is_active !== false);
+      return { success: true, coupons: filteredCoupons };
+    }
     if (supabase) {
       try {
         let q = supabase.from('coupons').select('*').order('id', { ascending: false });
@@ -954,14 +1190,15 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         }
         const { data, error } = await q;
         if (!error && data && data.length) {
+          memoryCoupons = data;
           return { success: true, coupons: data };
         }
       } catch (e) {}
     }
-    if (cleanPath === '/coupons/admin') {
-      return { success: true, coupons: DEFAULT_COUPONS };
-    }
-    return { success: true, coupons: DEFAULT_COUPONS.filter(c => c.is_active !== 0) };
+    const filteredCoupons = cleanPath === '/coupons/admin'
+      ? memoryCoupons
+      : memoryCoupons.filter(c => c.is_active !== 0 && c.is_active !== false);
+    return { success: true, coupons: filteredCoupons };
   }
 
   if (cleanPath === '/coupons/validate') {
@@ -973,8 +1210,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       throw new Error('Please enter a coupon code.');
     }
 
-    let coupon = null;
-    if (supabase) {
+    let coupon = memoryCoupons.find(c => c.code.toUpperCase() === cleanCode);
+    if (!coupon && supabase) {
       try {
         const { data, error } = await supabase
           .from('coupons')
@@ -983,9 +1220,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
           .maybeSingle();
         if (!error && data) coupon = data;
       } catch (e) {}
-    }
-    if (!coupon) {
-      coupon = DEFAULT_COUPONS.find(c => c.code.toUpperCase() === cleanCode);
     }
 
     if (!coupon) {
@@ -1002,9 +1236,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     if (coupon.end_date && coupon.end_date < todayStr) {
       throw new Error(`This coupon offer expired on ${coupon.end_date}.`);
-    }
-    if (coupon.expires_at && coupon.expires_at < todayStr) {
-      throw new Error(`This coupon offer expired on ${coupon.expires_at}.`);
     }
 
     const minVal = Number(coupon.min_order_value || 0);
@@ -1057,7 +1288,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/coupons' && method === 'POST') {
+    const newId = Date.now();
     const newCouponData = {
+      id: newId,
       code: (body.code || '').trim().toUpperCase(),
       discount_type: body.discount_type || 'percentage',
       discount_value: Number(body.discount_value || 0),
@@ -1069,17 +1302,23 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       times_used: 0
     };
 
+    let createdCoupon = newCouponData;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('coupons').insert([newCouponData]).select().single();
-        if (!error && data) return { success: true, coupon: data };
+        const { id, ...dbPayload } = newCouponData;
+        const { data, error } = await supabase.from('coupons').insert([dbPayload]).select().single();
+        if (!error && data) createdCoupon = data;
       } catch (e) {}
     }
-    return { success: true, coupon: { id: Date.now(), ...newCouponData } };
+
+    const updated = [...memoryCoupons, createdCoupon];
+    saveMemoryCoupons(updated);
+    return { success: true, coupon: createdCoupon, coupons: updated };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'PUT') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const couponId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     const updateData = {
       ...body,
       code: body.code ? body.code.trim().toUpperCase() : undefined,
@@ -1088,81 +1327,108 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       max_discount: body.max_discount !== undefined ? Number(body.max_discount) : undefined,
       is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : undefined
     };
-
     Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);
 
+    let updatedCoupon = { id: couponId, ...updateData };
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('coupons').update(updateData).eq('id', id).select().single();
-        if (!error && data) return { success: true, coupon: data };
+        const { data, error } = await supabase.from('coupons').update(updateData).eq('id', couponId).select().single();
+        if (!error && data) updatedCoupon = data;
       } catch (e) {}
     }
-    return { success: true, coupon: { id: Number(id), ...updateData } };
+
+    const updated = memoryCoupons.map(c => String(c.id) === String(rawId) ? { ...c, ...updatedCoupon } : c);
+    saveMemoryCoupons(updated);
+    return { success: true, coupon: updatedCoupon, coupons: updated };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'DELETE') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const couponId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
       try {
-        await supabase.from('coupons').delete().eq('id', id);
+        await supabase.from('coupons').delete().or(`id.eq.${couponId},id.eq.${rawId}`);
       } catch (e) {}
     }
-    return { success: true, message: 'Coupon deleted' };
+    const updated = memoryCoupons.filter(c => String(c.id) !== String(rawId));
+    saveMemoryCoupons(updated);
+    return { success: true, message: 'Coupon deleted', coupons: updated };
   }
 
   // -------------------------------------------------------------
   // 7. BRANCHES
   // -------------------------------------------------------------
   if (cleanPath === '/branches') {
+    if (isBranchesUserModified) {
+      return { success: true, branches: memoryBranches };
+    }
     if (supabase) {
       try {
         const { data, error } = await supabase.from('branches').select('*').order('id', { ascending: true });
-        if (!error && data && data.length) return { success: true, branches: data };
+        if (!error && data && data.length) {
+          memoryBranches = data;
+          return { success: true, branches: data };
+        }
       } catch (e) {}
     }
-    return { success: true, branches: DEFAULT_BRANCHES };
+    return { success: true, branches: memoryBranches };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'GET') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const found = memoryBranches.find(br => String(br.id) === String(rawId));
+    if (found) return { success: true, branch: found };
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('branches').select('*').eq('id', id).single();
+        const { data, error } = await supabase.from('branches').select('*').eq('id', rawId).maybeSingle();
         if (!error && data) return { success: true, branch: data };
       } catch (e) {}
     }
-    return { success: true, branch: DEFAULT_BRANCHES.find(br => String(br.id) === String(id)) || DEFAULT_BRANCHES[0] };
+    return { success: true, branch: memoryBranches[0] };
   }
 
   if (cleanPath === '/branches' && method === 'POST') {
+    const newId = Date.now();
+    const branchData = { id: newId, ...body };
+    let createdBranch = branchData;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('branches').insert([body]).select().single();
-        if (!error && data) return { success: true, branch: data };
+        const { id, ...dbPayload } = branchData;
+        const { data, error } = await supabase.from('branches').insert([dbPayload]).select().single();
+        if (!error && data) createdBranch = data;
       } catch (e) {}
     }
-    return { success: true, branch: { id: Date.now(), ...body } };
+    const updated = [...memoryBranches, createdBranch];
+    saveMemoryBranches(updated);
+    return { success: true, branch: createdBranch, branches: updated };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'PUT') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const branchId = isNaN(Number(rawId)) ? rawId : Number(rawId);
+    let updatedBranch = { id: branchId, ...body };
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('branches').update(body).eq('id', id).select().single();
-        if (!error && data) return { success: true, branch: data };
+        const { data, error } = await supabase.from('branches').update(body).eq('id', branchId).select().single();
+        if (!error && data) updatedBranch = data;
       } catch (e) {}
     }
-    return { success: true, branch: { id: Number(id), ...body } };
+    const updated = memoryBranches.map(b => String(b.id) === String(rawId) ? { ...b, ...updatedBranch } : b);
+    saveMemoryBranches(updated);
+    return { success: true, branch: updatedBranch, branches: updated };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'DELETE') {
-    const id = cleanPath.split('/')[2];
+    const rawId = cleanPath.split('/')[2];
+    const branchId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
       try {
-        await supabase.from('branches').delete().eq('id', id);
+        await supabase.from('branches').delete().or(`id.eq.${branchId},id.eq.${rawId}`);
       } catch (e) {}
     }
-    return { success: true, message: 'Branch deleted' };
+    const updated = memoryBranches.filter(b => String(b.id) !== String(rawId));
+    saveMemoryBranches(updated);
+    return { success: true, message: 'Branch deleted', branches: updated };
   }
 
   // -------------------------------------------------------------
@@ -1170,20 +1436,27 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // -------------------------------------------------------------
   if (cleanPath === '/settings') {
     if (method === 'GET') {
+      if (isSettingsUserModified) {
+        return { success: true, settings: memorySettings };
+      }
       if (supabase) {
         try {
           const { data, error } = await supabase.from('restaurant_settings').select('*');
           if (!error && data && data.length) {
             const map = {};
             data.forEach(item => { map[item.setting_key] = item.setting_value; });
-            return { success: true, settings: { ...DEFAULT_SETTINGS, ...map } };
+            const merged = { ...DEFAULT_SETTINGS, ...map };
+            memorySettings = merged;
+            return { success: true, settings: merged };
           }
         } catch (e) {}
       }
-      return { success: true, settings: DEFAULT_SETTINGS };
+      return { success: true, settings: memorySettings };
     }
 
     if (method === 'PUT') {
+      const merged = { ...memorySettings, ...body };
+      saveMemorySettings(merged);
       if (supabase) {
         try {
           for (const [key, value] of Object.entries(body)) {
@@ -1192,11 +1465,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
               { onConflict: 'setting_key' }
             );
           }
-        } catch (e) {
-          console.warn('[Supabase Settings Error]:', e.message);
-        }
+        } catch (e) {}
       }
-      return { success: true, settings: body };
+      return { success: true, settings: merged };
     }
   }
 
@@ -1568,7 +1839,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/admin/employees') {
-    if (supabase) {
+    if (!isEmployeesUserModified && supabase) {
       try {
         // Fetch admins without relational join (avoids FK requirement → 400 error)
         const { data, error } = await supabase.from('admins').select('*').order('id', { ascending: true });
@@ -1593,21 +1864,21 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
     return {
       success: true,
-      employees: [
-        { id: 1, name: 'Executive Admin', email: 'admin@cometoeat.com', role: 'admin', branch_id: 1, branch_name: 'Indiranagar (Flagship)' },
-        { id: 2, name: 'Chef Vikram (Kitchen Staff)', email: 'chef@cometoeat.com', role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)' }
-      ]
+      employees: memoryEmployees
     };
   }
 
   if (cleanPath === '/admin/employees' && method === 'POST') {
+    let newEmp = { id: Date.now(), role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)', ...body };
     if (supabase) {
       try {
         const { data, error } = await supabase.from('admins').insert([body]).select().single();
-        if (!error && data) return { success: true, employee: data };
+        if (!error && data) newEmp = data;
       } catch (e) {}
     }
-    return { success: true, employee: { id: Date.now(), ...body } };
+    const updated = [newEmp, ...memoryEmployees];
+    saveMemoryEmployees(updated);
+    return { success: true, employee: newEmp };
   }
 
   if (cleanPath.startsWith('/admin/employees/') && cleanPath.endsWith('/transfer') && method === 'POST') {
@@ -1618,6 +1889,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('admins').update({ pending_branch_id: targetBranchId, transfer_status: 'pending' }).eq('id', id);
       } catch (e) {}
     }
+    const updated = memoryEmployees.map(e => String(e.id) === String(id) ? { ...e, pending_branch_id: targetBranchId, transfer_status: 'pending' } : e);
+    saveMemoryEmployees(updated);
     return { success: true, message: 'Branch transfer initiated' };
   }
 
@@ -1628,6 +1901,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         await supabase.from('admins').update({ pending_branch_id: null, transfer_status: 'none' }).eq('id', id);
       } catch (e) {}
     }
+    const updated = memoryEmployees.map(e => String(e.id) === String(id) ? { ...e, pending_branch_id: null, transfer_status: 'none' } : e);
+    saveMemoryEmployees(updated);
     return { success: true, message: 'Transfer cancelled' };
   }
 
