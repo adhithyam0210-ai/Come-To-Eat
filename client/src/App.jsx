@@ -204,12 +204,24 @@ function MainApp() {
       }
     });
 
-    const unsubRealtimeOffers = subscribeToOffers(() => {
-      fetchData();
+    const unsubRealtimeOffers = subscribeToOffers((liveOffers) => {
+      if (liveOffers && Array.isArray(liveOffers)) {
+        setOffers(liveOffers);
+      } else {
+        api.get('/offers').then(res => {
+          if (res.success && res.offers) setOffers(res.offers);
+        }).catch(() => {});
+      }
     });
 
-    const unsubRealtimeCoupons = subscribeToCoupons(() => {
-      fetchData();
+    const unsubRealtimeCoupons = subscribeToCoupons((liveCoupons) => {
+      if (liveCoupons && Array.isArray(liveCoupons)) {
+        setCoupons(liveCoupons);
+      } else {
+        api.get('/coupons').then(res => {
+          if (res.success && res.coupons) setCoupons(res.coupons);
+        }).catch(() => {});
+      }
     });
 
     const unsubRealtimeBranches = subscribeToBranches((liveBranches) => {

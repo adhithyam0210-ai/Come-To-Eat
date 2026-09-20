@@ -44,7 +44,7 @@ export function clearAuth() {
   localStorage.removeItem('cte_user');
 }
 
-// Ensure non-admin users cannot perform master admin store modifications
+// Require Admin Role for store content mutations
 function requireAdminRole() {
   const user = getUser();
   if (!user || user.role !== 'admin') {
@@ -52,32 +52,27 @@ function requireAdminRole() {
   }
 }
 
-function getStore(key, defaultValue = null) {
+// Helper to compute next integer ID for a table to prevent sequence collisions
+async function getNextTableId(tableName) {
+  if (!supabase) return Date.now();
   try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem(`cte_${key}`) : null;
-    return raw !== null ? JSON.parse(raw) : defaultValue;
-  } catch (e) {
-    return defaultValue;
-  }
-}
-
-function setStore(key, value) {
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(`cte_${key}`, JSON.stringify(value));
+    const { data } = await supabase.from(tableName).select('id').order('id', { ascending: false }).limit(1);
+    if (data && data.length > 0) {
+      const maxId = Number(data[0].id);
+      if (!isNaN(maxId)) return maxId + 1;
     }
   } catch (e) {}
+  return 1;
 }
 
-// ==============================================================================
-// DEFAULT & PERSISTENT LOCAL STORAGE STATE
-// ==============================================================================
-const DEFAULT_BRANCHES = [
-  { id: 1, name: 'Indiranagar (Flagship)', code: 'INDIRA', address: '100 Feet Rd, Indiranagar, Bengaluru, 560038', phone: '+91 98765 43210', is_active: 1 },
-  { id: 2, name: 'Koramangala', code: 'KORA', address: '80 Feet Rd, 5th Block, Koramangala, Bengaluru, 560095', phone: '+91 98765 43211', is_active: 1 },
-  { id: 3, name: 'HSR Layout', code: 'HSR', address: '27th Main Rd, Sector 1, HSR Layout, Bengaluru, 560102', phone: '+91 98765 43212', is_active: 1 },
-  { id: 4, name: 'Whitefield', code: 'WHITE', address: 'ITPB Main Road, Whitefield, Bengaluru, 560066', phone: '+91 98765 43213', is_active: 1 }
-];
+// Helper to refetch and broadcast updated tables to all realtime subscribers
+async function refetchAndBroadcast(tableName, broadcastFn, orderBy = 'id') {
+  if (!supabase || !broadcastFn) return;
+  try {
+    const { data } = await supabase.from(tableName).select('*').order(orderBy, { ascending: true });
+    if (data) broadcastFn(data);
+  } catch (e) {}
+}
 
 const DEFAULT_SETTINGS = {
   timing_text: 'Open Daily: 10:00 AM – 11:30 PM',
@@ -87,29 +82,6 @@ const DEFAULT_SETTINGS = {
   contact_phone: '+91 98765 43210',
   contact_email: 'hello@cometoeat.com'
 };
-
-const DEFAULT_CATEGORIES = [
-  { id: 1, name: 'Burgers and Sandwiches', slug: 'burgers-and-sandwiches', image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', description: 'Flame-grilled smash burgers, gourmet subs, and toasted panini', sort_order: 1, is_active: 1 },
-  { id: 2, name: 'Momos', slug: 'momos', image_url: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80', description: 'Steamed, fried, and pan-seared Darjeeling momos', sort_order: 2, is_active: 1 },
-  { id: 3, name: 'Maggi', slug: 'maggi', image_url: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80', description: 'Classic, cheesy, and spicy loaded cafe-style Maggi', sort_order: 3, is_active: 1 },
-  { id: 4, name: 'Snacks', slug: 'snacks', image_url: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=800&q=80', description: 'Crispy french fries, nuggets, garlic bread, and finger bites', sort_order: 4, is_active: 1 },
-  { id: 5, name: 'Cold Beverages', slug: 'cold-beverages', image_url: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=800&q=80', description: 'Chilled iced coffees, cold brews, and fruit coolers', sort_order: 5, is_active: 1 },
-  { id: 6, name: 'Mojito', slug: 'mojito', image_url: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80', description: 'Refreshing muddled mint & lime mocktails', sort_order: 6, is_active: 1 },
-  { id: 7, name: 'Pizzas', slug: 'pizzas', image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80', description: 'Wood-fired hand-tossed Neapolitan pizzas', sort_order: 7, is_active: 1 },
-  { id: 8, name: 'Boba Tea', slug: 'boba-tea', image_url: 'https://images.unsplash.com/photo-1558857563-b37cf5c490a6?auto=format&fit=crop&w=800&q=80', description: 'Authentic Taiwanese boba & bubble milk teas', sort_order: 8, is_active: 1 },
-  { id: 9, name: 'Pasta', slug: 'pasta', image_url: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80', description: 'Italian creamy Alfredo, Arrabbiata, and Pink sauce pastas', sort_order: 9, is_active: 1 }
-];
-
-const DEFAULT_FOODS = [
-  { id: 1, name: 'Double Smash Gourmet Burger', slug: 'double-smash-burger', description: 'Double crisp-edged smash patties, molten cheddar, caramelized butter onions, and house secret sauce on brioche.', category_id: 1, price: 249, discount_price: 219, is_veg: 0, is_featured: 1, rating: 4.8, is_available: 1, image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80' },
-  { id: 2, name: 'Truffle Mushroom Swiss Burger', slug: 'truffle-mushroom-burger', description: 'Sauteed wild mushrooms, swiss cheese melt, and white truffle aioli on toasted sesame bun.', category_id: 1, price: 269, discount_price: 239, is_veg: 1, is_featured: 1, rating: 4.7, is_available: 1, image_url: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80' },
-  { id: 3, name: 'Brown Sugar Tiger Boba Milk', slug: 'brown-sugar-tiger-boba', description: 'Slow-simmered dark caramel streaks, organic fresh dairy, and warm chewy tapioca pearls.', category_id: 8, price: 219, discount_price: 199, is_veg: 1, is_featured: 1, rating: 4.9, is_available: 1, image_url: 'https://images.unsplash.com/photo-1558857563-b37cf5c490a6?auto=format&fit=crop&w=800&q=80' },
-  { id: 4, name: 'Matcha Green Tea Cheese Foam', slug: 'matcha-cheese-foam', description: 'Ceremonial Uji matcha tea blended with fresh milk and topped with sea salt cheese foam.', category_id: 8, price: 239, discount_price: 209, is_veg: 1, is_featured: 0, rating: 4.6, is_available: 1, image_url: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=800&q=80' },
-  { id: 5, name: 'Steamed Darjeeling Chicken Momos', slug: 'steamed-chicken-momos', description: 'Hand-folded juicy minced chicken momos served with fiery red chili sesame chutney.', category_id: 2, price: 189, discount_price: 169, is_veg: 0, is_featured: 1, rating: 4.8, is_available: 1, image_url: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80' },
-  { id: 6, name: 'Pan-Fried Schezwan Paneer Momos', slug: 'pan-fried-paneer-momos', description: 'Crispy pan-seared cottage cheese momos tossed in spicy house schezwan sauce.', category_id: 2, price: 179, discount_price: 159, is_veg: 1, is_featured: 0, rating: 4.7, is_available: 1, image_url: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80' },
-  { id: 7, name: 'Neapolitan Margherita Pizza', slug: 'neapolitan-margherita', description: 'San Marzano tomato sauce, fresh buffalo mozzarella, virgin olive oil, and sweet basil leaves.', category_id: 7, price: 349, discount_price: 319, is_veg: 1, is_featured: 1, rating: 4.8, is_available: 1, image_url: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80' },
-  { id: 8, name: 'Belgian Choco Molten Lava Cake', slug: 'belgian-choco-lava', description: 'Warm dark Belgian chocolate cake with a gooey oozing molten chocolate core.', category_id: 4, price: 179, discount_price: 149, is_veg: 1, is_featured: 1, rating: 4.9, is_available: 1, image_url: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80' }
-];
 
 export const DEFAULT_HERO_SLIDES = [
   {
@@ -125,117 +97,11 @@ export const DEFAULT_HERO_SLIDES = [
     target_category: 'Cold Beverages',
     sort_order: 1,
     is_active: 1
-  },
-  {
-    id: 2,
-    tag: 'CHEF SIGNATURE',
-    script: 'Gourmet Burgers',
-    title: 'Flame-Grilled Juicy Smash Burgers',
-    desc: 'Double crisp-edged patties, molten aged cheddar, caramelized butter onions, and house secret sauce on warm brioche.',
-    desc_text: 'Double crisp-edged patties, molten aged cheddar, caramelized butter onions, and house secret sauce on warm brioche.',
-    image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80',
-    button_text: 'Explore Burgers',
-    bg_color: '#8B9474',
-    target_category: 'Burgers and Sandwiches',
-    sort_order: 2,
-    is_active: 1
-  },
-  {
-    id: 3,
-    tag: 'TAIWANESE AUTHENTIC',
-    script: 'Tiger Milk Boba',
-    title: 'Brown Sugar Tapioca Bubble Tea',
-    desc: 'Slow-simmered dark caramel streaks, organic fresh dairy, and warm chewy tapioca pearls brewed fresh daily.',
-    desc_text: 'Slow-simmered dark caramel streaks, organic fresh dairy, and warm chewy tapioca pearls brewed fresh daily.',
-    image_url: 'https://images.unsplash.com/photo-1558857563-b37cf5c490a6?auto=format&fit=crop&w=900&q=80',
-    button_text: 'Taste Boba',
-    bg_color: '#969F82',
-    target_category: 'Boba Tea',
-    sort_order: 3,
-    is_active: 1
   }
 ];
-
-const DEFAULT_OFFERS = [
-  { id: 1, title: 'Flat 50% OFF First Order', tag: 'WELCOME SPECIAL', description: 'Unlock 50% discount on gourmet smash burgers, momos, and fresh coolers prepared live.', image_url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80', button_text: 'Order Burgers Now', target_category: 'Burgers and Sandwiches', bg_color: '#85926B', is_active: 1 },
-  { id: 2, title: 'Free Boba Topping & Drink Upgrade', tag: 'BOBA FESTIVAL', description: 'Buy any signature Brown Sugar Tiger Boba and receive a complimentary cheese foam top layer.', image_url: 'https://images.unsplash.com/photo-1558857563-b37cf5c490a6?auto=format&fit=crop&w=800&q=80', button_text: 'Explore Boba Drinks', target_category: 'Boba Tea & Drinks', bg_color: '#969F82', is_active: 1 },
-  { id: 3, title: 'Darjeeling Momo Platter Combo', tag: 'SNACKING BUNDLE', description: 'Order 2 Momo plates & get 1 fresh Lime Mojito completely free with rapid table delivery.', image_url: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80', button_text: 'View Momo Combos', target_category: 'Momos & Dumplings', bg_color: '#8B9474', is_active: 1 }
-];
-
-const DEFAULT_COUPONS = [
-  { id: 1, code: 'WELCOME50', discount_type: 'percentage', discount_value: 50, min_order_value: 200, max_discount: 150, is_active: 1 },
-  { id: 2, code: 'FEAST100', discount_type: 'fixed', discount_value: 100, min_order_value: 499, max_discount: 100, is_active: 1 },
-  { id: 3, code: 'FREESHIP', discount_type: 'fixed', discount_value: 40, min_order_value: 150, max_discount: 40, is_active: 1 }
-];
-
-let memoryHeroSlides = getStore('hero_slides', [...DEFAULT_HERO_SLIDES]);
-const saveMemoryHeroSlides = (slides) => {
-  memoryHeroSlides = slides;
-  setStore('hero_slides', slides);
-};
-
-let memoryOffers = getStore('offers', [...DEFAULT_OFFERS]);
-const saveMemoryOffers = (offers) => {
-  memoryOffers = offers;
-  setStore('offers', offers);
-};
-
-let memoryCoupons = getStore('coupons', [...DEFAULT_COUPONS]);
-const saveMemoryCoupons = (coupons) => {
-  memoryCoupons = coupons;
-  setStore('coupons', coupons);
-};
-
-let memoryCategories = getStore('categories', [...DEFAULT_CATEGORIES]);
-const saveMemoryCategories = (cats) => {
-  memoryCategories = cats;
-  setStore('categories', cats);
-};
-
-let memoryFoods = getStore('foods', [...DEFAULT_FOODS]);
-const saveMemoryFoods = (foods) => {
-  memoryFoods = foods;
-  setStore('foods', foods);
-};
-
-let memoryBranches = getStore('branches', [...DEFAULT_BRANCHES]);
-const saveMemoryBranches = (branches) => {
-  memoryBranches = branches;
-  setStore('branches', branches);
-};
-
-let memoryEmployees = getStore('employees', [
-  { id: 1, name: 'Executive Admin', email: 'admin@cometoeat.com', role: 'admin', branch_id: 1, branch_name: 'Indiranagar (Flagship)' },
-  { id: 2, name: 'Chef Vikram (Kitchen Staff)', email: 'chef@cometoeat.com', role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)' }
-]);
-const saveMemoryEmployees = (employees) => {
-  memoryEmployees = employees;
-  setStore('employees', employees);
-};
-
-let memorySettings = getStore('settings', { ...DEFAULT_SETTINGS });
-const saveMemorySettings = (settings) => {
-  memorySettings = settings;
-  setStore('settings', settings);
-};
-
-function getStoredOrders() {
-  return getStore('local_orders', []);
-}
-
-function saveStoredOrder(order) {
-  const all = getStoredOrders();
-  const idx = all.findIndex(o => String(o.id) === String(order.id) || o.order_number === order.order_number);
-  if (idx >= 0) {
-    all[idx] = { ...all[idx], ...order };
-  } else {
-    all.unshift(order);
-  }
-  setStore('local_orders', all.slice(0, 50));
-}
 
 // ==============================================================================
-// DIRECT SUPABASE CLIENT API LAYER
+// DIRECT SUPABASE POSTGRESQL BACKEND API LAYER (ZERO LOCALSTORAGE DATA FALLBACK)
 // ==============================================================================
 
 export async function directSupabaseRequest(endpoint, options = {}) {
@@ -243,6 +109,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   const cleanPath = endpoint.split('?')[0].replace(/^\/api/, '');
   const queryParams = new URLSearchParams(endpoint.includes('?') ? endpoint.split('?')[1] : '');
   const body = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : {};
+
+  if (!supabase) {
+    throw new Error('Supabase client is not connected. Check environment variables.');
+  }
 
   // -------------------------------------------------------------
   // 1. AUTHENTICATION & USERS
@@ -252,93 +122,73 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const cleanEmail = (email || '').trim().toLowerCase();
 
     // Check admins table in Supabase
-    if (supabase) {
-      try {
-        const { data: adminData, error: adminErr } = await supabase
-          .from('admins')
-          .select('*')
-          .ilike('email', cleanEmail)
-          .maybeSingle();
+    const { data: adminData, error: adminErr } = await supabase
+      .from('admins')
+      .select('*')
+      .ilike('email', cleanEmail)
+      .maybeSingle();
 
-        if (!adminErr && adminData) {
-          if (adminData.password === password || password === 'admin123' || password === 'employee123') {
-            let branchName = 'Indiranagar (Flagship)';
-            let branchCode = 'INDIRA';
-            if (adminData.branch_id) {
-              const { data: br } = await supabase.from('branches').select('name, code').eq('id', adminData.branch_id).maybeSingle();
-              if (br) {
-                branchName = br.name;
-                branchCode = br.code;
-              }
-            }
-            const userPayload = {
-              id: adminData.id,
-              name: adminData.name,
-              email: adminData.email,
-              role: adminData.role || 'admin',
-              branch_id: adminData.branch_id || 1,
-              branch_name: branchName,
-              branch_code: branchCode,
-              pending_branch_id: adminData.pending_branch_id || null,
-              transfer_status: adminData.transfer_status || 'none'
-            };
-            const token = `cte_jwt_${adminData.id}_${Date.now()}`;
-            return {
-              success: true,
-              message: adminData.role === 'employee' ? 'Kitchen Employee login successful' : 'Admin login successful',
-              token,
-              user: userPayload,
-              redirect: adminData.role === 'employee' ? '/employee' : '/admin'
-            };
+    if (!adminErr && adminData) {
+      if (adminData.password === password || password === 'admin123' || password === 'employee123') {
+        let branchName = 'Indiranagar (Flagship)';
+        let branchCode = 'INDIRA';
+        if (adminData.branch_id) {
+          const { data: br } = await supabase.from('branches').select('name, code').eq('id', adminData.branch_id).maybeSingle();
+          if (br) {
+            branchName = br.name;
+            branchCode = br.code;
           }
         }
-      } catch (e) {}
-
-      // Check users table in Supabase
-      try {
-        const { data: userData, error: userErr } = await supabase
-          .from('users')
-          .select('*')
-          .ilike('email', cleanEmail)
-          .maybeSingle();
-
-        if (!userErr && userData) {
-          if (userData.is_blocked) {
-            throw new Error('Your account has been temporarily suspended.');
-          }
-          if (userData.password === password || password === 'user123') {
-            const userPayload = {
-              id: userData.id,
-              name: userData.name,
-              email: userData.email,
-              phone: userData.phone,
-              role: 'user'
-            };
-            const token = `cte_jwt_${userData.id}_${Date.now()}`;
-            return {
-              success: true,
-              message: 'Welcome back to Come To Eat!',
-              token,
-              user: userPayload,
-              redirect: '/'
-            };
-          }
-        }
-      } catch (e) {}
+        const userPayload = {
+          id: adminData.id,
+          name: adminData.name,
+          email: adminData.email,
+          role: adminData.role || 'admin',
+          branch_id: adminData.branch_id || 1,
+          branch_name: branchName,
+          branch_code: branchCode,
+          pending_branch_id: adminData.pending_branch_id || null,
+          transfer_status: adminData.transfer_status || 'none'
+        };
+        const token = `cte_jwt_${adminData.id}_${Date.now()}`;
+        return {
+          success: true,
+          message: adminData.role === 'employee' ? 'Kitchen Employee login successful' : 'Admin login successful',
+          token,
+          user: userPayload,
+          redirect: adminData.role === 'employee' ? '/employee' : '/admin'
+        };
+      }
     }
 
-    // Default Fallback Accounts
-    if (cleanEmail === 'admin@cometoeat.com' && (password === 'admin123' || password === 'admin')) {
-      const u = { id: 1, name: 'Executive Admin', email: 'admin@cometoeat.com', role: 'admin', branch_id: 1, branch_name: 'Indiranagar (Flagship)', branch_code: 'INDIRA' };
-      return { success: true, token: 'cte_token_admin', user: u, redirect: '/admin' };
-    }
-    if (cleanEmail === 'chef@cometoeat.com' && (password === 'employee123' || password === 'chef123' || password === 'employee')) {
-      const u = { id: 2, name: 'Chef Vikram (Kitchen Staff)', email: 'chef@cometoeat.com', role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)', branch_code: 'INDIRA' };
-      return { success: true, token: 'cte_token_employee', user: u, redirect: '/employee' };
-    }
-    if (cleanEmail.includes('@') && password && password.length >= 3) {
-      const u = { id: 99, name: cleanEmail.split('@')[0], email: cleanEmail, role: 'user' };
-      return { success: true, token: 'cte_token_user', user: u, redirect: '/' };
+    // Check users table in Supabase
+    const { data: userData, error: userErr } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('email', cleanEmail)
+      .maybeSingle();
+
+    if (!userErr && userData) {
+      if (userData.is_blocked) {
+        throw new Error('Your account has been temporarily suspended.');
+      }
+      if (userData.password === password || password === 'user123') {
+        const userPayload = {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          phone: userData.phone,
+          role: 'user'
+        };
+        const token = `cte_jwt_${userData.id}_${Date.now()}`;
+        return {
+          success: true,
+          message: 'Welcome back to Come To Eat!',
+          token,
+          user: userPayload,
+          redirect: '/'
+        };
+      }
     }
 
     throw new Error('Invalid email or password.');
@@ -348,54 +198,58 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { name, email, password, phone } = body;
     const cleanEmail = (email || '').trim().toLowerCase();
 
-    if (supabase) {
-      try {
-        const { data: newUser, error } = await supabase
-          .from('users')
-          .insert([{ name: name.trim(), email: cleanEmail, password: password, phone: phone || null, role: 'user' }])
-          .select()
-          .single();
-
-        if (!error && newUser) {
-          const token = `cte_jwt_${newUser.id}_${Date.now()}`;
-          return {
-            success: true,
-            message: 'Account created successfully! Welcome to Come To Eat.',
-            token,
-            user: newUser,
-            redirect: '/'
-          };
-        }
-      } catch (e) {}
+    const { data: existingUser } = await supabase.from('users').select('*').eq('email', cleanEmail).maybeSingle();
+    if (existingUser) {
+      const token = `cte_jwt_${existingUser.id}_${Date.now()}`;
+      return {
+        success: true,
+        message: 'Account logged in successfully!',
+        token,
+        user: existingUser,
+        redirect: '/'
+      };
     }
 
-    const fallbackUser = { id: Date.now(), name: name.trim(), email: cleanEmail, phone: phone || null, role: 'user' };
-    return { success: true, token: `cte_jwt_${fallbackUser.id}`, user: fallbackUser, redirect: '/' };
+    const nextUserId = await getNextTableId('users');
+    const { data: newUser, error } = await supabase
+      .from('users')
+      .insert([{ id: nextUserId, name: name.trim(), email: cleanEmail, password: password, phone: phone || null, role: 'user' }])
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message || 'Registration failed.');
+
+    const token = `cte_jwt_${newUser.id}_${Date.now()}`;
+    return {
+      success: true,
+      message: 'Account created successfully! Welcome to Come To Eat.',
+      token,
+      user: newUser,
+      redirect: '/'
+    };
   }
 
   if (cleanPath === '/auth/me') {
     const user = getUser();
     if (!user) throw new Error('Not authenticated');
 
-    if (supabase && (user.role === 'admin' || user.role === 'employee')) {
-      try {
-        const { data, error } = await supabase
-          .from('admins')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
+    if (user.role === 'admin' || user.role === 'employee') {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
-        if (!error && data) {
-          return {
-            success: true,
-            user: {
-              ...data,
-              branch_name: user.branch_name,
-              branch_code: user.branch_code
-            }
-          };
-        }
-      } catch (e) {}
+      if (!error && data) {
+        return {
+          success: true,
+          user: {
+            ...data,
+            branch_name: user.branch_name,
+            branch_code: user.branch_code
+          }
+        };
+      }
     }
 
     return { success: true, user };
@@ -406,76 +260,43 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (!user) return { success: true, addresses: [] };
 
     if (method === 'GET') {
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.from('addresses').select('*').eq('user_id', user.id).order('is_default', { ascending: false });
-          if (!error && data && data.length) return { success: true, addresses: data };
-        } catch (e) {}
-      }
-      const localAddresses = getStore(`addresses_${user.id}`, [
-        { id: 1, user_id: user.id, label: 'Home', street: 'Flat 402, Green Glen Heights, HSR Layout', city: 'Bengaluru', landmark: 'Near Agara Lake', phone: user.phone || '+91 98765 43210', is_default: 1 }
-      ]);
-      return { success: true, addresses: localAddresses };
+      const { data, error } = await supabase.from('addresses').select('*').eq('user_id', user.id).order('is_default', { ascending: false });
+      if (error) throw error;
+      return { success: true, addresses: data || [] };
     }
 
     if (method === 'POST') {
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.from('addresses').insert([{ ...body, user_id: user.id }]).select().single();
-          if (!error && data) return { success: true, address: data };
-        } catch (e) {}
-      }
-      const newAddress = { id: Date.now(), ...body, user_id: user.id };
-      const current = getStore(`addresses_${user.id}`, []);
-      current.push(newAddress);
-      setStore(`addresses_${user.id}`, current);
-      return { success: true, address: newAddress };
+      const nextId = await getNextTableId('addresses');
+      const { data, error } = await supabase.from('addresses').insert([{ id: nextId, ...body, user_id: user.id }]).select().single();
+      if (error) throw error;
+      return { success: true, address: data };
     }
   }
 
-  if (cleanPath.startsWith('/auth/addresses/')) {
+  if (cleanPath.startsWith('/auth/addresses/') && method === 'DELETE') {
     const id = cleanPath.split('/')[3];
-    if (supabase) {
-      try {
-        await supabase.from('addresses').delete().eq('id', id);
-      } catch (e) {}
-    }
-    const user = getUser();
-    if (user) {
-      const current = getStore(`addresses_${user.id}`, []).filter(a => String(a.id) !== String(id));
-      setStore(`addresses_${user.id}`, current);
-    }
+    const { error } = await supabase.from('addresses').delete().eq('id', id);
+    if (error) throw error;
     return { success: true, message: 'Address deleted' };
   }
 
   // -------------------------------------------------------------
-  // 2. CATEGORIES
+  // 2. CATEGORIES (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/categories' || cleanPath === '/categories/admin') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
-        if (!error && data && data.length) {
-          saveMemoryCategories(data);
-          const result = cleanPath === '/categories'
-            ? data.filter(c => c.is_active !== false && c.is_active !== 0)
-            : data;
-          return { success: true, categories: result };
-        }
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+    if (error) throw error;
     const result = cleanPath === '/categories'
-      ? memoryCategories.filter(c => c.is_active !== false && c.is_active !== 0)
-      : memoryCategories;
+      ? (data || []).filter(c => c.is_active !== false && c.is_active !== 0)
+      : (data || []);
     return { success: true, categories: result };
   }
 
   if (cleanPath === '/categories' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryCategories.map(c => Number(c.id) || 0));
-    const newId = maxId + 1;
+    const nextId = await getNextTableId('categories');
     const catPayload = {
-      id: newId,
+      id: nextId,
       name: body.name || 'New Category',
       slug: body.slug || createSlug(body.name),
       description: body.description || '',
@@ -484,19 +305,12 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1
     };
 
-    let createdCat = catPayload;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('categories').insert([catPayload]).select().single();
-        if (!error && data) createdCat = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('categories').insert([catPayload]).select().single();
+    if (error) throw error;
 
-    const updated = [...memoryCategories.filter(c => String(c.id) !== String(createdCat.id)), createdCat];
-    saveMemoryCategories(updated);
-    broadcastCategories(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
-    return { success: true, category: createdCat, categories: updated };
+    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: data }));
+    return { success: true, category: data };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'PUT') {
@@ -506,97 +320,65 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const updatePayload = { ...body };
     if (body.name && !body.slug) updatePayload.slug = createSlug(body.name);
 
-    let updatedCat = { id: catId, ...updatePayload };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', catId).select().single();
-        if (!error && data) updatedCat = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', catId).select().single();
+    if (error) throw error;
 
-    const updated = memoryCategories.map(c => String(c.id) === String(rawId) ? { ...c, ...updatedCat } : c);
-    saveMemoryCategories(updated);
-    broadcastCategories(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
-    return { success: true, category: updatedCat, categories: updated };
+    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: data }));
+    return { success: true, category: data };
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'DELETE') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const catId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    if (supabase) {
-      try {
-        await supabase.from('categories').delete().or(`id.eq.${catId},id.eq.${rawId}`);
-      } catch (e) {}
-    }
-    const updated = memoryCategories.filter(c => String(c.id) !== String(rawId));
-    saveMemoryCategories(updated);
-    broadcastCategories(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
-    return { success: true, message: 'Category deleted', categories: updated };
+    const { error } = await supabase.from('categories').delete().or(`id.eq.${catId},id.eq.${rawId}`);
+    if (error) throw error;
+
+    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated'));
+    return { success: true, message: 'Category deleted' };
   }
 
   // -------------------------------------------------------------
-  // 3. FOODS
+  // 3. FOODS (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/foods') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-        if (!error && data && data.length) {
-          saveMemoryFoods(data);
-          return { success: true, foods: data };
-        }
-      } catch (e) {}
-    }
-    return { success: true, foods: memoryFoods };
+    const { data, error } = await supabase.from('food_items').select('*').order('id', { ascending: true });
+    if (error) throw error;
+    return { success: true, foods: data || [] };
   }
 
   if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
     const rawId = cleanPath.split('/')[2];
     const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
 
-    const existingFood = memoryFoods.find(f => String(f.id) === String(rawId));
-    const currentAvail = existingFood ? (existingFood.is_available === true || existingFood.is_available === 1) : true;
-    const nextAvail = currentAvail ? 0 : 1;
+    const { data: currentItem, error: fetchErr } = await supabase.from('food_items').select('is_available').eq('id', foodId).single();
+    if (fetchErr || !currentItem) throw new Error('Food item not found.');
 
-    if (supabase) {
-      try {
-        await supabase.from('food_items').update({ is_available: nextAvail }).eq('id', foodId);
-      } catch (e) {}
-    }
+    const isAvailable = currentItem.is_available === true || currentItem.is_available === 1;
+    const nextAvail = isAvailable ? 0 : 1;
 
-    const updated = memoryFoods.map(f => {
-      if (String(f.id) === String(rawId)) {
-        return { ...f, is_available: nextAvail };
-      }
-      return f;
-    });
-    saveMemoryFoods(updated);
-    broadcastFoods(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
-    return { success: true, message: 'Availability toggled', foods: updated };
+    const { data, error } = await supabase.from('food_items').update({ is_available: nextAvail }).eq('id', foodId).select().single();
+    if (error) throw error;
+
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
+    return { success: true, message: 'Availability toggled', food: data };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'GET') {
     const rawId = cleanPath.split('/')[2];
-    if (supabase) {
-      try {
-        const { data } = await supabase.from('food_items').select('*').eq('id', rawId).maybeSingle();
-        if (data) return { success: true, food: data };
-      } catch (e) {}
-    }
-    const found = memoryFoods.find(f => String(f.id) === String(rawId));
-    return { success: true, food: found || memoryFoods[0] };
+    const { data, error } = await supabase.from('food_items').select('*').eq('id', rawId).maybeSingle();
+    if (error || !data) throw new Error('Food item not found.');
+    return { success: true, food: data };
   }
 
   if (cleanPath === '/foods' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryFoods.map(f => Number(f.id) || 0));
-    const newId = maxId + 1;
+    const nextId = await getNextTableId('food_items');
     const foodPayload = {
-      id: newId,
+      id: nextId,
       name: body.name || 'Delicious Dish',
       slug: body.slug || createSlug(body.name),
       category_id: body.category_id ? Number(body.category_id) : 1,
@@ -611,19 +393,12 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       rating: body.rating ? Number(body.rating) : 4.8
     };
 
-    let createdFood = foodPayload;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('food_items').insert([foodPayload]).select().single();
-        if (!error && data) createdFood = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('food_items').insert([foodPayload]).select().single();
+    if (error) throw error;
 
-    const updated = [...memoryFoods.filter(f => String(f.id) !== String(createdFood.id)), createdFood];
-    saveMemoryFoods(updated);
-    broadcastFoods(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
-    return { success: true, food: createdFood, foods: updated };
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
+    return { success: true, food: data };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'PUT') {
@@ -639,77 +414,55 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (body.is_available !== undefined) updatePayload.is_available = (body.is_available === false || body.is_available === 0 || body.is_available === '0') ? 0 : 1;
     if (body.is_featured !== undefined) updatePayload.is_featured = (body.is_featured === true || body.is_featured === 1 || body.is_featured === '1') ? 1 : 0;
 
-    let updatedFood = { id: foodId, ...updatePayload };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', foodId).select().single();
-        if (!error && data) updatedFood = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', foodId).select().single();
+    if (error) throw error;
 
-    const updated = memoryFoods.map(f => String(f.id) === String(rawId) ? { ...f, ...updatedFood } : f);
-    saveMemoryFoods(updated);
-    broadcastFoods(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
-    return { success: true, food: updatedFood, foods: updated };
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
+    return { success: true, food: data };
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'DELETE') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    if (supabase) {
-      try {
-        await supabase.from('food_items').delete().or(`id.eq.${foodId},id.eq.${rawId}`);
-      } catch (e) {}
-    }
-    const updated = memoryFoods.filter(f => String(f.id) !== String(rawId));
-    saveMemoryFoods(updated);
-    broadcastFoods(updated);
-    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
-    return { success: true, message: 'Food item deleted', foods: updated };
+
+    const { error } = await supabase.from('food_items').delete().or(`id.eq.${foodId},id.eq.${rawId}`);
+    if (error) throw error;
+
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
+    return { success: true, message: 'Food item deleted' };
   }
 
   // -------------------------------------------------------------
-  // 4. HERO SLIDES
+  // 4. HERO SLIDES (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/hero-slides' || cleanPath === '/hero-slides/admin') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('hero_slides')
-          .select('*')
-          .order('sort_order', { ascending: true });
+    const { data, error } = await supabase.from('hero_slides').select('*').order('sort_order', { ascending: true });
+    if (error) throw error;
 
-        if (!error && data && data.length) {
-          const formatted = data.map(s => ({
-            ...s,
-            desc: s.desc_text || s.desc || '',
-            desc_text: s.desc_text || s.desc || ''
-          }));
-          saveMemoryHeroSlides(formatted);
-          const slides = cleanPath === '/hero-slides' ? formatted.filter(s => s.is_active !== false && s.is_active !== 0) : formatted;
-          return { success: true, slides };
-        }
-      } catch (e) {}
-    }
-    const filteredMemory = cleanPath === '/hero-slides'
-      ? memoryHeroSlides.filter(s => s.is_active !== false && s.is_active !== 0)
-      : memoryHeroSlides;
-    return { success: true, slides: filteredMemory };
+    const formatted = (data || []).map(s => ({
+      ...s,
+      desc: s.desc_text || s.desc || '',
+      desc_text: s.desc_text || s.desc || ''
+    }));
+
+    const result = cleanPath === '/hero-slides'
+      ? formatted.filter(s => s.is_active !== false && s.is_active !== 0)
+      : formatted;
+    return { success: true, slides: result };
   }
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryHeroSlides.map(s => Number(s.id) || 0));
-    const newId = maxId + 1;
+    const nextId = await getNextTableId('hero_slides');
     const payload = {
-      id: newId,
+      id: nextId,
       tag: body.tag || 'CHEF SPECIAL',
       script: body.script || 'Delicious & Fresh',
       title: body.title || 'Special Signature',
       desc_text: body.desc_text || body.desc || '',
-      desc: body.desc_text || body.desc || '',
       image_url: body.image_url || body.image || '',
       button_text: body.button_text || 'Order Now',
       bg_color: body.bg_color || '#85926B',
@@ -719,24 +472,13 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       is_active: body.is_active !== undefined ? (body.is_active ? 1 : 0) : 1
     };
 
-    let createdSlide = payload;
-    if (supabase) {
-      try {
-        const { desc, ...dbPayload } = payload;
-        const { data, error } = await supabase.from('hero_slides').insert([dbPayload]).select().single();
-        if (!error && data) {
-          createdSlide = { ...data, desc: data.desc_text || data.desc || '' };
-        }
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('hero_slides').insert([payload]).select().single();
+    if (error) throw error;
 
-    const updated = [...memoryHeroSlides.filter(s => String(s.id) !== String(createdSlide.id)), createdSlide];
-    saveMemoryHeroSlides(updated);
-    broadcastHeroSlides(updated);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updated }));
-    }
-    return { success: true, slide: createdSlide, slides: updated };
+    const formatted = { ...data, desc: data.desc_text || data.desc || '' };
+    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:hero_slides_updated'));
+    return { success: true, slide: formatted };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'PUT') {
@@ -748,10 +490,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (body.tag !== undefined) payload.tag = body.tag;
     if (body.script !== undefined) payload.script = body.script;
     if (body.title !== undefined) payload.title = body.title;
-    if (body.desc !== undefined || body.desc_text !== undefined) {
-      payload.desc_text = body.desc_text || body.desc || '';
-      payload.desc = body.desc_text || body.desc || '';
-    }
+    if (body.desc !== undefined || body.desc_text !== undefined) payload.desc_text = body.desc_text || body.desc || '';
     if (body.image_url !== undefined || body.image !== undefined) payload.image_url = body.image_url || body.image || '';
     if (body.button_text !== undefined) payload.button_text = body.button_text;
     if (body.bg_color !== undefined) payload.bg_color = body.bg_color;
@@ -760,29 +499,13 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (body.sort_order !== undefined) payload.sort_order = Number(body.sort_order);
     if (body.is_active !== undefined) payload.is_active = (body.is_active ? 1 : 0);
 
-    let updatedSlide = { id: slideId, ...payload };
-    if (supabase) {
-      try {
-        const { desc, ...dbPayload } = payload;
-        const { data, error } = await supabase
-          .from('hero_slides')
-          .update(dbPayload)
-          .eq('id', slideId)
-          .select()
-          .single();
-        if (!error && data) {
-          updatedSlide = { ...data, desc: data.desc_text || data.desc || '' };
-        }
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('hero_slides').update(payload).eq('id', slideId).select().single();
+    if (error) throw error;
 
-    const updatedList = memoryHeroSlides.map(s => String(s.id) === String(rawId) ? { ...s, ...updatedSlide } : s);
-    saveMemoryHeroSlides(updatedList);
-    broadcastHeroSlides(updatedList);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updatedList }));
-    }
-    return { success: true, slide: updatedSlide, slides: updatedList };
+    const formatted = { ...data, desc: data.desc_text || data.desc || '' };
+    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:hero_slides_updated'));
+    return { success: true, slide: formatted };
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'DELETE') {
@@ -790,112 +513,72 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const rawId = cleanPath.split('/')[2];
     const slideId = isNaN(Number(rawId)) ? rawId : Number(rawId);
 
-    if (supabase) {
-      try {
-        await supabase.from('hero_slides').delete().or(`id.eq.${slideId},id.eq.${rawId}`);
-      } catch (e) {}
-    }
+    const { error } = await supabase.from('hero_slides').delete().or(`id.eq.${slideId},id.eq.${rawId}`);
+    if (error) throw error;
 
-    const updatedList = memoryHeroSlides.filter(s => String(s.id) !== String(rawId));
-    saveMemoryHeroSlides(updatedList);
-    broadcastHeroSlides(updatedList);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('cte:hero_slides_updated', { detail: updatedList }));
-    }
-    return { success: true, message: 'Slide deleted', slides: updatedList };
+    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:hero_slides_updated'));
+    return { success: true, message: 'Slide deleted' };
   }
 
   // -------------------------------------------------------------
-  // 5. OFFERS
+  // 5. OFFERS (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/offers' || cleanPath === '/offers/admin') {
-    if (supabase) {
-      try {
-        let q = supabase.from('offer_banners').select('*').order('id', { ascending: true });
-        if (cleanPath === '/offers') q = q.eq('is_active', 1);
-        const { data, error } = await q;
-        if (!error && data && data.length) {
-          saveMemoryOffers(data);
-          return { success: true, offers: data };
-        }
-      } catch (e) {}
-    }
-    const filteredOffers = cleanPath === '/offers' ? memoryOffers.filter(o => o.is_active !== 0) : memoryOffers;
-    return { success: true, offers: filteredOffers };
+    let q = supabase.from('offer_banners').select('*').order('id', { ascending: true });
+    if (cleanPath === '/offers') q = q.eq('is_active', 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    return { success: true, offers: data || [] };
   }
 
   if (cleanPath === '/offers' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryOffers.map(o => Number(o.id) || 0));
-    const newId = maxId + 1;
-    const offerData = { id: newId, ...body };
+    const nextId = await getNextTableId('offer_banners');
+    const offerData = { id: nextId, ...body };
 
-    let created = offerData;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('offer_banners').insert([offerData]).select().single();
-        if (!error && data) created = data;
-      } catch (e) {}
-    }
-    const updated = [...memoryOffers.filter(o => String(o.id) !== String(created.id)), created];
-    saveMemoryOffers(updated);
-    broadcastOffers(updated);
-    return { success: true, offer: created, offers: updated };
+    const { data, error } = await supabase.from('offer_banners').insert([offerData]).select().single();
+    if (error) throw error;
+
+    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id');
+    return { success: true, offer: data };
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'PUT') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const offerId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    let updatedOffer = { id: offerId, ...body };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('offer_banners').update(body).eq('id', offerId).select().single();
-        if (!error && data) updatedOffer = data;
-      } catch (e) {}
-    }
-    const updated = memoryOffers.map(o => String(o.id) === String(rawId) ? { ...o, ...updatedOffer } : o);
-    saveMemoryOffers(updated);
-    broadcastOffers(updated);
-    return { success: true, offer: updatedOffer, offers: updated };
+
+    const { data, error } = await supabase.from('offer_banners').update(body).eq('id', offerId).select().single();
+    if (error) throw error;
+
+    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id');
+    return { success: true, offer: data };
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'DELETE') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const offerId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    if (supabase) {
-      try {
-        await supabase.from('offer_banners').delete().or(`id.eq.${offerId},id.eq.${rawId}`);
-      } catch (e) {}
-    }
-    const updated = memoryOffers.filter(o => String(o.id) !== String(rawId));
-    saveMemoryOffers(updated);
-    broadcastOffers(updated);
-    return { success: true, message: 'Offer deleted', offers: updated };
+
+    const { error } = await supabase.from('offer_banners').delete().or(`id.eq.${offerId},id.eq.${rawId}`);
+    if (error) throw error;
+
+    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id');
+    return { success: true, message: 'Offer deleted' };
   }
 
   // -------------------------------------------------------------
-  // 6. COUPONS
+  // 6. COUPONS (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/coupons' || cleanPath === '/coupons/active' || cleanPath === '/coupons/admin') {
-    if (supabase) {
-      try {
-        let q = supabase.from('coupons').select('*').order('id', { ascending: false });
-        if (cleanPath === '/coupons/active' || cleanPath === '/coupons') {
-          q = q.eq('is_active', 1);
-        }
-        const { data, error } = await q;
-        if (!error && data && data.length) {
-          saveMemoryCoupons(data);
-          return { success: true, coupons: data };
-        }
-      } catch (e) {}
+    let q = supabase.from('coupons').select('*').order('id', { ascending: false });
+    if (cleanPath === '/coupons/active' || cleanPath === '/coupons') {
+      q = q.eq('is_active', 1);
     }
-    const filteredCoupons = cleanPath === '/coupons/admin'
-      ? memoryCoupons
-      : memoryCoupons.filter(c => c.is_active !== 0 && c.is_active !== false);
-    return { success: true, coupons: filteredCoupons };
+    const { data, error } = await q;
+    if (error) throw error;
+    return { success: true, coupons: data || [] };
   }
 
   if (cleanPath === '/coupons/validate') {
@@ -903,41 +586,24 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const cleanCode = rawCode.trim().toUpperCase();
     const orderTotal = Number(body.order_amount ?? body.totalAmount ?? body.orderTotal ?? 0);
 
-    if (!cleanCode) {
-      throw new Error('Please enter a coupon code.');
-    }
+    if (!cleanCode) throw new Error('Please enter a coupon code.');
 
-    let coupon = memoryCoupons.find(c => c.code.toUpperCase() === cleanCode);
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('coupons')
-          .select('*')
-          .eq('code', cleanCode)
-          .maybeSingle();
-        if (!error && data) coupon = data;
-      } catch (e) {}
-    }
+    const { data: coupon, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', cleanCode)
+      .maybeSingle();
 
-    if (!coupon) {
-      throw new Error(`Coupon "${cleanCode}" is invalid or does not exist.`);
-    }
-
-    if (coupon.is_active === 0 || coupon.is_active === false) {
-      throw new Error(`Coupon "${cleanCode}" is currently inactive.`);
-    }
+    if (error || !coupon) throw new Error(`Coupon "${cleanCode}" is invalid or does not exist.`);
+    if (coupon.is_active === 0 || coupon.is_active === false) throw new Error(`Coupon "${cleanCode}" is currently inactive.`);
 
     const todayStr = new Date().toISOString().split('T')[0];
-    if (coupon.start_date && coupon.start_date > todayStr) {
-      throw new Error(`This coupon offer begins on ${coupon.start_date}.`);
-    }
-    if (coupon.end_date && coupon.end_date < todayStr) {
-      throw new Error(`This coupon offer expired on ${coupon.end_date}.`);
-    }
+    if (coupon.start_date && coupon.start_date > todayStr) throw new Error(`This coupon offer begins on ${coupon.start_date}.`);
+    if (coupon.end_date && coupon.end_date < todayStr) throw new Error(`This coupon offer expired on ${coupon.end_date}.`);
 
     const minVal = Number(coupon.min_order_value || 0);
     if (minVal > 0 && orderTotal < minVal) {
-      throw new Error(`Minimum order value of ₹${minVal} required to apply coupon "${coupon.code}". (Your item total: ₹${orderTotal})`);
+      throw new Error(`Minimum order value of ₹${minVal} required for coupon "${coupon.code}". (Order total: ₹${orderTotal})`);
     }
 
     let discount = 0;
@@ -946,14 +612,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     if (coupon.discount_type === 'percentage') {
       discount = (orderTotal * discVal) / 100;
-      if (maxDisc > 0 && discount > maxDisc) {
-        discount = maxDisc;
-      }
+      if (maxDisc > 0 && discount > maxDisc) discount = maxDisc;
     } else {
       discount = discVal;
-      if (maxDisc > 0 && discount > maxDisc) {
-        discount = maxDisc;
-      }
+      if (maxDisc > 0 && discount > maxDisc) discount = maxDisc;
     }
 
     discount = Math.min(discount, orderTotal);
@@ -976,7 +638,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       valid: true,
       coupon: couponObj,
       code: coupon.code,
-      discount: discount,
+      discount,
       discountAmount: discount,
       discountType: couponObj.discount_type,
       discountValue: discVal,
@@ -986,10 +648,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath === '/coupons' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryCoupons.map(c => Number(c.id) || 0));
-    const newId = maxId + 1;
+    const nextId = await getNextTableId('coupons');
     const newCouponData = {
-      id: newId,
+      id: nextId,
       code: (body.code || '').trim().toUpperCase(),
       discount_type: body.discount_type || 'percentage',
       discount_value: Number(body.discount_value || 0),
@@ -1001,18 +662,11 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       times_used: 0
     };
 
-    let createdCoupon = newCouponData;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('coupons').insert([newCouponData]).select().single();
-        if (!error && data) createdCoupon = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('coupons').insert([newCouponData]).select().single();
+    if (error) throw error;
 
-    const updated = [...memoryCoupons.filter(c => String(c.id) !== String(createdCoupon.id)), createdCoupon];
-    saveMemoryCoupons(updated);
-    broadcastCoupons(updated);
-    return { success: true, coupon: createdCoupon, coupons: updated };
+    await refetchAndBroadcast('coupons', broadcastCoupons, 'id');
+    return { success: true, coupon: data };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'PUT') {
@@ -1029,177 +683,133 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     };
     Object.keys(updateData).forEach(k => updateData[k] === undefined && delete updateData[k]);
 
-    let updatedCoupon = { id: couponId, ...updateData };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('coupons').update(updateData).eq('id', couponId).select().single();
-        if (!error && data) updatedCoupon = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase.from('coupons').update(updateData).eq('id', couponId).select().single();
+    if (error) throw error;
 
-    const updated = memoryCoupons.map(c => String(c.id) === String(rawId) ? { ...c, ...updatedCoupon } : c);
-    saveMemoryCoupons(updated);
-    broadcastCoupons(updated);
-    return { success: true, coupon: updatedCoupon, coupons: updated };
+    await refetchAndBroadcast('coupons', broadcastCoupons, 'id');
+    return { success: true, coupon: data };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'DELETE') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const couponId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    if (supabase) {
-      try {
-        await supabase.from('coupons').delete().or(`id.eq.${couponId},id.eq.${rawId}`);
-      } catch (e) {}
-    }
-    const updated = memoryCoupons.filter(c => String(c.id) !== String(rawId));
-    saveMemoryCoupons(updated);
-    broadcastCoupons(updated);
-    return { success: true, message: 'Coupon deleted', coupons: updated };
+
+    const { error } = await supabase.from('coupons').delete().or(`id.eq.${couponId},id.eq.${rawId}`);
+    if (error) throw error;
+
+    await refetchAndBroadcast('coupons', broadcastCoupons, 'id');
+    return { success: true, message: 'Coupon deleted' };
   }
 
   // -------------------------------------------------------------
-  // 7. BRANCHES
+  // 7. BRANCHES (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/branches') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('branches').select('*').order('id', { ascending: true });
-        if (!error && data && data.length) {
-          saveMemoryBranches(data);
-          return { success: true, branches: data };
-        }
-      } catch (e) {}
-    }
-    return { success: true, branches: memoryBranches };
+    const { data, error } = await supabase.from('branches').select('*').order('id', { ascending: true });
+    if (error) throw error;
+    return { success: true, branches: data || [] };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'GET') {
     const rawId = cleanPath.split('/')[2];
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('branches').select('*').eq('id', rawId).maybeSingle();
-        if (!error && data) return { success: true, branch: data };
-      } catch (e) {}
-    }
-    const found = memoryBranches.find(br => String(br.id) === String(rawId));
-    return { success: true, branch: found || memoryBranches[0] };
+    const { data, error } = await supabase.from('branches').select('*').eq('id', rawId).maybeSingle();
+    if (error || !data) throw new Error('Branch not found.');
+    return { success: true, branch: data };
   }
 
   if (cleanPath === '/branches' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryBranches.map(b => Number(b.id) || 0));
-    const newId = maxId + 1;
-    const branchData = { id: newId, ...body };
-    let createdBranch = branchData;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('branches').insert([branchData]).select().single();
-        if (!error && data) createdBranch = data;
-      } catch (e) {}
-    }
-    const updated = [...memoryBranches.filter(b => String(b.id) !== String(createdBranch.id)), createdBranch];
-    saveMemoryBranches(updated);
-    broadcastBranches(updated);
-    return { success: true, branch: createdBranch, branches: updated };
+    const nextId = await getNextTableId('branches');
+    const branchData = { id: nextId, ...body };
+
+    const { data, error } = await supabase.from('branches').insert([branchData]).select().single();
+    if (error) throw error;
+
+    await refetchAndBroadcast('branches', broadcastBranches, 'id');
+    return { success: true, branch: data };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'PUT') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const branchId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    let updatedBranch = { id: branchId, ...body };
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('branches').update(body).eq('id', branchId).select().single();
-        if (!error && data) updatedBranch = data;
-      } catch (e) {}
-    }
-    const updated = memoryBranches.map(b => String(b.id) === String(rawId) ? { ...b, ...updatedBranch } : b);
-    saveMemoryBranches(updated);
-    broadcastBranches(updated);
-    return { success: true, branch: updatedBranch, branches: updated };
+
+    const { data, error } = await supabase.from('branches').update(body).eq('id', branchId).select().single();
+    if (error) throw error;
+
+    await refetchAndBroadcast('branches', broadcastBranches, 'id');
+    return { success: true, branch: data };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'DELETE') {
     requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const branchId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    if (supabase) {
-      try {
-        await supabase.from('branches').delete().or(`id.eq.${branchId},id.eq.${rawId}`);
-      } catch (e) {}
-    }
-    const updated = memoryBranches.filter(b => String(b.id) !== String(rawId));
-    saveMemoryBranches(updated);
-    broadcastBranches(updated);
-    return { success: true, message: 'Branch deleted', branches: updated };
+
+    const { error } = await supabase.from('branches').delete().or(`id.eq.${branchId},id.eq.${rawId}`);
+    if (error) throw error;
+
+    await refetchAndBroadcast('branches', broadcastBranches, 'id');
+    return { success: true, message: 'Branch deleted' };
   }
 
   // -------------------------------------------------------------
-  // 8. STORE SETTINGS
+  // 8. STORE SETTINGS (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/settings') {
     if (method === 'GET') {
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.from('restaurant_settings').select('*');
-          if (!error && data && data.length) {
-            const map = {};
-            data.forEach(item => { map[item.setting_key] = item.setting_value; });
-            const merged = { ...DEFAULT_SETTINGS, ...map };
-            saveMemorySettings(merged);
-            return { success: true, settings: merged };
-          }
-        } catch (e) {}
+      const { data, error } = await supabase.from('restaurant_settings').select('*');
+      if (error) throw error;
+      const map = {};
+      if (data && data.length) {
+        data.forEach(item => { map[item.setting_key] = item.setting_value; });
       }
-      return { success: true, settings: memorySettings };
+      const merged = { ...DEFAULT_SETTINGS, ...map };
+      return { success: true, settings: merged };
     }
 
     if (method === 'PUT') {
       requireAdminRole();
-      const merged = { ...memorySettings, ...body };
-      saveMemorySettings(merged);
-      broadcastSettings(merged);
-      if (supabase) {
-        try {
-          for (const [key, value] of Object.entries(body)) {
-            await supabase.from('restaurant_settings').upsert(
-              { setting_key: key, setting_value: String(value) },
-              { onConflict: 'setting_key' }
-            );
-          }
-        } catch (e) {}
+      for (const [key, value] of Object.entries(body)) {
+        await supabase.from('restaurant_settings').upsert(
+          { setting_key: key, setting_value: String(value) },
+          { onConflict: 'setting_key' }
+        );
       }
+
+      const { data: updatedData } = await supabase.from('restaurant_settings').select('*');
+      const map = {};
+      if (updatedData) {
+        updatedData.forEach(item => { map[item.setting_key] = item.setting_value; });
+      }
+      const merged = { ...DEFAULT_SETTINGS, ...map };
+
+      if (broadcastSettings) broadcastSettings(merged);
       return { success: true, settings: merged };
     }
   }
 
   // -------------------------------------------------------------
-  // 9. REVIEWS
+  // 9. REVIEWS (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/reviews' || cleanPath.startsWith('/reviews/food/') || cleanPath === '/reviews/admin') {
     if (method === 'GET') {
-      if (supabase) {
-        try {
-          let q = supabase.from('reviews').select('*').order('created_at', { ascending: false });
-          if (cleanPath.startsWith('/reviews/food/')) {
-            const foodId = cleanPath.split('/')[3];
-            q = q.eq('food_id', foodId);
-          }
-          const { data, error } = await q;
-          if (!error && data && data.length) return { success: true, reviews: data };
-        } catch (e) {}
+      let q = supabase.from('reviews').select('*').order('created_at', { ascending: false });
+      if (cleanPath.startsWith('/reviews/food/')) {
+        const foodId = cleanPath.split('/')[3];
+        q = q.eq('food_id', foodId);
       }
-      return { success: true, reviews: getStore('reviews', [
-        { id: 1, user_name: 'Ananya Sharma', rating: 5, comment: 'The Double Smash Burger is truly the best in Bengaluru!', created_at: new Date().toISOString() },
-        { id: 2, user_name: 'Rahul Mehta', rating: 5, comment: 'Brown Sugar Tiger Boba is authentic Taiwanese quality.', created_at: new Date().toISOString() }
-      ]) };
+      const { data, error } = await q;
+      if (error) throw error;
+      return { success: true, reviews: data || [] };
     }
 
     if (method === 'POST') {
       const user = getUser();
+      const nextId = await getNextTableId('reviews');
       const reviewPayload = {
+        id: nextId,
         user_name: body.user_name || user?.name || 'Customer',
         user_id: user?.id || null,
         rating: Number(body.rating) || 5,
@@ -1208,26 +818,20 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         branch_id: body.branch_id || 1,
         is_approved: 1
       };
-      if (supabase) {
-        try {
-          const { data, error } = await supabase.from('reviews').insert([reviewPayload]).select().single();
-          if (!error && data) return { success: true, review: data };
-        } catch (e) {}
-      }
-      const newRev = { id: Date.now(), ...reviewPayload, created_at: new Date().toISOString() };
-      const current = getStore('reviews', []);
-      current.unshift(newRev);
-      setStore('reviews', current);
-      return { success: true, review: newRev };
+
+      const { data, error } = await supabase.from('reviews').insert([reviewPayload]).select().single();
+      if (error) throw error;
+      return { success: true, review: data };
     }
   }
 
   // -------------------------------------------------------------
-  // 10. ORDERS & REALTIME (Connects directly to orders table)
+  // 10. ORDERS & REALTIME (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/orders' && method === 'POST') {
     const user = getUser();
     const orderNumber = `CTE-${Date.now().toString().slice(-6)}`;
+
     const orderRecord = {
       order_number: orderNumber,
       user_id: user?.id || null,
@@ -1257,52 +861,41 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       updated_at: new Date().toISOString()
     };
 
-    let createdOrder = null;
+    const { data: createdOrder, error: orderErr } = await supabase
+      .from('orders')
+      .insert([orderRecord])
+      .select()
+      .single();
 
-    if (supabase) {
+    if (orderErr) throw orderErr;
+
+    if (body.items && Array.isArray(body.items)) {
       try {
-        const { data: insertedOrder, error: orderErr } = await supabase
-          .from('orders')
-          .insert([orderRecord])
-          .select()
-          .single();
-
-        if (!orderErr && insertedOrder) {
-          createdOrder = insertedOrder;
-
-          if (body.items && Array.isArray(body.items)) {
-            try {
-              const itemsPayload = body.items.map(item => ({
-                order_id: createdOrder.id,
-                food_id: item.food_id || item.id,
-                food_name: item.name || item.food_name,
-                unit_price: Number(item.price || item.unit_price),
-                quantity: Number(item.quantity || 1),
-                subtotal: Number(item.subtotal || ((item.price || 0) * (item.quantity || 1))),
-                selected_addons_json: item.selected_addons ? JSON.stringify(item.selected_addons) : null
-              }));
-              await supabase.from('order_items').insert(itemsPayload);
-            } catch (e) {}
-          }
-        }
+        const nextItemId = await getNextTableId('order_items');
+        const itemsPayload = body.items.map((item, idx) => ({
+          id: nextItemId + idx,
+          order_id: createdOrder.id,
+          food_id: item.food_id || item.id,
+          food_name: item.name || item.food_name,
+          unit_price: Number(item.price || item.unit_price),
+          quantity: Number(item.quantity || 1),
+          subtotal: Number(item.subtotal || ((item.price || 0) * (item.quantity || 1))),
+          selected_addons_json: item.selected_addons ? JSON.stringify(item.selected_addons) : null
+        }));
+        await supabase.from('order_items').insert(itemsPayload);
       } catch (e) {}
-    }
-
-    if (!createdOrder) {
-      createdOrder = { id: Date.now(), ...orderRecord };
     }
 
     if (body.coupon_code) {
       const appliedCode = body.coupon_code.trim().toUpperCase();
-      const localCoupons = getStore('coupons', DEFAULT_COUPONS);
-      const cpIdx = localCoupons.findIndex(c => c.code.toUpperCase() === appliedCode);
-      if (cpIdx >= 0) {
-        localCoupons[cpIdx].times_used = (localCoupons[cpIdx].times_used || 0) + 1;
-        saveMemoryCoupons(localCoupons);
-      }
+      try {
+        const { data: cp } = await supabase.from('coupons').select('times_used').eq('code', appliedCode).single();
+        if (cp) {
+          await supabase.from('coupons').update({ times_used: (cp.times_used || 0) + 1 }).eq('code', appliedCode);
+        }
+      } catch (e) {}
     }
 
-    saveStoredOrder({ ...createdOrder, items: body.items || [] });
     broadcastLiveOrder(createdOrder, 'ORDER_CREATED');
 
     return {
@@ -1316,47 +909,31 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath === '/orders/user') {
     const user = getUser();
-    if (supabase && user) {
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+    if (!user) return { success: true, orders: [] };
 
-        if (!error && data && data.length) return { success: true, orders: data };
-      } catch (e) {}
-    }
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    const localOrders = getStoredOrders();
-    return { success: true, orders: localOrders };
+    if (error) throw error;
+    return { success: true, orders: data || [] };
   }
 
   if (cleanPath === '/orders/admin/all') {
     const branchId = queryParams.get('branch_id');
-    let ordersList = [];
-    if (supabase) {
-      try {
-        let q = supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (branchId && branchId !== 'all') {
-          q = q.eq('branch_id', branchId);
-        }
-        const { data, error } = await q;
-        if (!error && data && data.length) {
-          ordersList = data.map(o => ({
-            ...o,
-            items: o.items || (o.items_json ? (typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json) : [])
-          }));
-        }
-      } catch (e) {}
+    let q = supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (branchId && branchId !== 'all') {
+      q = q.eq('branch_id', branchId);
     }
+    const { data, error } = await q;
+    if (error) throw error;
 
-    if (!ordersList || ordersList.length === 0) {
-      ordersList = getStoredOrders();
-      if (branchId && branchId !== 'all') {
-        ordersList = ordersList.filter(o => String(o.branch_id) === String(branchId));
-      }
-    }
+    const ordersList = (data || []).map(o => ({
+      ...o,
+      items: o.items || (o.items_json ? (typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json) : [])
+    }));
 
     return { success: true, orders: ordersList };
   }
@@ -1365,120 +942,67 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const orderId = cleanPath.split('/')[2];
     const { status } = body;
 
-    let updated = null;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .update({ order_status: status, updated_at: new Date().toISOString() })
-          .eq('id', orderId)
-          .select()
-          .single();
-        if (!error && data) updated = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ order_status: status, updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .select()
+      .single();
 
-    if (!updated) {
-      updated = { id: Number(orderId), order_status: status, updated_at: new Date().toISOString() };
-    }
+    if (error) throw error;
 
-    saveStoredOrder(updated);
-    broadcastLiveOrder(updated, 'ORDER_STATUS_CHANGED');
-
-    return { success: true, message: `Order updated to ${status}`, order: updated };
+    broadcastLiveOrder(data, 'ORDER_STATUS_CHANGED');
+    return { success: true, message: `Order updated to ${status}`, order: data };
   }
 
   if (cleanPath.startsWith('/orders/') && cleanPath.endsWith('/cancel') && method === 'POST') {
     const orderId = cleanPath.split('/')[2];
     const { reason } = body;
 
-    let updated = null;
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .update({ order_status: 'Cancelled', cancellation_reason: reason || 'Cancelled by customer', updated_at: new Date().toISOString() })
-          .eq('id', orderId)
-          .select()
-          .single();
-        if (!error && data) updated = data;
-      } catch (e) {}
-    }
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ order_status: 'Cancelled', cancellation_reason: reason || 'Cancelled by customer', updated_at: new Date().toISOString() })
+      .eq('id', orderId)
+      .select()
+      .single();
 
-    if (!updated) {
-      updated = { id: Number(orderId), order_status: 'Cancelled', cancellation_reason: reason };
-    }
+    if (error) throw error;
 
-    saveStoredOrder(updated);
-    broadcastLiveOrder(updated, 'ORDER_CANCELLED');
-
-    return { success: true, message: 'Order has been cancelled.', order: updated };
+    broadcastLiveOrder(data, 'ORDER_CANCELLED');
+    return { success: true, message: 'Order has been cancelled.', order: data };
   }
 
   if (cleanPath.startsWith('/orders/') && method === 'GET') {
     const orderId = cleanPath.split('/')[2];
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .maybeSingle();
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
 
-        if (!error && data) return { success: true, order: data };
-      } catch (e) {}
-    }
-
-    const localMatch = getStoredOrders().find(o => String(o.id) === String(orderId) || o.order_number === orderId);
-    if (localMatch) return { success: true, order: localMatch };
-
-    return {
-      success: true,
-      order: {
-        id: Number(orderId) || 101,
-        order_number: `CTE-101`,
-        order_status: 'Order Placed',
-        final_amount: 399,
-        created_at: new Date().toISOString(),
-        customer_name: 'Guest User'
-      }
-    };
+    if (error || !data) throw new Error('Order not found.');
+    return { success: true, order: data };
   }
 
   // -------------------------------------------------------------
-  // 11. ADMIN DASHBOARD & STAFF METRICS
+  // 11. ADMIN DASHBOARD & STAFF METRICS (Direct Supabase Cloud DB)
   // -------------------------------------------------------------
   if (cleanPath === '/admin/dashboard') {
     const branchId = queryParams.get('branch_id');
-    let ordersList = [];
-
-    if (supabase) {
-      try {
-        let q = supabase.from('orders').select('*').order('created_at', { ascending: false });
-        if (branchId && branchId !== 'all') {
-          q = q.eq('branch_id', branchId);
-        }
-        const { data, error } = await q;
-        if (!error && data && data.length) {
-          ordersList = data;
-        }
-      } catch (e) {}
+    let q = supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (branchId && branchId !== 'all') {
+      q = q.eq('branch_id', branchId);
     }
+    const { data: ordersList, error } = await q;
+    if (error) throw error;
 
-    if (!ordersList || ordersList.length === 0) {
-      ordersList = getStoredOrders();
-      if (branchId && branchId !== 'all') {
-        ordersList = ordersList.filter(o => String(o.branch_id) === String(branchId));
-      }
-    }
-
-    const totalOrders = ordersList.length;
-    const totalRevenue = ordersList.reduce((sum, o) => sum + Number(o.final_amount || 0), 0);
-    const todayRevenue = Math.round(ordersList.slice(0, 4).reduce((sum, o) => sum + Number(o.final_amount || 0), 0) || (totalRevenue * 0.45));
+    const totalOrders = (ordersList || []).length;
+    const totalRevenue = (ordersList || []).reduce((sum, o) => sum + Number(o.final_amount || 0), 0);
+    const todayRevenue = Math.round((ordersList || []).slice(0, 4).reduce((sum, o) => sum + Number(o.final_amount || 0), 0) || (totalRevenue * 0.45));
     const todayOrders = Math.min(totalOrders, 4);
-    const pendingOrders = ordersList.filter(o => !['Delivered', 'Cancelled'].includes(o.order_status)).length;
-    const completedOrders = ordersList.filter(o => o.order_status === 'Delivered').length;
-    const cancelledOrders = ordersList.filter(o => o.order_status === 'Cancelled').length;
+    const pendingOrders = (ordersList || []).filter(o => !['Delivered', 'Cancelled'].includes(o.order_status)).length;
+    const completedOrders = (ordersList || []).filter(o => o.order_status === 'Delivered').length;
+    const cancelledOrders = (ordersList || []).filter(o => o.order_status === 'Cancelled').length;
 
     const popularItems = [
       { food_name: 'Double Smash Gourmet Burger', total_sold: 48, total_revenue: 11952 },
@@ -1487,7 +1011,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       { food_name: 'Belgian Choco Molten Lava Cake', total_sold: 29, total_revenue: 5191 }
     ];
 
-    const recentOrders = ordersList.slice(0, 6);
+    const recentOrders = (ordersList || []).slice(0, 6);
 
     return {
       success: true,
@@ -1508,187 +1032,122 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/admin/customers') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-        if (!error && data && data.length) return { success: true, customers: data };
-      } catch (e) {}
-    }
-    return {
-      success: true,
-      customers: [
-        { id: 1, name: 'Alex Rivera', email: 'alex@example.com', phone: '+91 98765 43210', is_blocked: 0, created_at: new Date().toISOString() }
-      ]
-    };
+    const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return { success: true, customers: data || [] };
   }
 
   if (cleanPath.startsWith('/admin/customers/') && cleanPath.endsWith('/block') && method === 'PATCH') {
     requireAdminRole();
     const id = cleanPath.split('/')[3];
-    if (supabase) {
-      try {
-        const { data: cust } = await supabase.from('users').select('is_blocked').eq('id', id).single();
-        const nextBlocked = cust?.is_blocked === 1 ? 0 : 1;
-        const { data } = await supabase.from('users').update({ is_blocked: nextBlocked }).eq('id', id).select().single();
-        return { success: true, customer: data };
-      } catch (e) {}
-    }
-    return { success: true, message: 'Status updated' };
+    const { data: cust } = await supabase.from('users').select('is_blocked').eq('id', id).single();
+    const nextBlocked = cust?.is_blocked === 1 ? 0 : 1;
+    const { data, error } = await supabase.from('users').update({ is_blocked: nextBlocked }).eq('id', id).select().single();
+    if (error) throw error;
+    return { success: true, customer: data };
   }
 
   if (cleanPath === '/admin/employees') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('admins').select('*').order('id', { ascending: true });
-        if (!error && data && data.length) {
-          let branchMap = {};
-          try {
-            const { data: branchData } = await supabase.from('branches').select('id, name, code');
-            if (branchData) {
-              branchData.forEach(b => { branchMap[b.id] = b; });
-            }
-          } catch (e) {}
+    const { data, error } = await supabase.from('admins').select('*').order('id', { ascending: true });
+    if (error) throw error;
 
-          const mapped = data.map(e => ({
-            ...e,
-            branch_name: branchMap[e.branch_id]?.name || 'Indiranagar (Flagship)',
-            branch_code: branchMap[e.branch_id]?.code || 'INDIRA'
-          }));
-          saveMemoryEmployees(mapped);
-          return { success: true, employees: mapped };
-        }
-      } catch (e) {}
-    }
-    return {
-      success: true,
-      employees: memoryEmployees
-    };
+    let branchMap = {};
+    try {
+      const { data: branchData } = await supabase.from('branches').select('id, name, code');
+      if (branchData) {
+        branchData.forEach(b => { branchMap[b.id] = b; });
+      }
+    } catch (e) {}
+
+    const mapped = (data || []).map(e => ({
+      ...e,
+      branch_name: branchMap[e.branch_id]?.name || 'Indiranagar (Flagship)',
+      branch_code: branchMap[e.branch_id]?.code || 'INDIRA'
+    }));
+
+    return { success: true, employees: mapped };
   }
 
   if (cleanPath === '/admin/employees' && method === 'POST') {
     requireAdminRole();
-    const maxId = Math.max(0, ...memoryEmployees.map(e => Number(e.id) || 0));
-    const newId = maxId + 1;
-    let newEmp = { id: newId, role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)', ...body };
-
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('admins').insert([{ id: newId, role: 'employee', branch_id: 1, ...body }]).select().single();
-        if (!error && data) newEmp = data;
-      } catch (e) {}
-    }
-    const updated = [...memoryEmployees.filter(e => String(e.id) !== String(newEmp.id)), newEmp];
-    saveMemoryEmployees(updated);
-    return { success: true, employee: newEmp };
+    const nextId = await getNextTableId('admins');
+    const { data, error } = await supabase.from('admins').insert([{ id: nextId, role: 'employee', branch_id: 1, ...body }]).select().single();
+    if (error) throw error;
+    return { success: true, employee: data };
   }
 
   if (cleanPath.startsWith('/admin/employees/') && cleanPath.endsWith('/transfer') && method === 'POST') {
     requireAdminRole();
     const id = cleanPath.split('/')[3];
     const { targetBranchId } = body;
-    if (supabase) {
-      try {
-        await supabase.from('admins').update({ pending_branch_id: targetBranchId, transfer_status: 'pending' }).eq('id', id);
-      } catch (e) {}
-    }
-    const updated = memoryEmployees.map(e => String(e.id) === String(id) ? { ...e, pending_branch_id: targetBranchId, transfer_status: 'pending' } : e);
-    saveMemoryEmployees(updated);
+    const { error } = await supabase.from('admins').update({ pending_branch_id: targetBranchId, transfer_status: 'pending' }).eq('id', id);
+    if (error) throw error;
     return { success: true, message: 'Branch transfer initiated' };
   }
 
   if (cleanPath.startsWith('/admin/employees/') && cleanPath.endsWith('/cancel-transfer') && method === 'POST') {
     requireAdminRole();
     const id = cleanPath.split('/')[3];
-    if (supabase) {
-      try {
-        await supabase.from('admins').update({ pending_branch_id: null, transfer_status: 'none' }).eq('id', id);
-      } catch (e) {}
-    }
-    const updated = memoryEmployees.map(e => String(e.id) === String(id) ? { ...e, pending_branch_id: null, transfer_status: 'none' } : e);
-    saveMemoryEmployees(updated);
+    const { error } = await supabase.from('admins').update({ pending_branch_id: null, transfer_status: 'none' }).eq('id', id);
+    if (error) throw error;
     return { success: true, message: 'Transfer cancelled' };
   }
 
   if (cleanPath === '/employee/confirm-transfer' && method === 'POST') {
     const user = getUser();
-    if (user && supabase) {
-      try {
-        const { data } = await supabase
-          .from('admins')
-          .update({ branch_id: user.pending_branch_id || user.branch_id, pending_branch_id: null, transfer_status: 'none' })
-          .eq('id', user.id)
-          .select()
-          .single();
-        if (data) {
-          const updatedUser = { ...user, branch_id: data.branch_id, pending_branch_id: null, transfer_status: 'none' };
-          setAuth(getToken(), updatedUser);
-          return { success: true, user: updatedUser };
-        }
-      } catch (e) {}
-    }
-    return { success: true, user };
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('admins')
+      .update({ branch_id: user.pending_branch_id || user.branch_id, pending_branch_id: null, transfer_status: 'none' })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    const updatedUser = { ...user, branch_id: data.branch_id, pending_branch_id: null, transfer_status: 'none' };
+    setAuth(getToken(), updatedUser);
+    return { success: true, user: updatedUser };
   }
 
   if (cleanPath === '/employee/decline-transfer' && method === 'POST') {
     const user = getUser();
-    if (user && supabase) {
-      try {
-        await supabase.from('admins').update({ pending_branch_id: null, transfer_status: 'none' }).eq('id', user.id);
-        const updatedUser = { ...user, pending_branch_id: null, transfer_status: 'none' };
-        setAuth(getToken(), updatedUser);
-        return { success: true, user: updatedUser };
-      } catch (e) {}
-    }
-    return { success: true, user };
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase.from('admins').update({ pending_branch_id: null, transfer_status: 'none' }).eq('id', user.id);
+    if (error) throw error;
+
+    const updatedUser = { ...user, pending_branch_id: null, transfer_status: 'none' };
+    setAuth(getToken(), updatedUser);
+    return { success: true, user: updatedUser };
   }
 
   if (cleanPath === '/admin/payments') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
-        if (!error && data && data.length) return { success: true, payments: data };
-      } catch (e) {}
-    }
-    return {
-      success: true,
-      payments: [
-        { id: 1, order_id: 1, amount: 489, payment_method: 'UPI', status: 'successful', transaction_id: 'TXN_998124', refund_status: 'none', created_at: new Date().toISOString() }
-      ]
-    };
+    const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return { success: true, payments: data || [] };
   }
 
   if (cleanPath.startsWith('/admin/payments/') && cleanPath.endsWith('/refund') && method === 'POST') {
     requireAdminRole();
     const orderId = cleanPath.split('/')[3];
-    if (supabase) {
-      try {
-        await supabase.from('payments').update({ refund_status: 'processed', refund_amount: body.amount || 0 }).eq('order_id', orderId);
-      } catch (e) {}
-    }
+    const { error } = await supabase.from('payments').update({ refund_status: 'processed', refund_amount: body.amount || 0 }).eq('order_id', orderId);
+    if (error) throw error;
     return { success: true, message: 'Refund issued successfully' };
   }
 
   if (cleanPath === '/admin/deliveries') {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.from('delivery_orders').select('*').order('updated_at', { ascending: false });
-        if (!error && data && data.length) return { success: true, deliveries: data };
-      } catch (e) {}
-    }
-    return {
-      success: true,
-      deliveries: [
-        { id: 1, order_id: 1, driver_name: 'Rajesh Kumar', driver_phone: '+91 99887 76655', current_status: 'assigned', updated_at: new Date().toISOString() }
-      ]
-    };
+    const { data, error } = await supabase.from('delivery_orders').select('*').order('updated_at', { ascending: false });
+    if (error) throw error;
+    return { success: true, deliveries: data || [] };
   }
 
   // -------------------------------------------------------------
-  // 12. IMAGE UPLOADS
+  // 12. IMAGE UPLOADS (Direct Supabase Cloud Storage)
   // -------------------------------------------------------------
   if (cleanPath === '/upload' && method === 'POST') {
     const { image, filename } = body;
-    if (supabase && image && image.startsWith('data:image')) {
+    if (image && image.startsWith('data:image')) {
       try {
         const matches = image.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
         if (matches) {
