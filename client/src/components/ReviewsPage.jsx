@@ -63,7 +63,7 @@ const SAMPLE_REVIEWS = [
 
 export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOpenOrders }) {
   const { user } = useAuth();
-  const [reviews, setReviews] = useState(SAMPLE_REVIEWS);
+  const [reviews, setReviews] = useState([]);
   const [ratingFilter, setRatingFilter] = useState('all');
   const [newRating, setNewRating] = useState(5);
   const [newDish, setNewDish] = useState('');
@@ -75,7 +75,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
     const q = selectedBranch?.id ? `?branch_id=${selectedBranch.id}` : '';
     api.get(`/reviews${q}`)
       .then((res) => {
-        if (res.success && res.reviews && res.reviews.length > 0) {
+        if (res.success && res.reviews) {
           const mapped = res.reviews.map((r) => ({
             id: r.id,
             name: r.user_name || 'Valued Guest',
@@ -85,9 +85,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
             date: new Date(r.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }),
             verified: true
           }));
-          setReviews([...mapped, ...SAMPLE_REVIEWS]);
-        } else {
-          setReviews(SAMPLE_REVIEWS);
+          setReviews(mapped);
         }
       })
       .catch(() => {});
@@ -134,11 +132,11 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
   };
 
   return (
-    <div style={{ backgroundColor: '#FAF8F5', minHeight: '80vh', paddingBottom: '80px' }}>
+    <div style={{ backgroundColor: '#FAF7F2', minHeight: '80vh', paddingBottom: '80px' }}>
       {/* Header Banner */}
       <div style={{
         position: 'relative',
-        backgroundColor: '#1E251B',
+        backgroundColor: '#141414',
         color: '#FFFFFF',
         padding: 'clamp(40px, 6vw, 70px) 0 clamp(44px, 6vw, 80px)',
         overflow: 'hidden'
@@ -146,7 +144,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, #1E251B 0%, #293424 70%, #FAF8F5 100%)',
+          background: 'linear-gradient(180deg, #141414 0%, #300004 70%, #FAF7F2 100%)',
           pointerEvents: 'none'
         }} />
 
@@ -155,33 +153,34 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            backgroundColor: 'rgba(133, 146, 107, 0.3)',
-            border: '1px solid rgba(133, 146, 107, 0.5)',
+            backgroundColor: 'rgba(255, 184, 0, 0.2)',
+            border: '1px solid rgba(255, 184, 0, 0.4)',
             padding: '5px 16px',
             borderRadius: '20px',
             fontSize: '0.76rem',
-            fontWeight: 700,
-            color: '#E8EFE1',
+            fontWeight: 800,
+            color: '#FFB800',
             marginBottom: '14px',
             letterSpacing: '1px',
             textTransform: 'uppercase'
           }}>
-            <Sparkles size={14} /> Guest Testimonials & Reviews
+            <Sparkles size={14} color="#FFB800" /> Guest Testimonials & Reviews
           </div>
 
           <h1 style={{
-            fontFamily: "'Playfair Display', serif",
+            fontFamily: "'Poppins', sans-serif",
             fontSize: 'clamp(2.2rem, 5vw, 3.2rem)',
-            fontWeight: 700,
-            lineHeight: 1.18,
+            fontWeight: 900,
+            lineHeight: 1.15,
             color: '#FFFFFF',
-            margin: '0 0 14px'
+            margin: '0 0 14px',
+            textTransform: 'uppercase'
           }}>
-            Loved by Foodies
+            LOVED BY FOODIES
           </h1>
 
           <p style={{
-            color: '#D4DEC8',
+            color: 'rgba(255, 255, 255, 0.88)',
             fontSize: 'clamp(0.95rem, 2vw, 1.1rem)',
             lineHeight: 1.6,
             margin: '0 0 24px'
@@ -197,18 +196,19 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
             backgroundColor: 'rgba(255, 255, 255, 0.12)',
             backdropFilter: 'blur(8px)',
             padding: '10px 24px',
-            borderRadius: '24px'
+            borderRadius: '24px',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFF' }}>4.9</span>
-              <div style={{ display: 'flex', gap: '2px', color: '#F59E0B' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFF' }}>4.9</span>
+              <div style={{ display: 'flex', gap: '2px', color: '#FFB800' }}>
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={15} fill="#F59E0B" />
+                  <Star key={i} size={16} fill="#FFB800" color="#FFB800" />
                 ))}
               </div>
             </div>
             <span style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255,255,255,0.3)' }} />
-            <span style={{ fontSize: '0.85rem', color: '#EBF0E4', fontWeight: 600 }}>Over 1,200+ Verified Orders</span>
+            <span style={{ fontSize: '0.85rem', color: '#FFFFFF', fontWeight: 700 }}>Over 1,200+ Verified Orders</span>
           </div>
         </div>
       </div>
@@ -244,10 +244,10 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                 style={{
                   padding: '7px 18px',
                   borderRadius: '20px',
-                  border: ratingFilter === tab.id ? '1.5px solid #85926B' : '1px solid #DCE3D4',
-                  backgroundColor: ratingFilter === tab.id ? '#85926B' : '#FFFFFF',
-                  color: ratingFilter === tab.id ? '#FFFFFF' : '#3D4636',
-                  fontWeight: ratingFilter === tab.id ? 700 : 600,
+                  border: ratingFilter === tab.id ? '1.5px solid #8D0A13' : '1px solid #ECE7DE',
+                  backgroundColor: ratingFilter === tab.id ? '#8D0A13' : '#FFFFFF',
+                  color: ratingFilter === tab.id ? '#FFFFFF' : '#1A1D20',
+                  fontWeight: ratingFilter === tab.id ? 800 : 700,
                   fontSize: '0.84rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s'
@@ -258,7 +258,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
             ))}
           </div>
 
-          <span style={{ fontSize: '0.86rem', color: '#6A785E', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.86rem', color: '#5A626A', fontWeight: 700 }}>
             Showing {filteredReviews.length} reviews
           </span>
         </div>
@@ -278,7 +278,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                 borderRadius: '20px',
                 padding: '24px',
                 border: '1px solid #ECE7DE',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.04)',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between'
@@ -288,15 +288,15 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', gap: '3px' }}>
                     {[...Array(rev.rating)].map((_, i) => (
-                      <Star key={i} size={15} fill="#F59E0B" color="#F59E0B" />
+                      <Star key={i} size={15} fill="#FFB800" color="#FFB800" />
                     ))}
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: '#97A38C' }}>{rev.date}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6E7781', fontWeight: 600 }}>{rev.date}</span>
                 </div>
 
                 <p style={{
                   fontSize: '0.92rem',
-                  color: '#3D4636',
+                  color: '#3A4149',
                   lineHeight: 1.6,
                   fontStyle: 'italic',
                   marginBottom: '16px'
@@ -306,7 +306,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
               </div>
 
               <div style={{
-                borderTop: '1px solid #F0EFEB',
+                borderTop: '1px solid #FAF7F2',
                 paddingTop: '14px',
                 display: 'flex',
                 alignItems: 'center',
@@ -314,14 +314,14 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
               }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#1F241C' }}>{rev.name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#1A1D20' }}>{rev.name}</span>
                     {rev.verified && (
                       <span title="Verified Order" style={{ color: '#2E7D32', display: 'flex', alignItems: 'center' }}>
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={14} />
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.76rem', color: '#85926B', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.76rem', color: '#8D0A13', fontWeight: 700, marginTop: '2px' }}>
                     Ordered: {rev.dish}
                   </div>
                 </div>
@@ -330,13 +330,13 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  backgroundColor: '#EBF0E4',
+                  backgroundColor: '#FFF8E6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#85926B'
+                  color: '#8D0A13'
                 }}>
-                  <Heart size={14} fill="#85926B" />
+                  <Heart size={14} fill="#8D0A13" color="#8D0A13" />
                 </div>
               </div>
             </div>
@@ -349,7 +349,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
           borderRadius: '24px',
           padding: 'clamp(24px, 4vw, 36px)',
           border: '1px solid #ECE7DE',
-          boxShadow: '0 8px 30px rgba(0,0,0,0.04)',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.05)',
           maxWidth: '720px',
           margin: '0 auto'
         }}>
@@ -358,19 +358,19 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
               width: '48px',
               height: '48px',
               borderRadius: '50%',
-              backgroundColor: '#EBF0E4',
-              color: '#85926B',
+              backgroundColor: '#FFF8E6',
+              color: '#8D0A13',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 12px'
             }}>
-              <ShieldCheck size={24} color="#85926B" />
+              <ShieldCheck size={24} color="#8D0A13" />
             </div>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.5rem', fontWeight: 700, color: '#1F241C', margin: '0 0 8px' }}>
-              Share Your Dining Experience
+            <h3 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.4rem', fontWeight: 900, color: '#1A1D20', margin: '0 0 8px', textTransform: 'uppercase' }}>
+              SHARE YOUR DINING EXPERIENCE
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#6A785E', maxWidth: '560px', margin: '0 auto 16px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '0.9rem', color: '#5A626A', maxWidth: '560px', margin: '0 auto 16px', lineHeight: 1.6 }}>
               We value your voice! Let us know how your food was prepared and enjoyed.
             </p>
           </div>
@@ -387,7 +387,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
               alignItems: 'center',
               gap: '10px',
               fontSize: '0.9rem',
-              fontWeight: 600
+              fontWeight: 700
             }}>
               <Check size={18} /> Thank you! Your review has been submitted and added.
             </div>
@@ -395,7 +395,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#333D29', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#1A1D20', marginBottom: '6px' }}>
                 Your Rating
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -415,19 +415,19 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                   >
                     <Star
                       size={24}
-                      fill={star <= newRating ? '#F59E0B' : 'transparent'}
-                      color={star <= newRating ? '#F59E0B' : '#D1D5DB'}
+                      fill={star <= newRating ? '#FFB800' : 'transparent'}
+                      color={star <= newRating ? '#FFB800' : '#D1D5DB'}
                     />
                   </button>
                 ))}
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#85926B', alignSelf: 'center', marginLeft: '6px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#8D0A13', alignSelf: 'center', marginLeft: '6px' }}>
                   {newRating} / 5 Stars
                 </span>
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#333D29', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#1A1D20', marginBottom: '6px' }}>
                 Dish or Beverage Ordered (Optional)
               </label>
               <input
@@ -439,16 +439,16 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: '12px',
-                  border: '1px solid #DCE3D4',
+                  border: '1px solid #ECE7DE',
                   fontSize: '0.9rem',
                   outline: 'none',
-                  backgroundColor: '#FAF8F5'
+                  backgroundColor: '#FAF7F2'
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#333D29', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#1A1D20', marginBottom: '6px' }}>
                 Your Review *
               </label>
               <textarea
@@ -461,10 +461,10 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                   width: '100%',
                   padding: '10px 14px',
                   borderRadius: '12px',
-                  border: '1px solid #DCE3D4',
+                  border: '1px solid #ECE7DE',
                   fontSize: '0.9rem',
                   outline: 'none',
-                  backgroundColor: '#FAF8F5',
+                  backgroundColor: '#FAF7F2',
                   resize: 'vertical'
                 }}
               />
@@ -478,7 +478,7 @@ export function ReviewsPage({ selectedBranch, onNavigateToHome, onOpenAuth, onOp
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#85926B',
+                    color: '#8D0A13',
                     fontSize: '0.82rem',
                     fontWeight: 600,
                     cursor: 'pointer',

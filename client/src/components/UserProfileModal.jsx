@@ -80,71 +80,74 @@ export function UserProfileModal({ isOpen, onClose }) {
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #ECE7DE',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#FAF8F5'
+          backgroundColor: '#161616',
+          color: '#FFFFFF'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '40px',
               height: '40px',
               borderRadius: '50%',
-              backgroundColor: '#85926B',
-              color: '#FFF',
+              backgroundColor: '#FFB800',
+              color: '#8D0A13',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontWeight: 800
+              fontWeight: 800,
+              fontSize: '1.1rem'
             }}>
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.35rem', fontWeight: 700, color: '#1F241C' }}>
+              <h3 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF' }}>
                 {user.name}
               </h3>
-              <div style={{ fontSize: '0.78rem', color: '#7E8775' }}>
+              <div style={{ fontSize: '0.78rem', color: '#FFB800', fontWeight: 600 }}>
                 Customer Account Profile
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ color: '#475234', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#F0F4E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={onClose} style={{ color: '#FFFFFF', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={18} />
           </button>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px', backgroundColor: '#FAF7F2' }}>
           {/* Contact Details Card */}
           <div style={{
-            backgroundColor: '#FAF8F5',
+            backgroundColor: '#FFFFFF',
             padding: '16px',
             borderRadius: '16px',
-            border: '1px solid #ECE7DE',
+            border: '1px solid #EAE5DD',
             marginBottom: '24px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px'
+            gap: '10px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#324022' }}>
-              <Mail size={16} color="#85926B" /> <strong>Email:</strong> {user.email}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#141414' }}>
+              <Mail size={16} color="#8D0A13" /> <strong>Email:</strong> {user.email}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#324022' }}>
-              <Phone size={16} color="#85926B" /> <strong>Phone:</strong> {user.phone || 'Not set'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', color: '#141414' }}>
+              <Phone size={16} color="#8D0A13" /> <strong>Phone:</strong> {user.phone || 'Not set'}
             </div>
           </div>
 
           {/* Saved Addresses Section */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h4 style={{ fontWeight: 700, fontSize: '1.05rem', color: '#1F241C' }}>
+            <h4 style={{ fontWeight: 800, fontSize: '1.05rem', color: '#141414' }}>
               Saved Delivery Addresses
             </h4>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               style={{
-                color: '#85926B',
+                color: '#8D0A13',
                 fontSize: '0.84rem',
-                fontWeight: 700,
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px'
@@ -157,16 +160,17 @@ export function UserProfileModal({ isOpen, onClose }) {
           {/* Add Address Form */}
           {showAddForm && (
             <form onSubmit={handleAddAddress} style={{
-              backgroundColor: '#F7F9F4',
+              backgroundColor: '#FFFFFF',
               padding: '18px',
               borderRadius: '16px',
-              border: '1px solid #DCE3D4',
+              border: '1px solid #EAE5DD',
               marginBottom: '20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px'
+              gap: '12px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
             }}>
-              {error && <div style={{ color: '#C62828', fontSize: '0.8rem', fontWeight: 600 }}>{error}</div>}
+              {error && <div style={{ color: '#D32F2F', fontSize: '0.8rem', fontWeight: 700 }}>{error}</div>}
 
               <div style={{ display: 'flex', gap: '8px' }}>
                 {['Home', 'Work', 'Other'].map((l) => (
@@ -179,9 +183,9 @@ export function UserProfileModal({ isOpen, onClose }) {
                       borderRadius: '8px',
                       fontSize: '0.8rem',
                       fontWeight: 700,
-                      backgroundColor: label === l ? '#85926B' : '#FFFFFF',
-                      color: label === l ? '#FFF' : '#475234',
-                      border: '1px solid #DCE3D4'
+                      backgroundColor: label === l ? '#8D0A13' : '#F5F5F5',
+                      color: label === l ? '#FFFFFF' : '#444444',
+                      border: '1px solid #EAE5DD'
                     }}
                   >
                     {l}
@@ -247,33 +251,34 @@ export function UserProfileModal({ isOpen, onClose }) {
                   padding: '14px',
                   borderRadius: '14px',
                   backgroundColor: '#FFFFFF',
-                  border: '1px solid #ECE7DE',
+                  border: '1px solid #EAE5DD',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'flex-start'
+                  alignItems: 'flex-start',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
                 }}
               >
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#2A3324', fontSize: '0.9rem' }}>
-                    {addr.label === 'Home' ? <Home size={15} color="#85926B" /> : <Briefcase size={15} color="#85926B" />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, color: '#141414', fontSize: '0.9rem' }}>
+                    {addr.label === 'Home' ? <Home size={15} color="#8D0A13" /> : <Briefcase size={15} color="#8D0A13" />}
                     <span>{addr.label}</span>
                     {addr.is_default === 1 && (
-                      <span style={{ fontSize: '0.68rem', backgroundColor: '#EBF0E4', color: '#475234', padding: '2px 6px', borderRadius: '4px' }}>
+                      <span style={{ fontSize: '0.68rem', backgroundColor: '#FFF4D6', color: '#8D0A13', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
                         DEFAULT
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '0.84rem', color: '#65705C', marginTop: '4px', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '0.84rem', color: '#555555', marginTop: '4px', lineHeight: 1.4 }}>
                     {addr.street}, {addr.city} {addr.landmark ? `(Near: ${addr.landmark})` : ''}
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#8C9776', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#888888', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <Phone size={12} /> {addr.phone}
                   </div>
                 </div>
 
                 <button
                   onClick={() => handleDeleteAddress(addr.id)}
-                  style={{ color: '#C62828', padding: '4px', opacity: 0.7 }}
+                  style={{ color: '#D32F2F', padding: '4px', opacity: 0.8 }}
                 >
                   <Trash2 size={15} />
                 </button>

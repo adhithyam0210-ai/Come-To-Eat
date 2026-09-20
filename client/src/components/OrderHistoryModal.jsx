@@ -100,11 +100,12 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #ECE7DE',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#FAF8F5'
+          backgroundColor: '#161616',
+          color: '#FFFFFF'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img
@@ -115,28 +116,28 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
                 height: '40px',
                 borderRadius: '50%',
                 objectFit: 'cover',
-                border: '2px solid #85926B',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                border: '2px solid #FFB800',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
               }}
             />
             <div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.35rem', fontWeight: 700, color: '#1F241C' }}>
+              <h3 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF' }}>
                 Your Order History
               </h3>
-              <div style={{ fontSize: '0.78rem', color: '#7E8775' }}>
+              <div style={{ fontSize: '0.78rem', color: '#FFB800', fontWeight: 600 }}>
                 View past receipts, track active orders, or reorder favorites
               </div>
             </div>
           </div>
-          <button onClick={onClose} style={{ color: '#475234', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#F0F4E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={onClose} style={{ color: '#FFFFFF', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={18} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px', backgroundColor: '#FAF7F2' }}>
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#7E8775' }}>
+            <div style={{ padding: '40px', textAlign: 'center', color: '#666666', fontWeight: 600 }}>
               Loading your previous orders...
             </div>
           ) : orders.length === 0 ? (
@@ -145,8 +146,8 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
                 width: '64px',
                 height: '64px',
                 borderRadius: '50%',
-                backgroundColor: '#F3F6EE',
-                color: '#85926B',
+                backgroundColor: '#FFF4D6',
+                color: '#8D0A13',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -154,10 +155,10 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
               }}>
                 <ShoppingBag size={28} />
               </div>
-              <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', color: '#1F241C', marginBottom: '6px' }}>
+              <h4 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.2rem', fontWeight: 800, color: '#141414', marginBottom: '6px' }}>
                 No past orders found
               </h4>
-              <p style={{ color: '#7E8775', fontSize: '0.88rem' }}>
+              <p style={{ color: '#666666', fontSize: '0.88rem' }}>
                 Your order receipts and live status updates will appear here once you place an order.
               </p>
             </div>
@@ -169,20 +170,20 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
                   <div
                     key={ord.id}
                     style={{
-                      border: isActive ? '2px solid #85926B' : '1px solid #ECE7DE',
+                      border: isActive ? '2px solid #8D0A13' : '1px solid #EAE5DD',
                       borderRadius: '18px',
                       padding: '18px',
-                      backgroundColor: isActive ? '#FAFBF9' : '#FFFFFF',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                      backgroundColor: isActive ? '#FFFFFF' : '#FFFFFF',
+                      boxShadow: isActive ? '0 4px 16px rgba(141,10,19,0.08)' : '0 2px 8px rgba(0,0,0,0.02)'
                     }}
                   >
                     {/* Top Row: Order #, Date, Status */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: '1rem', color: '#1F241C' }}>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', color: '#141414' }}>
                           Order #{ord.order_number}
                         </div>
-                        <div style={{ fontSize: '0.76rem', color: '#7E8775' }}>
+                        <div style={{ fontSize: '0.76rem', color: '#666666' }}>
                           {new Date(ord.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -197,9 +198,9 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
                         padding: '4px 12px',
                         borderRadius: '20px',
                         fontSize: '0.78rem',
-                        fontWeight: 700,
-                        backgroundColor: ord.order_status === 'Delivered' ? '#E8F5E9' : ord.order_status === 'Cancelled' ? '#FFEBEE' : '#EBF0E4',
-                        color: ord.order_status === 'Delivered' ? '#2E7D32' : ord.order_status === 'Cancelled' ? '#C62828' : '#394625',
+                        fontWeight: 800,
+                        backgroundColor: ord.order_status === 'Delivered' ? '#E8F5E9' : ord.order_status === 'Cancelled' ? '#FFEBEE' : '#FFF4D6',
+                        color: ord.order_status === 'Delivered' ? '#2E7D32' : ord.order_status === 'Cancelled' ? '#D32F2F' : '#8D0A13',
                         border: '1px solid currentColor'
                       }}>
                         {ord.order_status}
@@ -208,7 +209,7 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
 
                     {/* Items List */}
                     <div style={{
-                      backgroundColor: '#FAF8F5',
+                      backgroundColor: '#FAF7F2',
                       padding: '10px 14px',
                       borderRadius: '12px',
                       fontSize: '0.84rem',
@@ -217,7 +218,7 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
                       {ord.items?.map((it, idx) => (
                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
                           <span><strong>{it.quantity}x</strong> {it.food_name}</span>
-                          <span style={{ fontWeight: 600 }}>₹{it.subtotal}</span>
+                          <span style={{ fontWeight: 700, color: '#141414' }}>₹{it.subtotal}</span>
                         </div>
                       ))}
                       <div style={{
@@ -225,9 +226,9 @@ export function OrderHistoryModal({ isOpen, onClose, onTrackOrder }) {
                         justifyContent: 'space-between',
                         marginTop: '6px',
                         paddingTop: '6px',
-                        borderTop: '1px dashed #CBD4C0',
+                        borderTop: '1px dashed #FFB800',
                         fontWeight: 800,
-                        color: '#1F241C'
+                        color: '#8D0A13'
                       }}>
                         <span>Total Paid</span>
                         <span>₹{ord.final_amount}</span>

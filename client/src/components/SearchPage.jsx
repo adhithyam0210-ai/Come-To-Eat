@@ -59,11 +59,11 @@ export function SearchPage({
 
 
   return (
-    <div style={{ backgroundColor: '#FAF8F5', minHeight: '80vh', paddingBottom: '80px' }}>
+    <div style={{ backgroundColor: '#FAF7F2', minHeight: '80vh', paddingBottom: '80px' }}>
       {/* Search Header Banner */}
       <div style={{
         position: 'relative',
-        backgroundColor: '#1E251B',
+        backgroundColor: '#141414',
         color: '#FFFFFF',
         padding: 'clamp(24px, 4vw, 36px) 0 clamp(28px, 4vw, 42px)',
         overflow: 'hidden'
@@ -71,7 +71,7 @@ export function SearchPage({
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, #1E251B 0%, #2B3727 70%, #FAF8F5 100%)',
+          background: 'linear-gradient(180deg, #141414 0%, #300004 70%, #FAF7F2 100%)',
           pointerEvents: 'none'
         }} />
 
@@ -81,12 +81,12 @@ export function SearchPage({
             position: 'relative',
             maxWidth: '620px',
             margin: '0 auto',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.25)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.3)',
             borderRadius: '9999px'
           }}>
             <Search
               size={20}
-              color="#85926B"
+              color="#8D0A13"
               style={{
                 position: 'absolute',
                 left: '20px',
@@ -106,12 +106,12 @@ export function SearchPage({
                 width: '100%',
                 padding: '16px 50px 16px 54px',
                 borderRadius: '9999px',
-                border: '2px solid rgba(255, 255, 255, 0.8)',
+                border: '2px solid #FFB800',
                 fontSize: '1.05rem',
                 outline: 'none',
                 backgroundColor: '#FFFFFF',
-                color: '#1F241C',
-                fontWeight: 500
+                color: '#1A1D20',
+                fontWeight: 600
               }}
             />
             {searchTerm && (
@@ -124,7 +124,7 @@ export function SearchPage({
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: '#9CA3AF',
+                  color: '#6E7781',
                   cursor: 'pointer',
                   padding: '4px'
                 }}
@@ -154,7 +154,7 @@ export function SearchPage({
         }}>
           {/* Diet Filter Tabs */}
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', color: '#6A785E', fontWeight: 600 }}>Filter:</span>
+            <span style={{ fontSize: '0.82rem', color: '#5A626A', fontWeight: 700 }}>Filter:</span>
             {[
               { id: 'all', label: 'All Foods' },
               { id: 'veg', label: 'Pure Veg' },
@@ -167,10 +167,10 @@ export function SearchPage({
                   padding: '6px 14px',
                   borderRadius: '16px',
                   fontSize: '0.82rem',
-                  fontWeight: 600,
-                  border: vegFilter === f.id ? '1.5px solid #85926B' : '1px solid #E0E6DA',
-                  backgroundColor: vegFilter === f.id ? '#EBF0E4' : '#FFFFFF',
-                  color: vegFilter === f.id ? '#3D4636' : '#6A785E',
+                  fontWeight: 800,
+                  border: vegFilter === f.id ? '1.5px solid #8D0A13' : '1px solid #ECE7DE',
+                  backgroundColor: vegFilter === f.id ? '#8D0A13' : '#FAF7F2',
+                  color: vegFilter === f.id ? '#FFFFFF' : '#1A1D20',
                   cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
@@ -182,23 +182,23 @@ export function SearchPage({
 
           {/* Results Match Counter & Sort */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <span style={{ fontSize: '0.86rem', color: '#6A785E', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.86rem', color: '#5A626A', fontWeight: 700 }}>
               {filteredFoods.length} {filteredFoods.length === 1 ? 'dish found' : 'dishes found'}
             </span>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <SlidersHorizontal size={14} color="#85926B" />
+              <SlidersHorizontal size={14} color="#8D0A13" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 style={{
                   padding: '6px 12px',
                   borderRadius: '12px',
-                  border: '1px solid #DCE3D4',
+                  border: '1px solid #ECE7DE',
                   fontSize: '0.84rem',
                   backgroundColor: '#FFFFFF',
-                  color: '#2A3324',
-                  fontWeight: 600,
+                  color: '#1A1D20',
+                  fontWeight: 700,
                   outline: 'none',
                   cursor: 'pointer'
                 }}
@@ -232,7 +232,7 @@ export function SearchPage({
                     borderRadius: '20px',
                     overflow: 'hidden',
                     border: '1px solid #ECE7DE',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                    boxShadow: '0 6px 20px rgba(0,0,0,0.04)',
                     display: 'flex',
                     flexDirection: 'column',
                     cursor: 'pointer',
@@ -241,14 +241,14 @@ export function SearchPage({
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)';
+                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(141,10,19,0.12)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.03)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.04)';
                   }}
                 >
-                  <div style={{ position: 'relative', width: '100%', height: '180px', backgroundColor: '#F0F4E8' }}>
+                  <div style={{ position: 'relative', width: '100%', height: '180px', backgroundColor: '#161616' }}>
                     <img
                       src={item.image_url}
                       alt={item.name}
@@ -273,14 +273,14 @@ export function SearchPage({
                       padding: '3px 8px',
                       borderRadius: '12px',
                       fontSize: '0.74rem',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       display: 'flex',
                       alignItems: 'center',
                       gap: '3px',
-                      color: '#2A3324',
+                      color: '#1A1D20',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                     }}>
-                      <Star size={12} fill="#F59E0B" color="#F59E0B" />
+                      <Star size={12} fill="#FFB800" color="#FFB800" />
                       <span>{item.rating || '4.8'}</span>
                     </div>
 
@@ -288,12 +288,12 @@ export function SearchPage({
                       <div style={{
                         position: 'absolute',
                         inset: 0,
-                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        backgroundColor: 'rgba(20,20,20,0.7)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         color: '#FFF',
-                        fontWeight: 700,
+                        fontWeight: 900,
                         fontSize: '0.88rem'
                       }}>
                         Sold Out Today
@@ -302,14 +302,14 @@ export function SearchPage({
                   </div>
 
                   <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ fontSize: '0.74rem', color: '#85926B', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#8D0A13', fontWeight: 800, textTransform: 'uppercase', marginBottom: '2px' }}>
                       {item.category_name}
                     </div>
 
                     <h3 style={{
                       fontSize: '1.05rem',
-                      fontWeight: 700,
-                      color: '#1F241C',
+                      fontWeight: 800,
+                      color: '#1A1D20',
                       margin: '0 0 6px',
                       lineHeight: 1.3
                     }}>
@@ -318,7 +318,7 @@ export function SearchPage({
 
                     <p style={{
                       fontSize: '0.82rem',
-                      color: '#65705C',
+                      color: '#5A626A',
                       lineHeight: 1.5,
                       margin: '0 0 16px',
                       flex: 1,
@@ -334,16 +334,16 @@ export function SearchPage({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      borderTop: '1px solid #F0EFEB',
+                      borderTop: '1px solid #FAF7F2',
                       paddingTop: '12px'
                     }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                          <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1F241C' }}>
+                          <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#8D0A13' }}>
                             ₹{item.discount_price || item.price}
                           </span>
                           {hasDiscount && (
-                            <span style={{ fontSize: '0.8rem', color: '#9CA3AF', textDecoration: 'line-through' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#A1A8B0', textDecoration: 'line-through' }}>
                               ₹{item.price}
                             </span>
                           )}
@@ -354,19 +354,19 @@ export function SearchPage({
                         onClick={(e) => handleQuickAdd(item, e)}
                         disabled={!item.is_available}
                         style={{
-                          backgroundColor: isAdded ? '#2E7D32' : item.is_available ? '#85926B' : '#CCCCCC',
+                          backgroundColor: isAdded ? '#2E7D32' : item.is_available ? '#8D0A13' : '#CCCCCC',
                           color: '#FFFFFF',
                           border: 'none',
                           padding: '8px 16px',
                           borderRadius: '20px',
                           fontSize: '0.82rem',
-                          fontWeight: 700,
+                          fontWeight: 800,
                           cursor: item.is_available ? 'pointer' : 'not-allowed',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
                           transition: 'all 0.2s ease',
-                          boxShadow: item.is_available ? '0 3px 10px rgba(133, 146, 107, 0.3)' : 'none'
+                          boxShadow: item.is_available ? '0 3px 10px rgba(141, 10, 19, 0.35)' : 'none'
                         }}
                       >
                         {isAdded ? (
@@ -393,17 +393,17 @@ export function SearchPage({
             borderRadius: '20px',
             border: '1px solid #ECE7DE'
           }}>
-            <UtensilsCrossed size={40} color="#85926B" style={{ margin: '0 auto 12px' }} />
-            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1F241C', marginBottom: '8px' }}>
+            <UtensilsCrossed size={40} color="#8D0A13" style={{ margin: '0 auto 12px' }} />
+            <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1A1D20', marginBottom: '8px' }}>
               No dishes found for "{searchTerm}"
             </h4>
-            <p style={{ color: '#6A785E', fontSize: '0.9rem', marginBottom: '16px' }}>
+            <p style={{ color: '#5A626A', fontSize: '0.9rem', marginBottom: '16px' }}>
               Try searching with different keywords, or clear your search to explore all dishes.
             </p>
             <button
               onClick={() => { setSearchTerm(''); setVegFilter('all'); }}
-              className="btn-primary"
-              style={{ padding: '8px 20px', fontSize: '0.85rem' }}
+              className="btn-accent"
+              style={{ padding: '8px 22px', fontSize: '0.85rem' }}
             >
               Clear Search
             </button>

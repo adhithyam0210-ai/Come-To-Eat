@@ -1,50 +1,50 @@
 /* ==========================================================================
    COME TO EAT - DESIGN SYSTEM & STYLES
-   Aesthetic inspired by organic café visuals (sage green, cream, cursive accents)
+   Theme inspired by Burger District Crimson Red, Golden Yellow, and Cream
    ========================================================================== */
 
 :root {
-  /* Brand Organic Color Palette */
-  --primary: #85926B;
-  --primary-hover: #73805B;
-  --primary-dark: #475234;
-  --primary-light: #EBF0E4;
-  --primary-surface: #F4F7F0;
+  /* Brand Crimson & Gold Color Palette */
+  --primary: #8D0A13;
+  --primary-hover: #A80D1A;
+  --primary-dark: #520005;
+  --primary-light: #FDF2F3;
+  --primary-surface: #FBF4F4;
   
-  --accent: #E76F51;
-  --accent-hover: #D35639;
-  --accent-soft: #FDEEE9;
+  --accent: #FFB800;
+  --accent-hover: #E6A300;
+  --accent-soft: #FFF8E6;
   
-  --bg-main: #FAF8F5;
+  --bg-main: #FAF7F2;
   --bg-card: #FFFFFF;
-  --bg-subtle: #F5F3EF;
+  --bg-subtle: #F3EFE7;
   
-  --text-main: #1F241C;
-  --text-body: #4A5243;
-  --text-muted: #7E8775;
-  --text-light: #A5AF9D;
+  --text-main: #1A1D20;
+  --text-body: #3A4149;
+  --text-muted: #6E7781;
+  --text-light: #A1A8B0;
   
-  --border-subtle: rgba(133, 146, 107, 0.18);
-  --border-card: rgba(0, 0, 0, 0.07);
+  --border-subtle: rgba(141, 10, 19, 0.14);
+  --border-card: rgba(0, 0, 0, 0.08);
   
   --veg-green: #2E7D32;
-  --nonveg-red: #C62828;
+  --nonveg-red: #C8102E;
   
   /* Admin Dark Nav */
-  --admin-sidebar: #1C231B;
-  --admin-sidebar-hover: #293327;
+  --admin-sidebar: #141414;
+  --admin-sidebar-hover: #242424;
   --admin-card: #FFFFFF;
   
   /* Typography */
-  --font-ui: 'Calibri', 'Segoe UI', Candara, Arial, sans-serif;
-  --font-serif: 'Calibri', 'Segoe UI', Candara, Arial, sans-serif;
+  --font-ui: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', 'Georgia', serif;
   --font-cursive: 'Caveat', cursive;
   
   /* Shadows & Radius */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 8px 24px rgba(45, 55, 35, 0.08);
-  --shadow-lg: 0 16px 36px rgba(45, 55, 35, 0.12);
-  --shadow-hover: 0 12px 30px rgba(133, 146, 107, 0.22);
+  --shadow-md: 0 8px 24px rgba(141, 10, 19, 0.08);
+  --shadow-lg: 0 16px 36px rgba(141, 10, 19, 0.14);
+  --shadow-hover: 0 12px 30px rgba(141, 10, 19, 0.22);
   
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -55,7 +55,7 @@
 }
 
 *, body, button, input, select, textarea, h1, h2, h3, h4, h5, h6 {
-  font-family: 'Calibri', 'Segoe UI', Candara, Arial, sans-serif;
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 *, *::before, *::after {
@@ -81,7 +81,7 @@ body {
   position: relative;
   margin: 0;
   padding: 0;
-  font-family: 'Calibri', 'Segoe UI', Candara, Arial, sans-serif;
+  font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-main);
   line-height: 1.6;
@@ -111,14 +111,13 @@ main, section {
   background: var(--bg-main);
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD4C0;
+  background: #E5C4C4;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
 
-/* Button & Pill Utilities */
 /* Button & Pill Utilities */
 button {
   font-family: inherit;
@@ -129,40 +128,58 @@ button {
 }
 
 .btn-primary {
-  background-color: var(--primary);
-  color: #FFFFFF;
-  font-weight: 700;
-  padding: 12px 26px;
+  background-color: var(--accent);
+  color: #000000;
+  font-weight: 800;
+  padding: 12px 28px;
   border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 4px 14px rgba(133, 146, 107, 0.35);
+  box-shadow: 0 6px 18px rgba(255, 184, 0, 0.4);
   font-size: 1rem;
 }
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--accent-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(133, 146, 107, 0.45);
+  box-shadow: 0 8px 24px rgba(255, 184, 0, 0.55);
 }
 
 .btn-accent {
-  background-color: var(--accent);
+  background-color: var(--primary);
   color: #FFFFFF;
-  font-weight: 700;
-  padding: 12px 26px;
+  font-weight: 800;
+  padding: 12px 28px;
   border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 4px 14px rgba(231, 111, 81, 0.35);
+  box-shadow: 0 6px 18px rgba(141, 10, 19, 0.35);
   font-size: 1rem;
 }
 .btn-accent:hover {
-  background-color: var(--accent-hover);
+  background-color: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(231, 111, 81, 0.45);
+  box-shadow: 0 8px 24px rgba(141, 10, 19, 0.5);
+}
+
+.btn-outline {
+  border: 1.5px solid var(--accent);
+  color: #FFFFFF;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 0.95rem;
+}
+.btn-outline:hover {
+  background-color: var(--accent);
+  color: #000000;
+  transform: translateY(-1px);
 }
 
 .btn-outline {
@@ -218,8 +235,8 @@ button {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #85926B;
-  box-shadow: 0 3px 10px rgba(133, 146, 107, 0.25);
+  border: 2px solid #FFB800;
+  box-shadow: 0 3px 10px rgba(255, 184, 0, 0.25);
   flex-shrink: 0;
   background-color: #FFFFFF;
 }
@@ -227,7 +244,7 @@ button {
 .navbar-brand-name {
   font-size: clamp(1.15rem, 3.6vw, 1.45rem);
   font-weight: 800;
-  color: #2A3324;
+  color: #FFFFFF;
   line-height: 1.1;
   letter-spacing: -0.3px;
   white-space: nowrap;
@@ -240,6 +257,31 @@ button {
   flex-shrink: 0;
 }
 
+.navbar-login-btn {
+  background-color: #FFB800 !important;
+  color: #8D0A13 !important;
+  padding: 8px 20px !important;
+  border-radius: 9999px !important;
+  font-weight: 800 !important;
+  font-size: 0.92rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(255, 184, 0, 0.4) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s ease !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.navbar-login-btn:hover {
+  background-color: #E5A600 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 18px rgba(255, 184, 0, 0.55) !important;
+}
+
 /* Universal Matched Header Icon Buttons */
 .navbar-icon-btn {
   width: 38px !important;
@@ -248,19 +290,19 @@ button {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: #F0F4E8 !important;
-  color: #38462B !important;
-  border: 1px solid rgba(133, 146, 107, 0.28) !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #FFB800 !important;
+  border: 1px solid rgba(255, 184, 0, 0.3) !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   flex-shrink: 0 !important;
   position: relative !important;
   padding: 0 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
 }
 
 .navbar-icon-btn:hover {
-  background-color: #E2EBD6 !important;
+  background-color: rgba(255, 255, 255, 0.22) !important;
   transform: translateY(-1px);
 }
 
@@ -271,19 +313,19 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #85926B;
-  color: #FFFFFF;
+  background-color: #FFB800;
+  color: #8D0A13;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
   position: relative;
-  box-shadow: 0 3px 10px rgba(133, 146, 107, 0.35);
+  box-shadow: 0 3px 10px rgba(255, 184, 0, 0.35);
   padding: 0;
 }
 
 .navbar-cart-btn:hover {
-  background-color: #73805B;
+  background-color: #E5A600;
   transform: translateY(-1px);
 }
 
@@ -291,7 +333,7 @@ button {
   position: absolute;
   top: -4px;
   right: -4px;
-  background-color: #E76F51;
+  background-color: #8D0A13;
   color: #FFFFFF;
   font-size: 0.68rem;
   font-weight: 800;
@@ -302,7 +344,7 @@ button {
   align-items: center;
   justify-content: center;
   padding: 0 4px;
-  border: 2px solid #FAF8F5;
+  border: 2px solid #141414;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
@@ -373,6 +415,21 @@ button {
 @keyframes pulseGlow {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.04); opacity: 0.9; }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+
+@keyframes floatSlowAlt {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(12px) rotate(-2deg); }
+}
+
+@keyframes splashLogoPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(255, 184, 0, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 22px 60px rgba(0, 0, 0, 0.7), 0 0 60px rgba(255, 184, 0, 0.75); }
 }
 
 .fade-in {

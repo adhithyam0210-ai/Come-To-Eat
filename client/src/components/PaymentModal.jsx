@@ -94,11 +94,12 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
         {/* Header with Security Badge */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid #ECE7DE',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#FAF8F5'
+          backgroundColor: '#161616',
+          color: '#FFFFFF'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img
@@ -109,27 +110,27 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                 height: '40px',
                 borderRadius: '50%',
                 objectFit: 'cover',
-                border: '2px solid #85926B',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                border: '2px solid #FFB800',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
               }}
             />
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#2E7D32' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#4CAF50' }}>
                   <ShieldCheck size={14} /> 256-Bit SSL Encrypted
                 </span>
                 {checkoutData?.branch_name && (
-                  <span style={{ backgroundColor: '#EAF0E2', color: '#475234', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem' }}>
+                  <span style={{ backgroundColor: '#FFB800', color: '#8D0A13', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800 }}>
                     📍 {checkoutData.branch_name}
                   </span>
                 )}
               </div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.35rem', fontWeight: 700, color: '#1F241C', marginTop: '2px' }}>
+              <h3 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', marginTop: '2px' }}>
                 Choose Payment Method
               </h3>
             </div>
           </div>
-          <button onClick={onClose} style={{ color: '#475234', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#F0F4E8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={onClose} style={{ color: '#FFFFFF', width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <X size={18} />
           </button>
         </div>
@@ -138,11 +139,11 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
           <div style={{
             margin: '16px 24px 0',
             backgroundColor: '#FFEBEE',
-            color: '#C62828',
+            color: '#D32F2F',
             padding: '10px 14px',
             borderRadius: '10px',
             fontSize: '0.85rem',
-            fontWeight: 600,
+            fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '6px'
@@ -155,12 +156,13 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
           <div style={{
             display: 'grid',
             gridTemplateColumns: '200px 1fr',
-            minHeight: '340px'
+            minHeight: '340px',
+            backgroundColor: '#FAF7F2'
           }}>
             {/* Left Method Tabs */}
             <div style={{
-              backgroundColor: '#F7F9F4',
-              borderRight: '1px solid #ECE7DE',
+              backgroundColor: '#161616',
+              borderRight: '1px solid rgba(255,255,255,0.08)',
               padding: '12px 8px',
               display: 'flex',
               flexDirection: 'column',
@@ -186,12 +188,12 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                       padding: '12px 14px',
                       borderRadius: '12px',
                       fontSize: '0.88rem',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       textAlign: 'left',
-                      backgroundColor: active ? '#FFFFFF' : 'transparent',
-                      color: active ? '#85926B' : '#475234',
-                      boxShadow: active ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
-                      border: active ? '1px solid #E2E8DC' : 'none',
+                      backgroundColor: active ? '#8D0A13' : 'transparent',
+                      color: active ? '#FFFFFF' : '#CCCCCC',
+                      boxShadow: active ? '0 2px 8px rgba(141,10,19,0.3)' : 'none',
+                      border: active ? '1px solid #FFB800' : '1px solid transparent',
                       transition: 'all 0.2s ease'
                     }}
                   >
@@ -203,18 +205,19 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
             </div>
 
             {/* Right Method Form Content */}
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '24px', backgroundColor: '#FAF7F2' }}>
               {/* UPI Tab */}
               {paymentMethod === 'UPI' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{
-                    backgroundColor: '#FAF8F5',
+                    backgroundColor: '#FFFFFF',
                     padding: '16px',
                     borderRadius: '16px',
-                    border: '1px dashed #CBD4C0',
-                    textAlign: 'center'
+                    border: '1px dashed #FFB800',
+                    textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                   }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475234', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#8D0A13', marginBottom: '8px' }}>
                       Scan QR Code using Google Pay / PhonePe / Paytm
                     </div>
                     {/* Simulated QR Code Canvas */}
@@ -236,13 +239,13 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                         style={{ width: '100%', height: '100%', borderRadius: '6px' }}
                       />
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: '#7E8775' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#666666', fontWeight: 600 }}>
                       Instant confirmation upon UPI payment
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#141414', marginBottom: '4px' }}>
                       Or Enter UPI ID / VPA
                     </label>
                     <input
@@ -262,7 +265,7 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
               {paymentMethod === 'Credit/Debit Card' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#141414', marginBottom: '4px' }}>
                       Card Number
                     </label>
                     <input
@@ -277,7 +280,7 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#141414', marginBottom: '4px' }}>
                         Expiry (MM/YY)
                       </label>
                       <input
@@ -290,7 +293,7 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                       />
                     </div>
                     <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#141414', marginBottom: '4px' }}>
                         CVV / CVC
                       </label>
                       <input
@@ -306,7 +309,7 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#475234', marginBottom: '4px' }}>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#141414', marginBottom: '4px' }}>
                       Cardholder Name
                     </label>
                     <input
@@ -318,8 +321,8 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                     />
                   </div>
 
-                  <div style={{ fontSize: '0.74rem', color: '#7E8775', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Lock size={12} /> We do not store your card number or CVV in our database.
+                  <div style={{ fontSize: '0.74rem', color: '#666666', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Lock size={12} color="#8D0A13" /> We do not store your card number or CVV in our database.
                   </div>
                 </div>
               )}
@@ -327,7 +330,7 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
               {/* Net Banking Tab */}
               {paymentMethod === 'Net Banking' && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, color: '#475234', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 800, color: '#141414', marginBottom: '8px' }}>
                     Choose Your Bank
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -338,12 +341,12 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                         style={{
                           padding: '10px 12px',
                           borderRadius: '10px',
-                          border: selectedBank === b ? '2px solid #85926B' : '1px solid #DCE3D4',
-                          backgroundColor: selectedBank === b ? '#EBF0E4' : '#FFFFFF',
+                          border: selectedBank === b ? '2px solid #8D0A13' : '1px solid #EAE5DD',
+                          backgroundColor: selectedBank === b ? '#FFF4D6' : '#FFFFFF',
                           cursor: 'pointer',
                           fontSize: '0.85rem',
-                          fontWeight: 600,
-                          color: '#2A3324'
+                          fontWeight: 700,
+                          color: selectedBank === b ? '#8D0A13' : '#141414'
                         }}
                       >
                         {b}
@@ -365,13 +368,13 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                         gap: '12px',
                         padding: '12px',
                         borderRadius: '12px',
-                        backgroundColor: '#FAF8F5',
-                        border: '1px solid #ECE7DE',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #EAE5DD',
                         cursor: 'pointer'
                       }}
                     >
                       <input type="radio" name="wallet" defaultChecked={w.includes('Paytm')} />
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#2A3324' }}>{w}</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#141414' }}>{w}</span>
                     </label>
                   ))}
                 </div>
@@ -381,17 +384,18 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
               {paymentMethod === 'Cash on Delivery' && (
                 <div style={{
                   padding: '24px 20px',
-                  backgroundColor: '#FAF8F5',
+                  backgroundColor: '#FFFFFF',
                   borderRadius: '16px',
-                  border: '1px solid #ECE7DE',
-                  textAlign: 'center'
+                  border: '1px solid #EAE5DD',
+                  textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                 }}>
                   <div style={{
                     width: '48px',
                     height: '48px',
                     borderRadius: '50%',
-                    backgroundColor: '#EBF0E4',
-                    color: '#475234',
+                    backgroundColor: '#FFF4D6',
+                    color: '#8D0A13',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -399,8 +403,8 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
                   }}>
                     <Banknote size={24} />
                   </div>
-                  <h4 style={{ fontWeight: 700, color: '#1F241C', marginBottom: '6px' }}>Cash on Delivery</h4>
-                  <p style={{ fontSize: '0.85rem', color: '#65705C', lineHeight: 1.5 }}>
+                  <h4 style={{ fontWeight: 800, color: '#141414', marginBottom: '6px' }}>Cash on Delivery</h4>
+                  <p style={{ fontSize: '0.85rem', color: '#555555', lineHeight: 1.5 }}>
                     Pay with exact cash or scan the delivery partner's QR code when your food arrives.
                   </p>
                 </div>
@@ -411,15 +415,16 @@ export function PaymentModal({ isOpen, onClose, checkoutData, onOrderSuccess }) 
           {/* Modal Footer Pay Action */}
           <div style={{
             padding: '18px 24px',
-            borderTop: '1px solid #ECE7DE',
-            backgroundColor: '#FAF8F5',
+            borderTop: '1px solid #EAE5DD',
+            backgroundColor: '#161616',
+            color: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
           }}>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#7E8775', fontWeight: 600 }}>Amount to Pay</div>
-              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#1F241C' }}>
+              <div style={{ fontSize: '0.75rem', color: '#FFB800', fontWeight: 600 }}>Amount to Pay</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF' }}>
                 ₹{priceBreakdown.finalAmount}
               </div>
             </div>

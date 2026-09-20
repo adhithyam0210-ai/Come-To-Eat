@@ -84,7 +84,7 @@ export function CartDrawer({ onProceedToCheckout }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: '#FAF8F5'
+          backgroundColor: '#FAF7F2'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img
@@ -95,16 +95,16 @@ export function CartDrawer({ onProceedToCheckout }) {
                 height: '38px',
                 borderRadius: '50%',
                 objectFit: 'cover',
-                border: '2px solid #85926B',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                border: '2px solid #FFB800',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
               }}
             />
             <div>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.25rem', fontWeight: 700, color: '#1F241C' }}>
-                Your Order
+              <h3 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.25rem', fontWeight: 900, color: '#1A1D20', textTransform: 'uppercase' }}>
+                YOUR BAG
               </h3>
-              <div style={{ fontSize: '0.78rem', color: '#7E8775' }}>
-                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in bag
+              <div style={{ fontSize: '0.78rem', color: '#6E7781', fontWeight: 600 }}>
+                {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} selected
               </div>
             </div>
           </div>
@@ -113,7 +113,7 @@ export function CartDrawer({ onProceedToCheckout }) {
             {cartItems.length > 0 && (
               <button
                 onClick={clearCart}
-                style={{ fontSize: '0.78rem', color: '#A0A997', fontWeight: 600, padding: '4px 8px' }}
+                style={{ fontSize: '0.78rem', color: '#8D0A13', fontWeight: 800, padding: '4px 8px' }}
               >
                 Clear
               </button>
@@ -124,11 +124,12 @@ export function CartDrawer({ onProceedToCheckout }) {
                 width: '34px',
                 height: '34px',
                 borderRadius: '50%',
-                backgroundColor: '#F0F4E8',
-                color: '#475234',
+                backgroundColor: '#FAF7F2',
+                color: '#1A1D20',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                border: '1px solid #ECE7DE'
               }}
             >
               <X size={18} />
@@ -147,16 +148,16 @@ export function CartDrawer({ onProceedToCheckout }) {
             padding: '40px',
             textAlign: 'center'
           }}>
-            <ShoppingBag size={48} color="#85926B" style={{ margin: '0 auto 16px', strokeWidth: 1.5 }} />
-            <h4 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', color: '#1F241C', marginBottom: '8px' }}>
+            <ShoppingBag size={48} color="#8D0A13" style={{ margin: '0 auto 16px', strokeWidth: 1.5 }} />
+            <h4 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.4rem', color: '#1A1D20', marginBottom: '8px', fontWeight: 800 }}>
               Your bag is hungry
             </h4>
-            <p style={{ color: '#7E8775', fontSize: '0.92rem', marginBottom: '24px', maxWidth: '280px' }}>
-              Explore our menu to add fresh burgers, momos, and refreshing beverages!
+            <p style={{ color: '#6E7781', fontSize: '0.92rem', marginBottom: '24px', maxWidth: '280px' }}>
+              Explore our menu to add fresh burgers, momos, pizzas, and refreshing beverages!
             </p>
             <button
               onClick={() => setIsCartOpen(false)}
-              className="btn-primary"
+              className="btn-accent"
               style={{ padding: '12px 28px' }}
             >
               Explore Menu
@@ -165,11 +166,11 @@ export function CartDrawer({ onProceedToCheckout }) {
         ) : (
           <>
             {/* Delivery vs Pickup Selector */}
-            <div style={{ padding: '14px 20px', backgroundColor: '#F4F7F0', borderBottom: '1px solid #ECE7DE' }}>
+            <div style={{ padding: '14px 20px', backgroundColor: '#FAF7F2', borderBottom: '1px solid #ECE7DE' }}>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                backgroundColor: '#E2E8DC',
+                backgroundColor: '#ECE7DE',
                 padding: '4px',
                 borderRadius: '9999px'
               }}>
@@ -178,10 +179,10 @@ export function CartDrawer({ onProceedToCheckout }) {
                   style={{
                     padding: '10px 8px',
                     borderRadius: '9999px',
-                    fontSize: '0.92rem',
-                    fontWeight: 700,
-                    backgroundColor: deliveryType === 'delivery' ? '#85926B' : 'transparent',
-                    color: deliveryType === 'delivery' ? '#FFF' : '#475234',
+                    fontSize: '0.88rem',
+                    fontWeight: 800,
+                    backgroundColor: deliveryType === 'delivery' ? '#8D0A13' : 'transparent',
+                    color: deliveryType === 'delivery' ? '#FFF' : '#1A1D20',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -198,10 +199,10 @@ export function CartDrawer({ onProceedToCheckout }) {
                   style={{
                     padding: '10px 8px',
                     borderRadius: '9999px',
-                    fontSize: '0.92rem',
-                    fontWeight: 700,
-                    backgroundColor: deliveryType === 'pickup' ? '#85926B' : 'transparent',
-                    color: deliveryType === 'pickup' ? '#FFF' : '#475234',
+                    fontSize: '0.88rem',
+                    fontWeight: 800,
+                    backgroundColor: deliveryType === 'pickup' ? '#8D0A13' : 'transparent',
+                    color: deliveryType === 'pickup' ? '#FFF' : '#1A1D20',
                     transition: 'all 0.2s ease',
                     display: 'flex',
                     alignItems: 'center',
@@ -226,9 +227,9 @@ export function CartDrawer({ onProceedToCheckout }) {
                       display: 'flex',
                       gap: '14px',
                       padding: '14px',
-                      backgroundColor: '#FAF8F5',
+                      backgroundColor: '#FAF7F2',
                       borderRadius: '16px',
-                      border: '1px solid #EAE5DC'
+                      border: '1px solid #ECE7DE'
                     }}
                   >
                     {/* Item Thumbnail */}
@@ -249,14 +250,14 @@ export function CartDrawer({ onProceedToCheckout }) {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <DietaryBadge isVeg={item.is_veg} />
-                            <span style={{ fontWeight: 800, fontSize: '1rem', color: '#1F241C' }}>
+                            <span style={{ fontWeight: 800, fontSize: '1rem', color: '#1A1D20' }}>
                               {item.name}
                             </span>
                           </div>
 
                           {/* Selected Addons */}
                           {item.selected_addons && item.selected_addons.length > 0 && (
-                            <div style={{ fontSize: '0.82rem', color: '#7E8775', marginTop: '4px' }}>
+                            <div style={{ fontSize: '0.82rem', color: '#6E7781', marginTop: '4px' }}>
                               {item.selected_addons.map((a) => a.name).join(', ')}
                             </div>
                           )}
@@ -264,7 +265,7 @@ export function CartDrawer({ onProceedToCheckout }) {
 
                         <button
                           onClick={() => removeFromCart(item.cartItemId)}
-                          style={{ color: '#C62828', padding: '4px', opacity: 0.8, cursor: 'pointer', border: 'none', background: 'none' }}
+                          style={{ color: '#8D0A13', padding: '4px', opacity: 0.8, cursor: 'pointer', border: 'none', background: 'none' }}
                         >
                           <Trash2 size={17} />
                         </button>
@@ -278,7 +279,7 @@ export function CartDrawer({ onProceedToCheckout }) {
                         marginTop: 'auto',
                         paddingTop: '10px'
                       }}>
-                        <div style={{ fontWeight: 800, color: '#2A3324', fontSize: '1.08rem' }}>
+                        <div style={{ fontWeight: 900, color: '#8D0A13', fontSize: '1.08rem' }}>
                           ₹{item.subtotal}
                         </div>
 
@@ -287,23 +288,23 @@ export function CartDrawer({ onProceedToCheckout }) {
                           alignItems: 'center',
                           backgroundColor: '#FFFFFF',
                           borderRadius: '9999px',
-                          border: '1.5px solid #DCE3D4',
+                          border: '1.5px solid #ECE7DE',
                           padding: '3px 6px'
                         }}>
                           <button
                             onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                             style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
                           >
-                            <Minus size={15} color="#475234" />
+                            <Minus size={15} color="#8D0A13" />
                           </button>
-                          <span style={{ minWidth: '26px', textAlign: 'center', fontSize: '0.95rem', fontWeight: 800, color: '#1F241C' }}>
+                          <span style={{ minWidth: '26px', textAlign: 'center', fontSize: '0.95rem', fontWeight: 900, color: '#1A1D20' }}>
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                             style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'none', cursor: 'pointer' }}
                           >
-                            <Plus size={15} color="#475234" />
+                            <Plus size={15} color="#8D0A13" />
                           </button>
                         </div>
                       </div>
@@ -316,16 +317,16 @@ export function CartDrawer({ onProceedToCheckout }) {
               <div style={{
                 marginTop: '22px',
                 padding: '16px',
-                backgroundColor: '#FAF8F5',
+                backgroundColor: '#FAF7F2',
                 borderRadius: '16px',
                 border: '1px solid #ECE7DE'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.92rem', fontWeight: 700, color: '#475234' }}>
-                    <Tag size={17} color="#85926B" /> Have a Promo Coupon?
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.92rem', fontWeight: 800, color: '#1A1D20' }}>
+                    <Tag size={17} color="#8D0A13" /> Have a Promo Coupon?
                   </div>
                   {appliedCoupon && (
-                    <span style={{ fontSize: '0.78rem', color: '#2E7D32', fontWeight: 700, backgroundColor: '#E8F5E9', padding: '2px 8px', borderRadius: '12px' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#2E7D32', fontWeight: 800, backgroundColor: '#E8F5E9', padding: '2px 8px', borderRadius: '12px' }}>
                       Active
                     </span>
                   )}
@@ -336,22 +337,22 @@ export function CartDrawer({ onProceedToCheckout }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    backgroundColor: '#EBF0E4',
-                    border: '1.5px dashed #85926B',
+                    backgroundColor: '#FFF8E6',
+                    border: '1.5px dashed #FFB800',
                     padding: '12px 14px',
                     borderRadius: '12px'
                   }}>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#324022', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Check size={16} /> '{appliedCoupon.code}' APPLIED
+                      <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#1A1D20', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Check size={16} color="#8D0A13" /> '{appliedCoupon.code}' APPLIED
                       </div>
-                      <div style={{ fontSize: '0.82rem', color: '#556149', marginTop: '2px' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#8D0A13', marginTop: '2px', fontWeight: 700 }}>
                         You saved ₹{priceBreakdown.discountAmount} on this order!
                       </div>
                     </div>
                     <button
                       onClick={removeCoupon}
-                      style={{ fontSize: '0.86rem', color: '#C62828', fontWeight: 800, border: 'none', background: 'none', cursor: 'pointer', padding: '4px 8px' }}
+                      style={{ fontSize: '0.86rem', color: '#C8102E', fontWeight: 800, border: 'none', background: 'none', cursor: 'pointer', padding: '4px 8px' }}
                     >
                       Remove
                     </button>
@@ -365,12 +366,12 @@ export function CartDrawer({ onProceedToCheckout }) {
                         onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                         placeholder="e.g. WELCOME50, FEAST100"
                         className="form-input"
-                        style={{ padding: '10px 14px', fontSize: '0.94rem', textTransform: 'uppercase', flex: 1, fontFamily: 'monospace', fontWeight: 600 }}
+                        style={{ padding: '10px 14px', fontSize: '0.94rem', textTransform: 'uppercase', flex: 1, fontFamily: 'monospace', fontWeight: 700, border: '1px solid #ECE7DE' }}
                       />
                       <button
                         type="submit"
                         disabled={isApplying || !couponInput.trim()}
-                        className="btn-primary"
+                        className="btn-accent"
                         style={{ padding: '10px 20px', fontSize: '0.92rem' }}
                       >
                         {isApplying ? '...' : 'Apply'}
@@ -380,7 +381,7 @@ export function CartDrawer({ onProceedToCheckout }) {
                     {/* Quick Available Coupon Chips */}
                     {availableCoupons.length > 0 && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#7E8775', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#6E7781', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                           Available Promo Codes:
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -396,17 +397,17 @@ export function CartDrawer({ onProceedToCheckout }) {
                                 padding: '5px 10px',
                                 borderRadius: '8px',
                                 backgroundColor: '#FFFFFF',
-                                border: '1px solid #DCE3D4',
+                                border: '1px solid #ECE7DE',
                                 fontSize: '0.78rem',
-                                fontWeight: 700,
-                                color: '#475234',
+                                fontWeight: 800,
+                                color: '#1A1D20',
                                 cursor: 'pointer',
                                 transition: 'all 0.15s ease'
                               }}
                               title={`Apply ${cp.code} (${cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value} OFF`})`}
                             >
-                              <span style={{ fontFamily: 'monospace', color: '#85926B' }}>{cp.code}</span>
-                              <span style={{ fontSize: '0.72rem', color: '#E76F51' }}>
+                              <span style={{ fontFamily: 'monospace', color: '#8D0A13' }}>{cp.code}</span>
+                              <span style={{ fontSize: '0.72rem', color: '#FFB800', fontWeight: 900 }}>
                                 {cp.discount_type === 'percentage' ? `${cp.discount_value}% OFF` : `₹${cp.discount_value}`}
                               </span>
                             </button>
@@ -418,7 +419,7 @@ export function CartDrawer({ onProceedToCheckout }) {
                 )}
 
                 {couponError && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C62828', fontSize: '0.82rem', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#C8102E', fontSize: '0.82rem', marginTop: '10px' }}>
                     <AlertCircle size={15} style={{ flexShrink: 0 }} /> {couponError}
                   </div>
                 )}
@@ -429,32 +430,32 @@ export function CartDrawer({ onProceedToCheckout }) {
             <div style={{
               padding: '22px 24px',
               borderTop: '1px solid #ECE7DE',
-              backgroundColor: '#FAF8F5'
+              backgroundColor: '#FAF7F2'
             }}>
               {/* Detailed Price Breakdown */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px', fontSize: '0.94rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#65705C' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#5A626A' }}>
                   <span>Item Subtotal</span>
-                  <span style={{ fontWeight: 600, color: '#1F241C' }}>₹{priceBreakdown.itemTotal}</span>
+                  <span style={{ fontWeight: 700, color: '#1A1D20' }}>₹{priceBreakdown.itemTotal}</span>
                 </div>
 
                 {priceBreakdown.discountAmount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2E7D32', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#2E7D32', fontWeight: 800 }}>
                     <span>Coupon Discount</span>
                     <span>-₹{priceBreakdown.discountAmount}</span>
                   </div>
                 )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#65705C' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#5A626A' }}>
                   <span>Taxes & Restaurant GST (5%)</span>
                   <span>₹{priceBreakdown.taxes}</span>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#65705C' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#5A626A' }}>
                   <span>Delivery Fee</span>
                   <span>
                     {priceBreakdown.deliveryFee === 0 ? (
-                      <strong style={{ color: '#2E7D32', fontWeight: 800 }}>FREE</strong>
+                      <strong style={{ color: '#2E7D32', fontWeight: 900 }}>FREE</strong>
                     ) : (
                       `₹${priceBreakdown.deliveryFee}`
                     )}
@@ -466,13 +467,13 @@ export function CartDrawer({ onProceedToCheckout }) {
                   justifyContent: 'space-between',
                   paddingTop: '10px',
                   marginTop: '4px',
-                  borderTop: '1.5px dashed #CBD4C0',
+                  borderTop: '1.5px dashed #ECE7DE',
                   fontSize: '1.25rem',
-                  fontWeight: 800,
-                  color: '#1F241C'
+                  fontWeight: 900,
+                  color: '#1A1D20'
                 }}>
                   <span>To Pay</span>
-                  <span style={{ color: '#85926B' }}>₹{priceBreakdown.finalAmount}</span>
+                  <span style={{ color: '#8D0A13' }}>₹{priceBreakdown.finalAmount}</span>
                 </div>
               </div>
 
@@ -482,8 +483,8 @@ export function CartDrawer({ onProceedToCheckout }) {
                   setIsCartOpen(false);
                   onProceedToCheckout();
                 }}
-                className="btn-accent"
-                style={{ width: '100%', padding: '16px', fontSize: '1.05rem', fontWeight: 800, justifyContent: 'center' }}
+                className="btn-primary"
+                style={{ width: '100%', padding: '16px', fontSize: '1.05rem', fontWeight: 900, justifyContent: 'center' }}
               >
                 <span>Proceed to Checkout</span>
                 <ArrowRight size={20} />

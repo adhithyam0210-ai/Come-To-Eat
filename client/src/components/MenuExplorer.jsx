@@ -54,34 +54,32 @@ export function MenuExplorer({
   return (
     <>
       {/* 1. DEDICATED SEARCH SECTION (#search) */}
-      <section id="search" style={{ padding: '70px 0 50px', backgroundColor: '#FAF8F5' }}>
+      <section id="search" style={{ padding: '60px 0 45px', backgroundColor: '#FAF7F2' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px' }}>
-            <div className="font-cursive" style={{ fontSize: '1.8rem', color: '#85926B', marginBottom: '4px' }}>
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 32px' }}>
+            <div className="font-cursive" style={{ fontSize: '1.9rem', color: '#8D0A13', fontWeight: 700, marginBottom: '2px' }}>
               Find Your Cravings
             </div>
             <h2 style={{
-              fontFamily: "'Playfair Display', serif",
+              fontFamily: "'Poppins', sans-serif",
               fontSize: 'clamp(1.7rem, 3.5vw, 2.3rem)',
-              color: '#1F241C',
-              fontWeight: 700,
-              margin: '0 0 10px'
+              color: '#1A1D20',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              margin: '0 0 8px'
             }}>
-              Search Dishes & Dietary Filters
+              SEARCH DISHES & DIETARY FILTERS
             </h2>
-            <div style={{ width: '50px', height: '3px', backgroundColor: '#85926B', borderRadius: '2px', margin: '0 auto 12px' }} />
-            <p style={{ color: '#6A785E', fontSize: '0.94rem', margin: 0 }}>
-              Instant live search across burgers, momos, stone-baked pizzas, boba tea, pasta, and desserts
-            </p>
+            <div style={{ width: '50px', height: '3.5px', backgroundColor: '#8D0A13', borderRadius: '2px', margin: '0 auto 12px' }} />
           </div>
 
           {/* Search Box & Filter Controls Bar */}
           <div style={{
             backgroundColor: '#FFFFFF',
-            padding: '24px',
-            borderRadius: '24px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
-            border: '1px solid rgba(133, 146, 107, 0.18)',
+            padding: '22px',
+            borderRadius: '20px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.05)',
+            border: '1px solid #ECE7DE',
             maxWidth: '960px',
             margin: '0 auto'
           }}>
@@ -100,7 +98,7 @@ export function MenuExplorer({
               }}>
                 <Search
                   size={18}
-                  color="#8C9776"
+                  color="#8D0A13"
                   style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}
                 />
                 <input
@@ -108,9 +106,9 @@ export function MenuExplorer({
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Type a dish, flavor, or ingredient (e.g. burger, momos, boba)..."
+                  placeholder="Type a dish, burger, momos, pizza, boba..."
                   className="form-input"
-                  style={{ paddingLeft: '44px', paddingRight: searchTerm ? '40px' : '16px', borderRadius: '9999px', fontSize: '0.94rem' }}
+                  style={{ paddingLeft: '44px', paddingRight: searchTerm ? '40px' : '16px', borderRadius: '9999px', fontSize: '0.94rem', border: '1.5px solid #ECE7DE' }}
                 />
                 {searchTerm && (
                   <button
@@ -120,7 +118,7 @@ export function MenuExplorer({
                       right: '14px',
                       top: '50%',
                       transform: 'translateY(-50%)',
-                      color: '#8C9776',
+                      color: '#6E7781',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
@@ -137,10 +135,10 @@ export function MenuExplorer({
                 {/* Veg Toggle */}
                 <div style={{
                   display: 'inline-flex',
-                  backgroundColor: '#F3F6EE',
+                  backgroundColor: '#FAF7F2',
                   padding: '4px',
                   borderRadius: '9999px',
-                  border: '1px solid rgba(133, 146, 107, 0.2)'
+                  border: '1px solid #ECE7DE'
                 }}>
                   <button
                     onClick={() => setVegFilter('all')}
@@ -148,9 +146,9 @@ export function MenuExplorer({
                       padding: '6px 16px',
                       borderRadius: '9999px',
                       fontSize: '0.82rem',
-                      fontWeight: 600,
-                      backgroundColor: vegFilter === 'all' ? '#85926B' : 'transparent',
-                      color: vegFilter === 'all' ? '#FFF' : '#556149',
+                      fontWeight: 800,
+                      backgroundColor: vegFilter === 'all' ? '#8D0A13' : 'transparent',
+                      color: vegFilter === 'all' ? '#FFF' : '#3A4149',
                       transition: 'all 0.2s ease'
                     }}
                   >
@@ -162,9 +160,9 @@ export function MenuExplorer({
                       padding: '6px 16px',
                       borderRadius: '9999px',
                       fontSize: '0.82rem',
-                      fontWeight: 600,
+                      fontWeight: 800,
                       backgroundColor: vegFilter === 'veg' ? '#E8F5E9' : 'transparent',
-                      color: vegFilter === 'veg' ? '#2E7D32' : '#556149',
+                      color: vegFilter === 'veg' ? '#2E7D32' : '#3A4149',
                       border: vegFilter === 'veg' ? '1px solid #2E7D32' : '1px solid transparent',
                       transition: 'all 0.2s ease'
                     }}
@@ -177,10 +175,10 @@ export function MenuExplorer({
                       padding: '6px 16px',
                       borderRadius: '9999px',
                       fontSize: '0.82rem',
-                      fontWeight: 600,
+                      fontWeight: 800,
                       backgroundColor: vegFilter === 'nonveg' ? '#FFEBEE' : 'transparent',
-                      color: vegFilter === 'nonveg' ? '#C62828' : '#556149',
-                      border: vegFilter === 'nonveg' ? '1px solid #C62828' : '1px solid transparent',
+                      color: vegFilter === 'nonveg' ? '#C8102E' : '#3A4149',
+                      border: vegFilter === 'nonveg' ? '1px solid #C8102E' : '1px solid transparent',
                       transition: 'all 0.2s ease'
                     }}
                   >
@@ -190,7 +188,7 @@ export function MenuExplorer({
 
                 {/* Sort By Dropdown */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '0.82rem', color: '#7E8775', fontWeight: 600 }}>Sort:</span>
+                  <span style={{ fontSize: '0.82rem', color: '#6E7781', fontWeight: 700 }}>Sort:</span>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -200,7 +198,8 @@ export function MenuExplorer({
                       borderRadius: '9999px',
                       fontSize: '0.84rem',
                       width: 'auto',
-                      fontWeight: 500
+                      fontWeight: 600,
+                      borderColor: '#ECE7DE'
                     }}
                   >
                     <option value="popular">Bestsellers First</option>
@@ -213,9 +212,9 @@ export function MenuExplorer({
             </div>
 
             {/* Quick Keyword Pills */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #F0F4E8' }}>
-              <span style={{ fontSize: '0.78rem', color: '#7E8775', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                <Sparkles size={13} color="#85926B" /> Popular Searches:
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #ECE7DE' }}>
+              <span style={{ fontSize: '0.78rem', color: '#6E7781', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Sparkles size={13} color="#FFB800" /> Popular Searches:
               </span>
               {quickSearchTags.map((tag) => (
                 <button
@@ -225,11 +224,11 @@ export function MenuExplorer({
                   style={{
                     padding: '4px 12px',
                     borderRadius: '9999px',
-                    backgroundColor: searchTerm.toLowerCase() === tag.toLowerCase() ? '#85926B' : '#F3F6EE',
-                    color: searchTerm.toLowerCase() === tag.toLowerCase() ? '#FFFFFF' : '#475234',
+                    backgroundColor: searchTerm.toLowerCase() === tag.toLowerCase() ? '#8D0A13' : '#FAF7F2',
+                    color: searchTerm.toLowerCase() === tag.toLowerCase() ? '#FFFFFF' : '#1A1D20',
                     fontSize: '0.78rem',
-                    fontWeight: 600,
-                    border: '1px solid rgba(133, 146, 107, 0.15)',
+                    fontWeight: 700,
+                    border: '1px solid #ECE7DE',
                     transition: 'all 0.15s ease'
                   }}
                 >
@@ -244,10 +243,11 @@ export function MenuExplorer({
                 marginTop: '16px',
                 padding: '10px 14px',
                 borderRadius: '12px',
-                backgroundColor: '#EBF1E4',
-                color: '#3A4530',
+                backgroundColor: '#FFF8E6',
+                color: '#1A1D20',
                 fontSize: '0.85rem',
-                fontWeight: 600,
+                fontWeight: 700,
+                border: '1px solid #FFE699',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -259,7 +259,7 @@ export function MenuExplorer({
                 </span>
                 <button
                   onClick={() => { setSearchTerm(''); setVegFilter('all'); }}
-                  style={{ color: '#C62828', fontSize: '0.8rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  style={{ color: '#8D0A13', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 >
                   Clear Filters <X size={12} />
                 </button>
@@ -270,26 +270,24 @@ export function MenuExplorer({
       </section>
 
       {/* 2. DEDICATED COMPLETE MENU SECTION (#menu) */}
-      <section id="menu" style={{ padding: '60px 0 100px', backgroundColor: '#FFFFFF', borderTop: '1px solid #ECE7DE' }}>
+      <section id="menu" style={{ padding: '50px 0 90px', backgroundColor: '#FFFFFF', borderTop: '1px solid #ECE7DE' }}>
         <div className="container">
           {/* Section Header */}
-          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 36px' }}>
-            <div className="font-cursive" style={{ fontSize: '1.8rem', color: '#85926B', marginBottom: '4px' }}>
-              Café Favorites Selection
+          <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 32px' }}>
+            <div className="font-cursive" style={{ fontSize: '1.9rem', color: '#8D0A13', fontWeight: 700, marginBottom: '2px' }}>
+              Selection
             </div>
             <h2 style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
-              color: '#1F241C',
-              fontWeight: 700,
-              margin: '0 0 10px'
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)',
+              color: '#1A1D20',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              margin: '0 0 8px'
             }}>
-              Our Complete Menu
+              OUR COMPLETE MENU
             </h2>
-            <div style={{ width: '50px', height: '3px', backgroundColor: '#85926B', borderRadius: '2px', margin: '0 auto 12px' }} />
-            <p style={{ color: '#6A785E', fontSize: '0.94rem', margin: 0 }}>
-              Browse dishes by category or select all to view everything crafted fresh in our kitchen
-            </p>
+            <div style={{ width: '50px', height: '3.5px', backgroundColor: '#8D0A13', borderRadius: '2px', margin: '0 auto 12px' }} />
           </div>
 
           {/* Horizontal Category Chips Filter */}
@@ -306,15 +304,15 @@ export function MenuExplorer({
             <button
               onClick={() => onSelectCategory('all')}
               style={{
-                padding: '9px 20px',
+                padding: '9px 22px',
                 borderRadius: '9999px',
                 fontSize: '0.88rem',
-                fontWeight: 600,
+                fontWeight: 800,
                 whiteSpace: 'nowrap',
-                backgroundColor: !selectedCategory || selectedCategory === 'all' ? '#2A3324' : '#F3F6EE',
-                color: !selectedCategory || selectedCategory === 'all' ? '#FFFFFF' : '#475234',
-                border: '1px solid rgba(0,0,0,0.06)',
-                boxShadow: !selectedCategory || selectedCategory === 'all' ? '0 4px 12px rgba(42, 51, 36, 0.25)' : 'none',
+                backgroundColor: !selectedCategory || selectedCategory === 'all' ? '#8D0A13' : '#FAF7F2',
+                color: !selectedCategory || selectedCategory === 'all' ? '#FFFFFF' : '#1A1D20',
+                border: '1px solid #ECE7DE',
+                boxShadow: !selectedCategory || selectedCategory === 'all' ? '0 4px 14px rgba(141, 10, 19, 0.3)' : 'none',
                 transition: 'all 0.2s ease'
               }}
             >
@@ -327,15 +325,15 @@ export function MenuExplorer({
                   key={cat.id}
                   onClick={() => onSelectCategory(cat.slug)}
                   style={{
-                    padding: '9px 20px',
+                    padding: '9px 22px',
                     borderRadius: '9999px',
                     fontSize: '0.88rem',
-                    fontWeight: 600,
+                    fontWeight: 800,
                     whiteSpace: 'nowrap',
-                    backgroundColor: active ? '#85926B' : '#F3F6EE',
-                    color: active ? '#FFFFFF' : '#475234',
-                    border: '1px solid rgba(0,0,0,0.06)',
-                    boxShadow: active ? '0 4px 12px rgba(133, 146, 107, 0.35)' : 'none',
+                    backgroundColor: active ? '#8D0A13' : '#FAF7F2',
+                    color: active ? '#FFFFFF' : '#1A1D20',
+                    border: '1px solid #ECE7DE',
+                    boxShadow: active ? '0 4px 14px rgba(141, 10, 19, 0.3)' : 'none',
                     transition: 'all 0.2s ease'
                   }}
                 >
@@ -351,18 +349,18 @@ export function MenuExplorer({
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '24px',
-          color: '#65705C',
+          color: '#5A626A',
           fontSize: '0.9rem'
         }}>
           <div>
-            Showing <strong style={{ color: '#2A3324' }}>{filteredFoods.length}</strong> delicious dishes
+            Showing <strong style={{ color: '#1A1D20' }}>{filteredFoods.length}</strong> delicious dishes
           </div>
           {selectedCategory && selectedCategory !== 'all' && (
             <button
               onClick={() => onSelectCategory('all')}
               style={{
-                color: '#85926B',
-                fontWeight: 700,
+                color: '#8D0A13',
+                fontWeight: 800,
                 fontSize: '0.84rem',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -381,18 +379,18 @@ export function MenuExplorer({
             borderRadius: '24px',
             padding: '60px 20px',
             textAlign: 'center',
-            border: '1px dashed #CBD4C0'
+            border: '1px dashed #ECE7DE'
           }}>
-            <UtensilsCrossed size={42} color="#85926B" style={{ margin: '0 auto 12px' }} />
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.4rem', color: '#2A3324', marginBottom: '8px' }}>
+            <UtensilsCrossed size={42} color="#8D0A13" style={{ margin: '0 auto 12px' }} />
+            <h3 style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.4rem', color: '#1A1D20', marginBottom: '8px', fontWeight: 800 }}>
               No dishes found
             </h3>
-            <p style={{ color: '#7E8775', fontSize: '0.92rem', marginBottom: '20px' }}>
+            <p style={{ color: '#6E7781', fontSize: '0.92rem', marginBottom: '20px' }}>
               We couldn't find any food items matching your search or filters.
             </p>
             <button
               onClick={() => { setSearchTerm(''); setVegFilter('all'); onSelectCategory('all'); }}
-              className="btn-outline"
+              className="btn-accent"
             >
               Reset All Filters
             </button>
@@ -410,7 +408,9 @@ export function MenuExplorer({
                 key={item.id}
                 className="food-card-responsive"
                 style={{
-                  opacity: isSoldOut ? 0.75 : 1
+                  opacity: isSoldOut ? 0.75 : 1,
+                  border: '1px solid #ECE7DE',
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.04)'
                 }}
               >
                 {/* Food Image Container */}
@@ -448,12 +448,12 @@ export function MenuExplorer({
                     </div>
                     {item.discount_price && !isSoldOut && (
                       <span style={{
-                        backgroundColor: '#E76F51',
-                        color: '#FFF',
-                        padding: '2px 6px',
+                        backgroundColor: '#FFB800',
+                        color: '#000000',
+                        padding: '3px 8px',
                         borderRadius: '4px',
                         fontSize: '0.65rem',
-                        fontWeight: 800
+                        fontWeight: 900
                       }}>
                         SAVE ₹{item.price - item.discount_price}
                       </span>
@@ -465,7 +465,7 @@ export function MenuExplorer({
                     <div style={{
                       position: 'absolute',
                       inset: 0,
-                      backgroundColor: 'rgba(30, 36, 26, 0.65)',
+                      backgroundColor: 'rgba(20, 20, 20, 0.75)',
                       backdropFilter: 'blur(2px)',
                       display: 'flex',
                       flexDirection: 'column',
@@ -473,8 +473,8 @@ export function MenuExplorer({
                       justifyContent: 'center',
                       color: '#FFFFFF'
                     }}>
-                      <AlertCircle size={20} color="#FFCDD2" />
-                      <span style={{ fontWeight: 800, fontSize: '0.8rem', marginTop: '4px', letterSpacing: '0.5px' }}>
+                      <AlertCircle size={20} color="#FFD7D7" />
+                      <span style={{ fontWeight: 900, fontSize: '0.8rem', marginTop: '4px', letterSpacing: '0.5px' }}>
                         SOLD OUT
                       </span>
                     </div>
@@ -488,16 +488,16 @@ export function MenuExplorer({
                       right: '8px',
                       backgroundColor: 'rgba(255, 255, 255, 0.92)',
                       backdropFilter: 'blur(4px)',
-                      padding: '2px 6px',
+                      padding: '2px 8px',
                       borderRadius: '10px',
                       fontSize: '0.68rem',
-                      fontWeight: 700,
-                      color: '#475234',
+                      fontWeight: 800,
+                      color: '#1A1D20',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '3px'
                     }}>
-                      <Clock size={11} /> {item.prep_time}
+                      <Clock size={11} color="#8D0A13" /> {item.prep_time}
                     </div>
                   )}
                 </div>
@@ -516,15 +516,15 @@ export function MenuExplorer({
                         fontSize: '0.68rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.6px',
-                        color: '#85926B',
-                        fontWeight: 700
+                        color: '#8D0A13',
+                        fontWeight: 800
                       }}>
                         {item.category_name}
                       </span>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#D97706', fontSize: '0.78rem', fontWeight: 700 }}>
-                        <Star size={12} fill="#F59E0B" color="#F59E0B" />
-                        <span>{item.rating || '4.8'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#D97706', fontSize: '0.78rem', fontWeight: 800 }}>
+                        <Star size={13} fill="#FFB800" color="#FFB800" />
+                        <span style={{ color: '#1A1D20' }}>{item.rating || '4.8'}</span>
                       </div>
                     </div>
 
@@ -533,10 +533,10 @@ export function MenuExplorer({
                       onClick={() => onOpenItemDetail(item)}
                       className="food-card-title-text"
                       style={{
-                        fontFamily: "'Playfair Display', serif",
+                        fontFamily: "'Poppins', sans-serif",
                         fontSize: '1.08rem',
                         fontWeight: 700,
-                        color: '#1F241C',
+                        color: '#1A1D20',
                         marginBottom: '4px',
                         cursor: 'pointer',
                         lineHeight: 1.25
@@ -550,7 +550,7 @@ export function MenuExplorer({
                       className="food-card-desc-text"
                       style={{
                         fontSize: '0.8rem',
-                        color: '#65705C',
+                        color: '#5A626A',
                         lineHeight: '1.38',
                         marginBottom: '10px'
                       }}
@@ -565,22 +565,22 @@ export function MenuExplorer({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     paddingTop: '8px',
-                    borderTop: '1px solid #F3F6EE',
+                    borderTop: '1px solid #FAF7F2',
                     marginTop: 'auto'
                   }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px' }}>
-                        <span className="food-card-price-text" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#2A3324' }}>
+                        <span className="food-card-price-text" style={{ fontSize: '1.15rem', fontWeight: 900, color: '#8D0A13' }}>
                           ₹{item.discount_price !== null && item.discount_price !== undefined ? item.discount_price : item.price}
                         </span>
                         {item.discount_price !== null && item.discount_price !== undefined && (
-                          <span style={{ fontSize: '0.76rem', textDecoration: 'line-through', color: '#9AA590' }}>
+                          <span style={{ fontSize: '0.76rem', textDecoration: 'line-through', color: '#A1A8B0' }}>
                             ₹{item.price}
                           </span>
                         )}
                       </div>
                       {hasAddons && (
-                        <div style={{ fontSize: '0.64rem', color: '#85926B', fontWeight: 600 }}>
+                        <div style={{ fontSize: '0.64rem', color: '#8D0A13', fontWeight: 700 }}>
                           + Options
                         </div>
                       )}
@@ -597,17 +597,17 @@ export function MenuExplorer({
                       disabled={isSoldOut}
                       className="food-card-add-btn"
                       style={{
-                        backgroundColor: isSoldOut ? '#CBD4C0' : '#85926B',
+                        backgroundColor: isSoldOut ? '#CBD4C0' : '#8D0A13',
                         color: '#FFFFFF',
-                        padding: '6px 14px',
+                        padding: '6px 16px',
                         borderRadius: '9999px',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         fontSize: '0.8rem',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px',
                         cursor: isSoldOut ? 'not-allowed' : 'pointer',
-                        boxShadow: isSoldOut ? 'none' : '0 2px 8px rgba(133, 146, 107, 0.25)'
+                        boxShadow: isSoldOut ? 'none' : '0 3px 10px rgba(141, 10, 19, 0.35)'
                       }}
                     >
                       <Plus size={14} />

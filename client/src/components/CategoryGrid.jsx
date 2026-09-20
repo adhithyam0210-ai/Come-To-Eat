@@ -11,32 +11,37 @@ export function CategoryGrid({ categories = [], selectedCategory, onSelectCatego
   };
 
   return (
-    <section id="categories" style={{ padding: '80px 0 60px', backgroundColor: '#FAF8F5' }}>
+    <section id="categories" style={{ padding: '60px 0 50px', backgroundColor: '#FAF7F2' }}>
       <div className="container">
         {/* Section Header */}
-        <div style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 48px' }}>
-          <div className="font-cursive" style={{ fontSize: '1.9rem', color: '#85926B', marginBottom: '6px' }}>
-            Taste The Variety
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div className="font-cursive" style={{ fontSize: '1.8rem', color: '#8D0A13', fontWeight: 700, marginBottom: '2px' }}>
+              Taste The Variety
+            </div>
+            <h2 style={{
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)',
+              color: '#1A1D20',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '-0.3px',
+              margin: 0
+            }}>
+              POPULAR CATEGORIES
+            </h2>
           </div>
-          <h2 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
-            color: '#1F241C',
-            fontWeight: 700,
-            marginBottom: '12px'
-          }}>
-            Explore Our Categories
-          </h2>
           <div style={{
-            width: '60px',
-            height: '3px',
-            backgroundColor: '#85926B',
-            borderRadius: '2px',
-            margin: '0 auto 16px'
-          }} />
-          <p style={{ color: '#6A7463', fontSize: '0.98rem' }}>
-            From crispy gourmet burgers to steaming momos, bubble tea, and stone-baked pizzas — pick your craving.
-          </p>
+            fontSize: '0.88rem',
+            fontWeight: 800,
+            color: '#8D0A13',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            <span>View All</span> →
+          </div>
         </div>
 
         {/* Category Cards Grid */}
@@ -50,17 +55,20 @@ export function CategoryGrid({ categories = [], selectedCategory, onSelectCatego
                 className="food-card-responsive"
                 style={{
                   cursor: 'pointer',
-                  border: isSelected ? '2.5px solid #85926B' : '1px solid rgba(133, 146, 107, 0.16)',
+                  backgroundColor: isSelected ? '#8D0A13' : '#161616',
+                  borderRadius: '16px',
+                  border: isSelected ? '2px solid #FFB800' : '1px solid rgba(255, 255, 255, 0.1)',
                   boxShadow: isSelected
-                    ? '0 12px 30px rgba(133, 146, 107, 0.3)'
-                    : '0 4px 16px rgba(0, 0, 0, 0.03)'
+                    ? '0 10px 25px rgba(141, 10, 19, 0.4)'
+                    : '0 6px 18px rgba(0, 0, 0, 0.15)',
+                  transition: 'all 0.3s ease'
                 }}
               >
                 {/* Food Photograph */}
                 <div
                   className="food-card-img-box category-card-img-box"
                   style={{
-                    backgroundColor: '#F3F5EE'
+                    backgroundColor: '#1E1E1E'
                   }}
                 >
                   <img
@@ -78,13 +86,13 @@ export function CategoryGrid({ categories = [], selectedCategory, onSelectCatego
                     width: '28px',
                     height: '28px',
                     borderRadius: '50%',
-                    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.65)',
                     backdropFilter: 'blur(4px)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#475234',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                    color: '#FFB800',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                   }}>
                     <ArrowUpRight size={14} />
                   </div>
@@ -94,21 +102,23 @@ export function CategoryGrid({ categories = [], selectedCategory, onSelectCatego
                 <div style={{
                   padding: '12px 14px',
                   textAlign: 'center',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: isSelected ? '#8D0A13' : '#161616',
                   flex: 1,
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  borderBottomLeftRadius: '16px',
+                  borderBottomRightRadius: '16px'
                 }}>
                   <h3
                     className="category-card-title-text"
                     style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: '1.05rem',
-                      fontWeight: 700,
-                      color: isSelected ? '#85926B' : '#1F241C',
-                      textTransform: 'capitalize',
-                      letterSpacing: '-0.2px',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontSize: '1rem',
+                      fontWeight: 900,
+                      color: '#FFFFFF',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
                       margin: 0
                     }}
                   >

@@ -69,15 +69,15 @@ export function CategoryPage({
 
   return (
     <div style={{ backgroundColor: '#FAF8F5', minHeight: '80vh', paddingBottom: '80px' }}>
-      {/* Category Hero Banner with organic ambient backdrop */}
+      {/* Category Hero Banner with full background image & elegant dark overlay */}
       <div style={{
         position: 'relative',
-        backgroundColor: '#1E251B',
+        backgroundColor: '#450005',
         color: '#FFFFFF',
-        padding: 'clamp(36px, 5vw, 64px) 0 clamp(44px, 6vw, 76px)',
+        padding: 'clamp(40px, 5.5vw, 68px) 0 clamp(48px, 6.5vw, 80px)',
         overflow: 'hidden'
       }}>
-        {/* Background Image / Ambient Blur */}
+        {/* Full Category Background Image */}
         {category.image_url && (
           <div style={{
             position: 'absolute',
@@ -85,22 +85,23 @@ export function CategoryPage({
             backgroundImage: `url(${category.image_url})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            opacity: 0.22,
-            filter: 'blur(8px)',
-            transform: 'scale(1.08)'
+            opacity: 0.55,
+            transform: 'scale(1.02)',
+            transition: 'opacity 0.3s ease'
           }} />
         )}
 
+        {/* Gradient Overlay for Superior Text Legibility */}
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(180deg, rgba(30,37,27,0.7) 0%, rgba(30,37,27,0.92) 80%, #FAF8F5 100%)',
+          background: 'linear-gradient(180deg, rgba(30, 0, 4, 0.72) 0%, rgba(69, 0, 5, 0.88) 75%, #FAF7F2 100%)',
           pointerEvents: 'none'
         }} />
 
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           {/* Breadcrumb & Back Navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
             <Breadcrumbs
               theme="dark"
               items={[
@@ -120,88 +121,62 @@ export function CategoryPage({
                 backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(255, 255, 255, 0.25)',
                 color: '#FFFFFF',
-                padding: '6px 16px',
-                borderRadius: '20px',
-                fontSize: '0.82rem',
-                fontWeight: 600,
+                padding: '8px 18px',
+                borderRadius: '9999px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.28)')}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.16)')}
             >
-              <ArrowLeft size={14} /> Back to Full Menu
+              <ArrowLeft size={15} /> Back to Full Menu
             </button>
           </div>
 
-          {/* Banner Main Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            alignItems: 'center',
-            gap: '32px'
-          }}>
-            <div>
+          {/* Banner Main Content */}
+          <div style={{ maxWidth: '720px' }}>
+            <h1 style={{
+              fontFamily: "'Poppins', sans-serif",
+              fontSize: 'clamp(2.2rem, 5vw, 3.4rem)',
+              fontWeight: 900,
+              color: '#FFFFFF',
+              lineHeight: 1.12,
+              margin: '0 0 12px',
+              textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+            }}>
+              {category.name}
+            </h1>
 
+            <p style={{
+              color: 'rgba(255, 255, 255, 0.92)',
+              fontSize: 'clamp(0.98rem, 2vw, 1.12rem)',
+              lineHeight: 1.6,
+              maxWidth: '640px',
+              margin: '0 0 20px',
+              fontWeight: 400,
+              textShadow: '0 1px 6px rgba(0,0,0,0.4)'
+            }}>
+              {category.description || `Explore our hand-crafted, freshly prepared selection of authentic ${category.name}.`}
+            </p>
 
-              <h1 style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 'clamp(2rem, 4.5vw, 3rem)',
-                fontWeight: 700,
-                color: '#FFFFFF',
-                lineHeight: 1.15,
-                margin: '0 0 12px'
-              }}>
-                {category.name}
-              </h1>
-
-              <p style={{
-                color: '#D2DCD0',
-                fontSize: 'clamp(0.92rem, 1.8vw, 1.05rem)',
-                lineHeight: 1.6,
-                maxWidth: '560px',
-                margin: '0 0 18px'
-              }}>
-                {category.description || `Explore our hand-crafted, freshly prepared selection of authentic ${category.name}.`}
-              </p>
-
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: 'rgba(255, 255, 255, 0.12)',
-                padding: '6px 14px',
-                borderRadius: '16px',
-                fontSize: '0.84rem',
-                color: '#FFF',
-                fontWeight: 600
-              }}>
-                <UtensilsCrossed size={14} color="#85926B" />
-                <span>{categoryFoods.length} {categoryFoods.length === 1 ? 'Dish Available' : 'Dishes Available'}</span>
-              </div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: 'rgba(255, 184, 0, 0.22)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 184, 0, 0.4)',
+              padding: '6px 16px',
+              borderRadius: '9999px',
+              fontSize: '0.86rem',
+              color: '#FFB800',
+              fontWeight: 800
+            }}>
+              <UtensilsCrossed size={15} color="#FFB800" />
+              <span>{categoryFoods.length} {categoryFoods.length === 1 ? 'Dish Available' : 'Dishes Available'}</span>
             </div>
-
-            {/* Category Banner Card Image */}
-            {category.image_url && (
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  maxWidth: '380px',
-                  height: '240px',
-                  borderRadius: '22px',
-                  overflow: 'hidden',
-                  boxShadow: '0 16px 40px rgba(0,0,0,0.35)',
-                  border: '3px solid rgba(255, 255, 255, 0.3)'
-                }}>
-                  <img
-                    src={category.image_url}
-                    alt={category.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

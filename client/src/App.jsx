@@ -51,7 +51,14 @@ function MainApp() {
   // Current page for user / landing view: 'home', 'search', 'menu', 'category', 'offers', 'reviews'
   const [currentPage, setCurrentPage] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [heroSlides, setHeroSlides] = useState([]);
+
+  // Synchronous fast cache initializers to eliminate flicker/glitch on page refresh
+  const [heroSlides, setHeroSlides] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cte_cached_hero_slides');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  });
 
   // Sync portal when user logs in or out
   useEffect(() => {
@@ -67,18 +74,44 @@ function MainApp() {
   }, [user]);
 
   // Master Data
-  const [categories, setCategories] = useState([]);
-  const [foods, setFoods] = useState([]);
+  const [categories, setCategories] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cte_cached_categories');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  });
+
+  const [foods, setFoods] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cte_cached_foods');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  });
+
   const [loading, setLoading] = useState(true);
 
   // Store Settings (Operating Hours, Delivery Info, Address, Contact)
-  const [settings, setSettings] = useState({
-    timing_text: 'Open Daily: 10:00 AM – 11:30 PM',
-    days_open: 'Monday – Sunday: 10:00 AM – 11:30 PM (No weekly off)',
-    delivery_text: 'Express 30 Min Delivery',
-    contact_address: '100 Feet Rd, Indiranagar, Bengaluru, 560038',
-    contact_phone: '+91 98765 43210',
-    contact_email: 'hello@cometoeat.com'
+  const [settings, setSettings] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cte_cached_settings');
+      return raw ? JSON.parse(raw) : {
+        timing_text: 'Open Daily: 10:00 AM – 11:30 PM',
+        days_open: 'Monday – Sunday: 10:00 AM – 11:30 PM (No weekly off)',
+        delivery_text: 'Express 30 Min Delivery',
+        contact_address: '100 Feet Rd, Indiranagar, Bengaluru, 560038',
+        contact_phone: '+91 98765 43210',
+        contact_email: 'hello@cometoeat.com'
+      };
+    } catch (e) {
+      return {
+        timing_text: 'Open Daily: 10:00 AM – 11:30 PM',
+        days_open: 'Monday – Sunday: 10:00 AM – 11:30 PM (No weekly off)',
+        delivery_text: 'Express 30 Min Delivery',
+        contact_address: '100 Feet Rd, Indiranagar, Bengaluru, 560038',
+        contact_phone: '+91 98765 43210',
+        contact_email: 'hello@cometoeat.com'
+      };
+    }
   });
 
   // Modals & UI States
@@ -94,7 +127,12 @@ function MainApp() {
   const [showSplash, setShowSplash] = useState(true);
 
   // Multi-branch state
-  const [branches, setBranches] = useState([]);
+  const [branches, setBranches] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cte_cached_branches');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  });
   const [selectedBranch, setSelectedBranch] = useState(null);
 
   const handleSelectBranch = (branch) => {
@@ -115,16 +153,25 @@ function MainApp() {
         api.get('/hero-slides').catch(() => null),
         api.get('/branches').catch(() => null)
       ]);
-      if (catsRes.success) setCategories(catsRes.categories);
-      if (foodsRes.success) setFoods(foodsRes.foods);
+      if (catsRes?.success && catsRes.categories) {
+        setCategories(catsRes.categories);
+        try { localStorage.setItem('cte_cached_categories', JSON.stringify(catsRes.categories)); } catch (e) {}
+      }
+      if (foodsRes?.success && foodsRes.foods) {
+        setFoods(foodsRes.foods);
+        try { localStorage.setItem('cte_cached_foods', JSON.stringify(foodsRes.foods)); } catch (e) {}
+      }
       if (setRes && setRes.success && setRes.settings) {
         setSettings(setRes.settings);
+        try { localStorage.setItem('cte_cached_settings', JSON.stringify(setRes.settings)); } catch (e) {}
       }
-      if (slidesRes && slidesRes.success && slidesRes.slides) {
+      if (slidesRes && slidesRes.success && slidesRes.slides && slidesRes.slides.length > 0) {
         setHeroSlides(slidesRes.slides);
+        try { localStorage.setItem('cte_cached_hero_slides', JSON.stringify(slidesRes.slides)); } catch (e) {}
       }
       if (branchesRes && branchesRes.success && branchesRes.branches?.length > 0) {
         setBranches(branchesRes.branches);
+        try { localStorage.setItem('cte_cached_branches', JSON.stringify(branchesRes.branches)); } catch (e) {}
         const savedId = localStorage.getItem('cte_selected_branch_id');
         const matched = branchesRes.branches.find(b => b.id === Number(savedId)) || branchesRes.branches[0];
         setSelectedBranch(matched);
@@ -317,7 +364,14 @@ function MainApp() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Animated Welcome Splash Screen */}
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {showSplash && (
+        <SplashScreen
+          isLoading={loading}
+          onFinish={() => {
+            setShowSplash(false);
+          }}
+        />
+      )}
 
       {/* Top Navigation with Multi-Page routing */}
       <Navbar

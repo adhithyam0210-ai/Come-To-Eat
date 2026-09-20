@@ -43,9 +43,9 @@ export function Navbar({
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      backgroundColor: 'rgba(250, 248, 245, 0.95)',
+      background: 'linear-gradient(90deg, #6B0007 0%, #8D0A13 50%, #4D0005 100%)',
       backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid rgba(133, 146, 107, 0.18)',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
       transition: 'all 0.3s ease'
     }}>
       {/* Single Unified Header Bar (per Notebook Drawing) */}
@@ -60,20 +60,21 @@ export function Navbar({
               src="/logo.jpg"
               alt="Come To Eat"
               className="navbar-brand-logo"
+              style={{ border: '2px solid #FFB800' }}
             />
             <div>
-              <div className="navbar-brand-name">
+              <div className="navbar-brand-name" style={{ color: '#FFFFFF' }}>
                 Come To Eat
               </div>
               <div style={{
                 fontSize: '0.64rem',
                 textTransform: 'uppercase',
                 letterSpacing: '1.4px',
-                color: '#85926B',
+                color: '#FFB800',
                 fontWeight: 800,
                 whiteSpace: 'nowrap'
               }}>
-                CAFÉ
+                DYNAMIC CAFÉ
               </div>
             </div>
           </div>
@@ -83,13 +84,13 @@ export function Navbar({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            backgroundColor: '#F0F4E8',
-            padding: '5px 10px',
+            backgroundColor: 'rgba(255, 255, 255, 0.12)',
+            padding: '5px 12px',
             borderRadius: '10px',
-            border: '1px solid #D6E0CE'
+            border: '1px solid rgba(255, 255, 255, 0.22)'
           }}>
-            <MapPin size={13} color="#65724F" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475234' }}>Branch:</span>
+            <MapPin size={13} color="#FFB800" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'rgba(255, 255, 255, 0.85)' }}>Branch:</span>
             <select
               value={selectedBranch?.id || ''}
               onChange={(e) => {
@@ -99,7 +100,7 @@ export function Navbar({
               }}
               style={{
                 backgroundColor: 'transparent',
-                color: '#2A3324',
+                color: '#FFFFFF',
                 border: 'none',
                 fontSize: '0.78rem',
                 fontWeight: 700,
@@ -137,7 +138,7 @@ export function Navbar({
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: isActive ? '#85926B' : '#475234',
+                    color: isActive ? '#FFB800' : 'rgba(255, 255, 255, 0.92)',
                     fontWeight: isActive ? 800 : 600,
                     fontSize: '1.02rem',
                     padding: '8px 4px',
@@ -153,7 +154,7 @@ export function Navbar({
                       left: 0,
                       right: 0,
                       height: '3px',
-                      backgroundColor: '#85926B',
+                      backgroundColor: '#FFB800',
                       borderRadius: '2px'
                     }} />
                   )}
@@ -170,6 +171,11 @@ export function Navbar({
               onClick={onOpenSearch}
               title="Search food items"
               className="navbar-icon-btn"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                color: '#FFFFFF',
+                borderColor: 'rgba(255, 255, 255, 0.25)'
+              }}
             >
               <Search size={18} />
             </button>
@@ -180,11 +186,16 @@ export function Navbar({
               onClick={() => setIsCartOpen(true)}
               className="navbar-cart-btn"
               title="View Bag"
+              style={{
+                backgroundColor: '#FFB800',
+                color: '#000000',
+                boxShadow: '0 4px 14px rgba(255, 184, 0, 0.4)'
+              }}
             >
-              <ShoppingBag size={18} />
-              <span className="desktop-only" style={{ fontWeight: 700, fontSize: '0.94rem' }}>Cart</span>
+              <ShoppingBag size={18} color="#000000" />
+              <span className="desktop-only" style={{ fontWeight: 800, fontSize: '0.94rem', color: '#000000' }}>Cart</span>
               {totalCount > 0 && (
-                <span className="navbar-cart-badge">
+                <span className="navbar-cart-badge" style={{ backgroundColor: '#8D0A13', color: '#FFFFFF', borderColor: '#FFB800' }}>
                   {totalCount}
                 </span>
               )}
@@ -197,14 +208,18 @@ export function Navbar({
               <button
                 onClick={() => setUserDropdown(!userDropdown)}
                 className="navbar-icon-btn"
-                title={user.name}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  color: '#FFFFFF',
+                  borderColor: 'rgba(255, 255, 255, 0.25)'
+                }}
               >
                 <div style={{
                   width: '26px',
                   height: '26px',
                   borderRadius: '50%',
-                  backgroundColor: user.role === 'admin' ? '#E76F51' : (user.role === 'employee' ? '#4A7C59' : '#85926B'),
-                  color: '#FFFFFF',
+                  backgroundColor: user.role === 'admin' ? '#FFB800' : (user.role === 'employee' ? '#FFB800' : '#8D0A13'),
+                  color: user.role === 'admin' || user.role === 'employee' ? '#8D0A13' : '#FFFFFF',
                   fontWeight: 800,
                   fontSize: '0.84rem',
                   display: 'flex',
@@ -221,16 +236,17 @@ export function Navbar({
                   top: '115%',
                   right: 0,
                   width: '240px',
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: '#161616',
                   borderRadius: '16px',
-                  boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
-                  border: '1px solid #EAE5DC',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(255,184,0,0.2)',
                   padding: '10px',
-                  zIndex: 200
+                  zIndex: 200,
+                  color: '#FFFFFF'
                 }}>
-                  <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid #F0ECE4' }}>
-                    <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#1F241C' }}>{user.name}</div>
-                    <div style={{ fontSize: '0.82rem', color: '#7E8775' }}>{user.email}</div>
+                  <div style={{ padding: '8px 12px 10px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#FFFFFF' }}>{user.name}</div>
+                    <div style={{ fontSize: '0.82rem', color: '#FFB800' }}>{user.email}</div>
                   </div>
 
                   {user.role === 'admin' && (
@@ -246,13 +262,13 @@ export function Navbar({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
-                        color: '#E76F51',
-                        fontWeight: 700,
+                        color: '#FFB800',
+                        fontWeight: 800,
                         fontSize: '0.94rem',
                         borderRadius: '10px'
                       }}
                     >
-                      <Shield size={18} color="#E76F51" /> {activePortal === 'admin' ? 'Switch to Customer View' : 'Manager Admin Portal'}
+                      <Shield size={18} color="#FFB800" /> {activePortal === 'admin' ? 'Switch to Customer View' : 'Manager Admin Portal'}
                     </button>
                   )}
 
@@ -269,13 +285,13 @@ export function Navbar({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '10px',
-                        color: '#475234',
-                        fontWeight: 700,
+                        color: '#FFB800',
+                        fontWeight: 800,
                         fontSize: '0.94rem',
                         borderRadius: '10px'
                       }}
                     >
-                      <UtensilsCrossed size={18} color="#85926B" /> {activePortal === 'employee' ? 'Switch to Customer View' : 'Go to Employee Portal'}
+                      <UtensilsCrossed size={18} color="#FFB800" /> {activePortal === 'employee' ? 'Switch to Customer View' : 'Go to Employee Portal'}
                     </button>
                   )}
 
@@ -291,13 +307,13 @@ export function Navbar({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
-                      color: '#475234',
+                      color: '#FFFFFF',
                       fontWeight: 600,
                       fontSize: '0.94rem',
                       borderRadius: '10px'
                     }}
                   >
-                    <ShoppingBag size={18} color="#85926B" /> Order History & Tracking
+                    <ShoppingBag size={18} color="#FFB800" /> Order History & Tracking
                   </button>
 
                   <button
@@ -312,22 +328,19 @@ export function Navbar({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
-                      color: '#475234',
+                      color: '#FFFFFF',
                       fontWeight: 600,
                       fontSize: '0.94rem',
                       borderRadius: '10px'
                     }}
                   >
-                    <User size={18} color="#85926B" /> Profile & Addresses
+                    <User size={18} color="#FFB800" /> Profile & Addresses
                   </button>
 
                   <button
                     onClick={() => {
-                      if (window.confirm('Are you sure you want to sign out of Come To Eat?')) {
-                        logout();
-                        setUserDropdown(false);
-                        setActivePortal('user');
-                      }
+                      logout();
+                      setUserDropdown(false);
                     }}
                     style={{
                       width: '100%',
@@ -336,12 +349,10 @@ export function Navbar({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '10px',
-                      color: '#C62828',
+                      color: '#FF4D4D',
                       fontWeight: 700,
                       fontSize: '0.94rem',
-                      borderRadius: '10px',
-                      borderTop: '1px solid #F0F4E8',
-                      marginTop: '4px'
+                      borderRadius: '10px'
                     }}
                   >
                     <LogOut size={18} /> Sign Out
@@ -351,11 +362,28 @@ export function Navbar({
             </div>
           ) : (
             <button
-              onClick={onOpenAuth}
-              className="navbar-icon-btn"
-              title="Sign In / Register"
+              onClick={() => onOpenAuth('login')}
+              className="navbar-login-btn"
+              style={{
+                backgroundColor: '#FFB800',
+                color: '#8D0A13',
+                padding: '8px 22px',
+                borderRadius: '9999px',
+                fontWeight: 800,
+                fontSize: '0.92rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(255, 184, 0, 0.4)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+                marginLeft: '6px'
+              }}
             >
-              <User size={18} />
+              <User size={16} color="#8D0A13" />
+              <span>Sign In</span>
             </button>
           )}
 
@@ -373,17 +401,18 @@ export function Navbar({
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
         <div style={{
-          backgroundColor: '#FAF8F5',
-          borderTop: '1px solid rgba(133, 146, 107, 0.15)',
+          backgroundColor: '#161616',
+          borderTop: '1px solid rgba(255, 184, 0, 0.2)',
           padding: '18px 22px 28px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
-          boxShadow: '0 12px 24px rgba(0,0,0,0.06)'
+          boxShadow: '0 12px 24px rgba(0,0,0,0.5)',
+          color: '#FFFFFF'
         }}>
           {/* Mobile Branch Selector */}
-          <div style={{ backgroundColor: '#EBF0E4', padding: '12px 16px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#475234', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '12px 16px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+            <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#FFB800', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <MapPin size={16} /> Outlet Branch:
             </span>
             <select
@@ -394,9 +423,9 @@ export function Navbar({
                 if (found && onSelectBranch) onSelectBranch(found);
               }}
               style={{
-                backgroundColor: '#FFFFFF',
-                color: '#1F241C',
-                border: '1.5px solid #C4D2B8',
+                backgroundColor: '#262626',
+                color: '#FFFFFF',
+                border: '1.5px solid #FFB800',
                 borderRadius: '10px',
                 fontSize: '0.9rem',
                 fontWeight: 700,
@@ -426,10 +455,10 @@ export function Navbar({
                       setMobileMenuOpen(false);
                     }}
                     style={{
-                      background: isActive ? '#EBF0E4' : 'none',
+                      background: isActive ? '#8D0A13' : 'none',
                       border: 'none',
                       textAlign: 'left',
-                      color: isActive ? '#85926B' : '#2A3324',
+                      color: isActive ? '#FFB800' : '#FFFFFF',
                       fontWeight: isActive ? 800 : 600,
                       fontSize: '1.08rem',
                       padding: '12px 16px',
@@ -444,10 +473,10 @@ export function Navbar({
             </div>
           )}
 
-          <div style={{ borderTop: '1px solid #E8EDE0', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {user ? (
               <>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#1F241C' }}>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#FFFFFF' }}>
                   {user.name}
                 </div>
                 {user.role === 'admin' && (
@@ -456,7 +485,7 @@ export function Navbar({
                       setActivePortal(activePortal === 'admin' ? 'user' : 'admin');
                       setMobileMenuOpen(false);
                     }}
-                    style={{ textAlign: 'left', padding: '10px 4px', color: '#E76F51', fontWeight: 800, fontSize: '1rem' }}
+                    style={{ textAlign: 'left', padding: '10px 4px', color: '#FFB800', fontWeight: 800, fontSize: '1rem' }}
                   >
                     {activePortal === 'admin' ? 'Switch to Customer View' : 'Manager Admin Dashboard'}
                   </button>
@@ -467,7 +496,7 @@ export function Navbar({
                       setActivePortal(activePortal === 'employee' ? 'user' : 'employee');
                       setMobileMenuOpen(false);
                     }}
-                    style={{ textAlign: 'left', padding: '10px 4px', color: '#85926B', fontWeight: 800, fontSize: '1rem' }}
+                    style={{ textAlign: 'left', padding: '10px 4px', color: '#FFB800', fontWeight: 800, fontSize: '1rem' }}
                   >
                     {activePortal === 'employee' ? 'Switch to Customer View' : 'Employee Live Kitchen Portal'}
                   </button>
@@ -477,7 +506,7 @@ export function Navbar({
                     onOpenOrders();
                     setMobileMenuOpen(false);
                   }}
-                  style={{ textAlign: 'left', padding: '10px 4px', color: '#475234', fontWeight: 700, fontSize: '0.98rem' }}
+                  style={{ textAlign: 'left', padding: '10px 4px', color: '#FFFFFF', fontWeight: 700, fontSize: '0.98rem' }}
                 >
                   My Orders & Live Tracking
                 </button>
@@ -486,7 +515,7 @@ export function Navbar({
                     onOpenProfile();
                     setMobileMenuOpen(false);
                   }}
-                  style={{ textAlign: 'left', padding: '10px 4px', color: '#475234', fontWeight: 700, fontSize: '0.98rem' }}
+                  style={{ textAlign: 'left', padding: '10px 4px', color: '#FFFFFF', fontWeight: 700, fontSize: '0.98rem' }}
                 >
                   My Addresses & Profile
                 </button>

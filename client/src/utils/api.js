@@ -52,6 +52,24 @@ function requireAdminRole() {
   }
 }
 
+// Synchronous fast cache to prevent initial load flicker on refresh
+function updateCache(key, data) {
+  try {
+    if (typeof window !== 'undefined' && data) {
+      localStorage.setItem(`cte_cached_${key}`, JSON.stringify(data));
+    }
+  } catch (e) {}
+}
+
+function getCache(key, fallback = null) {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(`cte_cached_${key}`) : null;
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
 // Helper to compute next integer ID for a table to prevent sequence collisions
 async function getNextTableId(tableName) {
   if (!supabase) return Date.now();
@@ -66,11 +84,14 @@ async function getNextTableId(tableName) {
 }
 
 // Helper to refetch and broadcast updated tables to all realtime subscribers
-async function refetchAndBroadcast(tableName, broadcastFn, orderBy = 'id') {
+async function refetchAndBroadcast(tableName, broadcastFn, orderBy = 'id', cacheKey = null) {
   if (!supabase || !broadcastFn) return;
   try {
     const { data } = await supabase.from(tableName).select('*').order(orderBy, { ascending: true });
-    if (data) broadcastFn(data);
+    if (data) {
+      if (cacheKey) updateCache(cacheKey, data);
+      broadcastFn(data);
+    }
   } catch (e) {}
 }
 
@@ -101,7 +122,7 @@ export const DEFAULT_HERO_SLIDES = [
 ];
 
 // ==============================================================================
-// DIRECT SUPABASE POSTGRESQL BACKEND API LAYER (ZERO LOCALSTORAGE DATA FALLBACK)
+// DIRECT SUPABASE POSTGRESQL BACKEND API LAYER (ZERO FLICKER STALE-WHILE-REVALIDATE)
 // ==============================================================================
 
 export async function directSupabaseRequest(endpoint, options = {}) {
@@ -261,7 +282,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
     if (method === 'GET') {
       const { data, error } = await supabase.from('addresses').select('*').eq('user_id', user.id).order('is_default', { ascending: false });
-      if (error) throw error;
+      if (error) return { success: true, addresses: getCache(`addresses_${user.id}`, []) };
+      updateCache(`addresses_${user.id}`, data);
       return { success: true, addresses: data || [] };
     }
 
@@ -281,14 +303,21 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   // -------------------------------------------------------------
-  // 2. CATEGORIES (Direct Supabase Cloud DB)
+  // 2. CATEGORIES (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/categories' || cleanPath === '/categories/admin') {
     const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
-    if (error) throw error;
+    if (!error && data) {
+      updateCache('categories', data);
+      const result = cleanPath === '/categories'
+        ? data.filter(c => c.is_active !== false && c.is_active !== 0)
+        : data;
+      return { success: true, categories: result };
+    }
+    const cached = getCache('categories', []);
     const result = cleanPath === '/categories'
-      ? (data || []).filter(c => c.is_active !== false && c.is_active !== 0)
-      : (data || []);
+      ? cached.filter(c => c.is_active !== false && c.is_active !== 0)
+      : cached;
     return { success: true, categories: result };
   }
 
@@ -308,7 +337,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('categories').insert([catPayload]).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order', 'categories');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: data }));
     return { success: true, category: data };
   }
@@ -323,7 +352,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('categories').update(updatePayload).eq('id', catId).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order', 'categories');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: data }));
     return { success: true, category: data };
   }
@@ -335,18 +364,22 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { error } = await supabase.from('categories').delete().or(`id.eq.${catId},id.eq.${rawId}`);
     if (error) throw error;
 
-    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order');
+    await refetchAndBroadcast('categories', broadcastCategories, 'sort_order', 'categories');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated'));
     return { success: true, message: 'Category deleted' };
   }
 
   // -------------------------------------------------------------
-  // 3. FOODS (Direct Supabase Cloud DB)
+  // 3. FOODS (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/foods') {
     const { data, error } = await supabase.from('food_items').select('*').order('id', { ascending: true });
-    if (error) throw error;
-    return { success: true, foods: data || [] };
+    if (!error && data) {
+      updateCache('foods', data);
+      return { success: true, foods: data };
+    }
+    const cached = getCache('foods', []);
+    return { success: true, foods: cached };
   }
 
   if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
@@ -362,7 +395,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('food_items').update({ is_available: nextAvail }).eq('id', foodId).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id', 'foods');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
     return { success: true, message: 'Availability toggled', food: data };
   }
@@ -370,8 +403,11 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath.startsWith('/foods/') && method === 'GET') {
     const rawId = cleanPath.split('/')[2];
     const { data, error } = await supabase.from('food_items').select('*').eq('id', rawId).maybeSingle();
-    if (error || !data) throw new Error('Food item not found.');
-    return { success: true, food: data };
+    if (!error && data) return { success: true, food: data };
+    const cachedFoods = getCache('foods', []);
+    const found = cachedFoods.find(f => String(f.id) === String(rawId));
+    if (found) return { success: true, food: found };
+    throw new Error('Food item not found.');
   }
 
   if (cleanPath === '/foods' && method === 'POST') {
@@ -396,7 +432,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('food_items').insert([foodPayload]).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id', 'foods');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
     return { success: true, food: data };
   }
@@ -417,7 +453,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('food_items').update(updatePayload).eq('id', foodId).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id', 'foods');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
     return { success: true, food: data };
   }
@@ -430,28 +466,34 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { error } = await supabase.from('food_items').delete().or(`id.eq.${foodId},id.eq.${rawId}`);
     if (error) throw error;
 
-    await refetchAndBroadcast('food_items', broadcastFoods, 'id');
+    await refetchAndBroadcast('food_items', broadcastFoods, 'id', 'foods');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated'));
     return { success: true, message: 'Food item deleted' };
   }
 
   // -------------------------------------------------------------
-  // 4. HERO SLIDES (Direct Supabase Cloud DB)
+  // 4. HERO SLIDES (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/hero-slides' || cleanPath === '/hero-slides/admin') {
     const { data, error } = await supabase.from('hero_slides').select('*').order('sort_order', { ascending: true });
-    if (error) throw error;
+    if (!error && data) {
+      const formatted = data.map(s => ({
+        ...s,
+        desc: s.desc_text || s.desc || '',
+        desc_text: s.desc_text || s.desc || ''
+      }));
+      updateCache('hero_slides', formatted);
+      const slides = cleanPath === '/hero-slides'
+        ? formatted.filter(s => s.is_active !== false && s.is_active !== 0)
+        : formatted;
+      return { success: true, slides };
+    }
 
-    const formatted = (data || []).map(s => ({
-      ...s,
-      desc: s.desc_text || s.desc || '',
-      desc_text: s.desc_text || s.desc || ''
-    }));
-
-    const result = cleanPath === '/hero-slides'
-      ? formatted.filter(s => s.is_active !== false && s.is_active !== 0)
-      : formatted;
-    return { success: true, slides: result };
+    const cached = getCache('hero_slides', []);
+    const slides = cleanPath === '/hero-slides'
+      ? cached.filter(s => s.is_active !== false && s.is_active !== 0)
+      : cached;
+    return { success: true, slides };
   }
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
@@ -476,7 +518,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (error) throw error;
 
     const formatted = { ...data, desc: data.desc_text || data.desc || '' };
-    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order', 'hero_slides');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:hero_slides_updated'));
     return { success: true, slide: formatted };
   }
@@ -503,7 +545,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     if (error) throw error;
 
     const formatted = { ...data, desc: data.desc_text || data.desc || '' };
-    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order', 'hero_slides');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:hero_slides_updated'));
     return { success: true, slide: formatted };
   }
@@ -516,20 +558,25 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { error } = await supabase.from('hero_slides').delete().or(`id.eq.${slideId},id.eq.${rawId}`);
     if (error) throw error;
 
-    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order');
+    await refetchAndBroadcast('hero_slides', broadcastHeroSlides, 'sort_order', 'hero_slides');
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:hero_slides_updated'));
     return { success: true, message: 'Slide deleted' };
   }
 
   // -------------------------------------------------------------
-  // 5. OFFERS (Direct Supabase Cloud DB)
+  // 5. OFFERS (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/offers' || cleanPath === '/offers/admin') {
     let q = supabase.from('offer_banners').select('*').order('id', { ascending: true });
     if (cleanPath === '/offers') q = q.eq('is_active', 1);
     const { data, error } = await q;
-    if (error) throw error;
-    return { success: true, offers: data || [] };
+    if (!error && data) {
+      updateCache('offers', data);
+      return { success: true, offers: data };
+    }
+    const cached = getCache('offers', []);
+    const filteredOffers = cleanPath === '/offers' ? cached.filter(o => o.is_active !== 0) : cached;
+    return { success: true, offers: filteredOffers };
   }
 
   if (cleanPath === '/offers' && method === 'POST') {
@@ -540,7 +587,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('offer_banners').insert([offerData]).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id');
+    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id', 'offers');
     return { success: true, offer: data };
   }
 
@@ -552,7 +599,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('offer_banners').update(body).eq('id', offerId).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id');
+    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id', 'offers');
     return { success: true, offer: data };
   }
 
@@ -564,12 +611,12 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { error } = await supabase.from('offer_banners').delete().or(`id.eq.${offerId},id.eq.${rawId}`);
     if (error) throw error;
 
-    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id');
+    await refetchAndBroadcast('offer_banners', broadcastOffers, 'id', 'offers');
     return { success: true, message: 'Offer deleted' };
   }
 
   // -------------------------------------------------------------
-  // 6. COUPONS (Direct Supabase Cloud DB)
+  // 6. COUPONS (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/coupons' || cleanPath === '/coupons/active' || cleanPath === '/coupons/admin') {
     let q = supabase.from('coupons').select('*').order('id', { ascending: false });
@@ -577,8 +624,15 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       q = q.eq('is_active', 1);
     }
     const { data, error } = await q;
-    if (error) throw error;
-    return { success: true, coupons: data || [] };
+    if (!error && data) {
+      updateCache('coupons', data);
+      return { success: true, coupons: data };
+    }
+    const cached = getCache('coupons', []);
+    const filteredCoupons = cleanPath === '/coupons/admin'
+      ? cached
+      : cached.filter(c => c.is_active !== 0 && c.is_active !== false);
+    return { success: true, coupons: filteredCoupons };
   }
 
   if (cleanPath === '/coupons/validate') {
@@ -665,7 +719,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('coupons').insert([newCouponData]).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('coupons', broadcastCoupons, 'id');
+    await refetchAndBroadcast('coupons', broadcastCoupons, 'id', 'coupons');
     return { success: true, coupon: data };
   }
 
@@ -686,7 +740,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('coupons').update(updateData).eq('id', couponId).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('coupons', broadcastCoupons, 'id');
+    await refetchAndBroadcast('coupons', broadcastCoupons, 'id', 'coupons');
     return { success: true, coupon: data };
   }
 
@@ -698,24 +752,31 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { error } = await supabase.from('coupons').delete().or(`id.eq.${couponId},id.eq.${rawId}`);
     if (error) throw error;
 
-    await refetchAndBroadcast('coupons', broadcastCoupons, 'id');
+    await refetchAndBroadcast('coupons', broadcastCoupons, 'id', 'coupons');
     return { success: true, message: 'Coupon deleted' };
   }
 
   // -------------------------------------------------------------
-  // 7. BRANCHES (Direct Supabase Cloud DB)
+  // 7. BRANCHES (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/branches') {
     const { data, error } = await supabase.from('branches').select('*').order('id', { ascending: true });
-    if (error) throw error;
-    return { success: true, branches: data || [] };
+    if (!error && data) {
+      updateCache('branches', data);
+      return { success: true, branches: data };
+    }
+    const cached = getCache('branches', []);
+    return { success: true, branches: cached };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'GET') {
     const rawId = cleanPath.split('/')[2];
     const { data, error } = await supabase.from('branches').select('*').eq('id', rawId).maybeSingle();
-    if (error || !data) throw new Error('Branch not found.');
-    return { success: true, branch: data };
+    if (!error && data) return { success: true, branch: data };
+    const cached = getCache('branches', []);
+    const found = cached.find(br => String(br.id) === String(rawId));
+    if (found) return { success: true, branch: found };
+    throw new Error('Branch not found.');
   }
 
   if (cleanPath === '/branches' && method === 'POST') {
@@ -726,7 +787,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('branches').insert([branchData]).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('branches', broadcastBranches, 'id');
+    await refetchAndBroadcast('branches', broadcastBranches, 'id', 'branches');
     return { success: true, branch: data };
   }
 
@@ -738,7 +799,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { data, error } = await supabase.from('branches').update(body).eq('id', branchId).select().single();
     if (error) throw error;
 
-    await refetchAndBroadcast('branches', broadcastBranches, 'id');
+    await refetchAndBroadcast('branches', broadcastBranches, 'id', 'branches');
     return { success: true, branch: data };
   }
 
@@ -750,23 +811,25 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     const { error } = await supabase.from('branches').delete().or(`id.eq.${branchId},id.eq.${rawId}`);
     if (error) throw error;
 
-    await refetchAndBroadcast('branches', broadcastBranches, 'id');
+    await refetchAndBroadcast('branches', broadcastBranches, 'id', 'branches');
     return { success: true, message: 'Branch deleted' };
   }
 
   // -------------------------------------------------------------
-  // 8. STORE SETTINGS (Direct Supabase Cloud DB)
+  // 8. STORE SETTINGS (Direct Supabase Cloud DB with Fast Cache Sync)
   // -------------------------------------------------------------
   if (cleanPath === '/settings') {
     if (method === 'GET') {
       const { data, error } = await supabase.from('restaurant_settings').select('*');
-      if (error) throw error;
-      const map = {};
-      if (data && data.length) {
+      if (!error && data) {
+        const map = {};
         data.forEach(item => { map[item.setting_key] = item.setting_value; });
+        const merged = { ...DEFAULT_SETTINGS, ...map };
+        updateCache('settings', merged);
+        return { success: true, settings: merged };
       }
-      const merged = { ...DEFAULT_SETTINGS, ...map };
-      return { success: true, settings: merged };
+      const cached = getCache('settings', DEFAULT_SETTINGS);
+      return { success: true, settings: cached };
     }
 
     if (method === 'PUT') {
@@ -784,6 +847,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         updatedData.forEach(item => { map[item.setting_key] = item.setting_value; });
       }
       const merged = { ...DEFAULT_SETTINGS, ...map };
+      updateCache('settings', merged);
 
       if (broadcastSettings) broadcastSettings(merged);
       return { success: true, settings: merged };
