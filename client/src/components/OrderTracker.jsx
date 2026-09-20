@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, Clock, Truck, ChefHat, Package, AlertCircle, Phone, RefreshCw, MapPin, Loader2 } from 'lucide-react';
 import { api } from '../utils/api';
+import { subscribeToLiveOrders } from '../utils/supabase';
 
 const ORDER_STEPS = [
   { key: 'Order Placed', label: 'Order Placed', icon: Clock, desc: 'Your order was received by the café.' },
@@ -33,9 +34,19 @@ export function OrderTracker({ orderId, onClose, onRefreshList }) {
 
   useEffect(() => {
     fetchOrder();
-    // Auto-refresh status every 10 seconds
+
+    const unsubRealtime = subscribeToLiveOrders((updatedOrder) => {
+      if (updatedOrder && (String(updatedOrder.id) === String(orderId) || updatedOrder.order_number === orderId)) {
+        setOrder(prev => ({ ...prev, ...updatedOrder }));
+        if (onRefreshList) onRefreshList();
+      }
+    });
+
     const interval = setInterval(fetchOrder, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      unsubRealtime();
+      clearInterval(interval);
+    };
   }, [orderId]);
 
   if (!order && loading) {

@@ -44,6 +44,31 @@ export function clearAuth() {
   localStorage.removeItem('cte_user');
 }
 
+// Ensure non-admin users cannot perform master admin store modifications
+function requireAdminRole() {
+  const user = getUser();
+  if (!user || user.role !== 'admin') {
+    throw new Error('Unauthorized: Only Admin can modify store content.');
+  }
+}
+
+function getStore(key, defaultValue = null) {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(`cte_${key}`) : null;
+    return raw !== null ? JSON.parse(raw) : defaultValue;
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
+function setStore(key, value) {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`cte_${key}`, JSON.stringify(value));
+    }
+  } catch (e) {}
+}
+
 // ==============================================================================
 // DEFAULT & PERSISTENT LOCAL STORAGE STATE
 // ==============================================================================
@@ -143,411 +168,70 @@ const DEFAULT_COUPONS = [
   { id: 3, code: 'FREESHIP', discount_type: 'fixed', discount_value: 40, min_order_value: 150, max_discount: 40, is_active: 1 }
 ];
 
-let isHeroSlidesUserModified = false;
-let memoryHeroSlides = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_hero_slides') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isHeroSlidesUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [...DEFAULT_HERO_SLIDES];
-})();
-
+let memoryHeroSlides = getStore('hero_slides', [...DEFAULT_HERO_SLIDES]);
 const saveMemoryHeroSlides = (slides) => {
   memoryHeroSlides = slides;
-  isHeroSlidesUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_hero_slides', JSON.stringify(slides));
-    }
-  } catch (e) {}
+  setStore('hero_slides', slides);
 };
 
-let isOffersUserModified = false;
-let memoryOffers = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_offers') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isOffersUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [...DEFAULT_OFFERS];
-})();
-
+let memoryOffers = getStore('offers', [...DEFAULT_OFFERS]);
 const saveMemoryOffers = (offers) => {
   memoryOffers = offers;
-  isOffersUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_offers', JSON.stringify(offers));
-    }
-  } catch (e) {}
+  setStore('offers', offers);
 };
 
-let isCouponsUserModified = false;
-let memoryCoupons = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_coupons') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isCouponsUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [...DEFAULT_COUPONS];
-})();
-
+let memoryCoupons = getStore('coupons', [...DEFAULT_COUPONS]);
 const saveMemoryCoupons = (coupons) => {
   memoryCoupons = coupons;
-  isCouponsUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_coupons', JSON.stringify(coupons));
-    }
-  } catch (e) {}
+  setStore('coupons', coupons);
 };
 
-let isCategoriesUserModified = false;
-let memoryCategories = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_categories') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isCategoriesUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [...DEFAULT_CATEGORIES];
-})();
-
+let memoryCategories = getStore('categories', [...DEFAULT_CATEGORIES]);
 const saveMemoryCategories = (cats) => {
   memoryCategories = cats;
-  isCategoriesUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_categories', JSON.stringify(cats));
-    }
-  } catch (e) {}
+  setStore('categories', cats);
 };
 
-let isFoodsUserModified = false;
-let memoryFoods = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_foods') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isFoodsUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [...DEFAULT_FOODS];
-})();
-
+let memoryFoods = getStore('foods', [...DEFAULT_FOODS]);
 const saveMemoryFoods = (foods) => {
   memoryFoods = foods;
-  isFoodsUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_foods', JSON.stringify(foods));
-    }
-  } catch (e) {}
+  setStore('foods', foods);
 };
 
-let isBranchesUserModified = false;
-let memoryBranches = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_branches') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isBranchesUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [...DEFAULT_BRANCHES];
-})();
-
+let memoryBranches = getStore('branches', [...DEFAULT_BRANCHES]);
 const saveMemoryBranches = (branches) => {
   memoryBranches = branches;
-  isBranchesUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_branches', JSON.stringify(branches));
-    }
-  } catch (e) {}
+  setStore('branches', branches);
 };
 
-let isEmployeesUserModified = false;
-let memoryEmployees = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_employees') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) {
-        isEmployeesUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return [
-    { id: 1, name: 'Executive Admin', email: 'admin@cometoeat.com', role: 'admin', branch_id: 1, branch_name: 'Indiranagar (Flagship)' },
-    { id: 2, name: 'Chef Vikram (Kitchen Staff)', email: 'chef@cometoeat.com', role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)' }
-  ];
-})();
-
+let memoryEmployees = getStore('employees', [
+  { id: 1, name: 'Executive Admin', email: 'admin@cometoeat.com', role: 'admin', branch_id: 1, branch_name: 'Indiranagar (Flagship)' },
+  { id: 2, name: 'Chef Vikram (Kitchen Staff)', email: 'chef@cometoeat.com', role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)' }
+]);
 const saveMemoryEmployees = (employees) => {
   memoryEmployees = employees;
-  isEmployeesUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_employees', JSON.stringify(employees));
-    }
-  } catch (e) {}
+  setStore('employees', employees);
 };
 
-let isSettingsUserModified = false;
-let memorySettings = (() => {
-  try {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('cte_settings') : null;
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === 'object') {
-        isSettingsUserModified = true;
-        return parsed;
-      }
-    }
-  } catch (e) {}
-  return { ...DEFAULT_SETTINGS };
-})();
-
+let memorySettings = getStore('settings', { ...DEFAULT_SETTINGS });
 const saveMemorySettings = (settings) => {
   memorySettings = settings;
-  isSettingsUserModified = true;
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cte_settings', JSON.stringify(settings));
-    }
-  } catch (e) {}
+  setStore('settings', settings);
 };
 
-
-
-
-const DEFAULT_ORDERS = [
-  {
-    id: 101,
-    order_number: 'CTE-101',
-    customer_name: 'Alex Rivera',
-    customer_email: 'alex@example.com',
-    customer_phone: '+91 98765 43210',
-    delivery_type: 'delivery',
-    delivery_address: 'Flat 402, Green Glen Heights, HSR Layout, Bengaluru',
-    item_total: 468,
-    total_amount: 468,
-    taxes: 23.4,
-    tax_amount: 23.4,
-    delivery_fee: 30,
-    discount_amount: 50,
-    coupon_code: 'WELCOME50',
-    final_amount: 471.4,
-    payment_method: 'UPI',
-    payment_status: 'successful',
-    order_status: 'Order Placed',
-    estimated_delivery_minutes: 30,
-    branch_id: 1,
-    branch_name: 'Indiranagar (Flagship)',
-    items: [
-      { id: 1, name: 'Double Smash Gourmet Burger', price: 249, quantity: 1, unit_price: 249 },
-      { id: 3, name: 'Brown Sugar Tiger Boba Milk', price: 219, quantity: 1, unit_price: 219 }
-    ],
-    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    updated_at: new Date(Date.now() - 1000 * 60 * 5).toISOString()
-  },
-  {
-    id: 102,
-    order_number: 'CTE-102',
-    customer_name: 'Priya Nair',
-    customer_email: 'priya@gmail.com',
-    customer_phone: '+91 98111 22334',
-    delivery_type: 'delivery',
-    delivery_address: '80 Feet Road, Koramangala 4th Block, Bengaluru',
-    item_total: 368,
-    total_amount: 368,
-    taxes: 18.4,
-    tax_amount: 18.4,
-    delivery_fee: 30,
-    discount_amount: 0,
-    final_amount: 416.4,
-    payment_method: 'Credit Card',
-    payment_status: 'successful',
-    order_status: 'Preparing',
-    estimated_delivery_minutes: 25,
-    branch_id: 1,
-    branch_name: 'Indiranagar (Flagship)',
-    items: [
-      { id: 5, name: 'Steamed Darjeeling Chicken Momos', price: 189, quantity: 1, unit_price: 189 },
-      { id: 6, name: 'Pan-Fried Schezwan Paneer Momos', price: 179, quantity: 1, unit_price: 179 }
-    ],
-    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    updated_at: new Date(Date.now() - 1000 * 60 * 10).toISOString()
-  },
-  {
-    id: 103,
-    order_number: 'CTE-103',
-    customer_name: 'Rahul Mehta',
-    customer_email: 'rahul.m@yahoo.com',
-    customer_phone: '+91 97777 88899',
-    delivery_type: 'delivery',
-    delivery_address: '27th Main, Sector 1, HSR Layout, Bengaluru',
-    item_total: 528,
-    total_amount: 528,
-    taxes: 26.4,
-    tax_amount: 26.4,
-    delivery_fee: 0,
-    discount_amount: 100,
-    coupon_code: 'FEAST100',
-    final_amount: 454.4,
-    payment_method: 'UPI',
-    payment_status: 'successful',
-    order_status: 'Ready',
-    estimated_delivery_minutes: 15,
-    branch_id: 1,
-    branch_name: 'Indiranagar (Flagship)',
-    items: [
-      { id: 7, name: 'Neapolitan Margherita Pizza', price: 349, quantity: 1, unit_price: 349 },
-      { id: 8, name: 'Belgian Choco Molten Lava Cake', price: 179, quantity: 1, unit_price: 179 }
-    ],
-    created_at: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
-    updated_at: new Date(Date.now() - 1000 * 60 * 5).toISOString()
-  },
-  {
-    id: 104,
-    order_number: 'CTE-104',
-    customer_name: 'Ananya Sharma',
-    customer_email: 'ananya@outlook.com',
-    customer_phone: '+91 96666 55443',
-    delivery_type: 'delivery',
-    delivery_address: '100 Feet Rd, Indiranagar, Bengaluru',
-    item_total: 269,
-    total_amount: 269,
-    taxes: 13.45,
-    tax_amount: 13.45,
-    delivery_fee: 30,
-    discount_amount: 0,
-    final_amount: 312.45,
-    payment_method: 'UPI',
-    payment_status: 'successful',
-    order_status: 'Out for Delivery',
-    estimated_delivery_minutes: 10,
-    branch_id: 1,
-    branch_name: 'Indiranagar (Flagship)',
-    items: [
-      { id: 2, name: 'Truffle Mushroom Swiss Burger', price: 269, quantity: 1, unit_price: 269 }
-    ],
-    created_at: new Date(Date.now() - 1000 * 60 * 35).toISOString(),
-    updated_at: new Date(Date.now() - 1000 * 60 * 12).toISOString()
-  },
-  {
-    id: 105,
-    order_number: 'CTE-105',
-    customer_name: 'Vikram Seth',
-    customer_email: 'vikram.seth@gmail.com',
-    customer_phone: '+91 95555 44332',
-    delivery_type: 'delivery',
-    delivery_address: 'ITPB Main Road, Whitefield, Bengaluru',
-    item_total: 458,
-    total_amount: 458,
-    taxes: 22.9,
-    tax_amount: 22.9,
-    delivery_fee: 30,
-    discount_amount: 0,
-    final_amount: 510.9,
-    payment_method: 'Net Banking',
-    payment_status: 'successful',
-    order_status: 'Delivered',
-    estimated_delivery_minutes: 0,
-    branch_id: 1,
-    branch_name: 'Indiranagar (Flagship)',
-    items: [
-      { id: 3, name: 'Brown Sugar Tiger Boba Milk', price: 219, quantity: 1, unit_price: 219 },
-      { id: 4, name: 'Matcha Green Tea Cheese Foam', price: 239, quantity: 1, unit_price: 239 }
-    ],
-    created_at: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
-    updated_at: new Date(Date.now() - 1000 * 60 * 20).toISOString()
-  },
-  {
-    id: 106,
-    order_number: 'CTE-106',
-    customer_name: 'Deepak Rao',
-    customer_email: 'deepak.rao@gmail.com',
-    customer_phone: '+91 94444 33221',
-    delivery_type: 'delivery',
-    delivery_address: 'Indiranagar 12th Main, Bengaluru',
-    item_total: 438,
-    total_amount: 438,
-    taxes: 21.9,
-    tax_amount: 21.9,
-    delivery_fee: 30,
-    discount_amount: 50,
-    coupon_code: 'WELCOME50',
-    final_amount: 439.9,
-    payment_method: 'UPI',
-    payment_status: 'successful',
-    order_status: 'Order Placed',
-    estimated_delivery_minutes: 30,
-    branch_id: 1,
-    branch_name: 'Indiranagar (Flagship)',
-    items: [
-      { id: 1, name: 'Double Smash Gourmet Burger', price: 249, quantity: 1, unit_price: 249 },
-      { id: 5, name: 'Steamed Darjeeling Chicken Momos', price: 189, quantity: 1, unit_price: 189 }
-    ],
-    created_at: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
-    updated_at: new Date(Date.now() - 1000 * 60 * 3).toISOString()
-  }
-];
-
-// localStorage — used ONLY for user session data, orders, and addresses (never for admin-editable content)
 function getStoredOrders() {
-  try {
-    const raw = localStorage.getItem('cte_local_orders');
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) { return []; }
+  return getStore('local_orders', []);
 }
 
 function saveStoredOrder(order) {
   const all = getStoredOrders();
-  const idx = all.findIndex(o => o.id === order.id || o.order_number === order.order_number);
-  if (idx >= 0) { all[idx] = { ...all[idx], ...order }; } else { all.unshift(order); }
-  try { localStorage.setItem('cte_local_orders', JSON.stringify(all.slice(0, 50))); } catch (e) {}
-}
-
-/**
- * After any Supabase write, re-fetch the entire table and broadcast to all clients.
- * Guarantees the broadcast payload is always cloud-fresh — never a stale merged version.
- */
-async function refetchAndBroadcast(table, broadcastFn, orderBy = 'id') {
-  if (!supabase) return [];
-  try {
-    const { data } = await supabase.from(table).select('*').order(orderBy, { ascending: true });
-    if (data && broadcastFn) broadcastFn(data);
-    return data || [];
-  } catch (e) { return []; }
+  const idx = all.findIndex(o => String(o.id) === String(order.id) || o.order_number === order.order_number);
+  if (idx >= 0) {
+    all[idx] = { ...all[idx], ...order };
+  } else {
+    all.unshift(order);
+  }
+  setStore('local_orders', all.slice(0, 50));
 }
 
 // ==============================================================================
@@ -572,20 +256,29 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       try {
         const { data: adminData, error: adminErr } = await supabase
           .from('admins')
-          .select('*, branches(name, code)')
+          .select('*')
           .ilike('email', cleanEmail)
           .maybeSingle();
 
         if (!adminErr && adminData) {
           if (adminData.password === password || password === 'admin123' || password === 'employee123') {
+            let branchName = 'Indiranagar (Flagship)';
+            let branchCode = 'INDIRA';
+            if (adminData.branch_id) {
+              const { data: br } = await supabase.from('branches').select('name, code').eq('id', adminData.branch_id).maybeSingle();
+              if (br) {
+                branchName = br.name;
+                branchCode = br.code;
+              }
+            }
             const userPayload = {
               id: adminData.id,
               name: adminData.name,
               email: adminData.email,
               role: adminData.role || 'admin',
               branch_id: adminData.branch_id || 1,
-              branch_name: adminData.branches?.name || 'Indiranagar (Flagship)',
-              branch_code: adminData.branches?.code || 'INDIRA',
+              branch_name: branchName,
+              branch_code: branchCode,
               pending_branch_id: adminData.pending_branch_id || null,
               transfer_status: adminData.transfer_status || 'none'
             };
@@ -688,7 +381,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       try {
         const { data, error } = await supabase
           .from('admins')
-          .select('*, branches(name, code)')
+          .select('*')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -697,8 +390,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
             success: true,
             user: {
               ...data,
-              branch_name: data.branches?.name || user.branch_name,
-              branch_code: data.branches?.code || user.branch_code
+              branch_name: user.branch_name,
+              branch_code: user.branch_code
             }
           };
         }
@@ -759,20 +452,14 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // 2. CATEGORIES
   // -------------------------------------------------------------
   if (cleanPath === '/categories' || cleanPath === '/categories/admin') {
-    if (isCategoriesUserModified) {
-      const result = cleanPath === '/categories'
-        ? memoryCategories.filter(c => c.is_active !== false && c.is_active !== 0)
-        : memoryCategories;
-      return { success: true, categories: result };
-    }
     if (supabase) {
       try {
         const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
         if (!error && data && data.length) {
+          saveMemoryCategories(data);
           const result = cleanPath === '/categories'
             ? data.filter(c => c.is_active !== false && c.is_active !== 0)
             : data;
-          memoryCategories = data;
           return { success: true, categories: result };
         }
       } catch (e) {}
@@ -784,7 +471,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/categories' && method === 'POST') {
-    const newId = Date.now();
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryCategories.map(c => Number(c.id) || 0));
+    const newId = maxId + 1;
     const catPayload = {
       id: newId,
       name: body.name || 'New Category',
@@ -798,13 +487,12 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     let createdCat = catPayload;
     if (supabase) {
       try {
-        const { id, ...dbPayload } = catPayload;
-        const { data, error } = await supabase.from('categories').insert([dbPayload]).select().single();
+        const { data, error } = await supabase.from('categories').insert([catPayload]).select().single();
         if (!error && data) createdCat = data;
       } catch (e) {}
     }
 
-    const updated = [...memoryCategories, createdCat];
+    const updated = [...memoryCategories.filter(c => String(c.id) !== String(createdCat.id)), createdCat];
     saveMemoryCategories(updated);
     broadcastCategories(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:categories_updated', { detail: updated }));
@@ -812,6 +500,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'PUT') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const catId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     const updatePayload = { ...body };
@@ -833,6 +522,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/categories/') && method === 'DELETE') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const catId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
@@ -847,16 +537,15 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     return { success: true, message: 'Category deleted', categories: updated };
   }
 
-  // ── FOODS ─────────────────────────────────────────────────────────────
+  // -------------------------------------------------------------
+  // 3. FOODS
+  // -------------------------------------------------------------
   if (cleanPath === '/foods') {
-    if (isFoodsUserModified) {
-      return { success: true, foods: memoryFoods };
-    }
     if (supabase) {
       try {
         const { data, error } = await supabase.from('food_items').select('*').order('id', { ascending: true });
         if (!error && data && data.length) {
-          memoryFoods = data;
+          saveMemoryFoods(data);
           return { success: true, foods: data };
         }
       } catch (e) {}
@@ -867,23 +556,19 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath.startsWith('/foods/') && cleanPath.endsWith('/availability') && method === 'PATCH') {
     const rawId = cleanPath.split('/')[2];
     const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
-    let updatedItem = null;
+
+    const existingFood = memoryFoods.find(f => String(f.id) === String(rawId));
+    const currentAvail = existingFood ? (existingFood.is_available === true || existingFood.is_available === 1) : true;
+    const nextAvail = currentAvail ? 0 : 1;
 
     if (supabase) {
       try {
-        const { data: item } = await supabase.from('food_items').select('is_available').eq('id', foodId).maybeSingle();
-        if (item) {
-          const isAvailable = item.is_available === true || item.is_available === 1;
-          const { data } = await supabase.from('food_items').update({ is_available: isAvailable ? 0 : 1 }).eq('id', foodId).select().single();
-          if (data) updatedItem = data;
-        }
+        await supabase.from('food_items').update({ is_available: nextAvail }).eq('id', foodId);
       } catch (e) {}
     }
 
     const updated = memoryFoods.map(f => {
       if (String(f.id) === String(rawId)) {
-        const currentAvail = f.is_available === true || f.is_available === 1;
-        const nextAvail = currentAvail ? 0 : 1;
         return { ...f, is_available: nextAvail };
       }
       return f;
@@ -896,20 +581,20 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath.startsWith('/foods/') && method === 'GET') {
     const rawId = cleanPath.split('/')[2];
-    const found = memoryFoods.find(f => String(f.id) === String(rawId));
-    if (found) return { success: true, food: found };
-
     if (supabase) {
       try {
         const { data } = await supabase.from('food_items').select('*').eq('id', rawId).maybeSingle();
         if (data) return { success: true, food: data };
       } catch (e) {}
     }
-    return { success: true, food: memoryFoods[0] };
+    const found = memoryFoods.find(f => String(f.id) === String(rawId));
+    return { success: true, food: found || memoryFoods[0] };
   }
 
   if (cleanPath === '/foods' && method === 'POST') {
-    const newId = Date.now();
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryFoods.map(f => Number(f.id) || 0));
+    const newId = maxId + 1;
     const foodPayload = {
       id: newId,
       name: body.name || 'Delicious Dish',
@@ -929,13 +614,12 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     let createdFood = foodPayload;
     if (supabase) {
       try {
-        const { id, ...dbPayload } = foodPayload;
-        const { data, error } = await supabase.from('food_items').insert([dbPayload]).select().single();
+        const { data, error } = await supabase.from('food_items').insert([foodPayload]).select().single();
         if (!error && data) createdFood = data;
       } catch (e) {}
     }
 
-    const updated = [...memoryFoods, createdFood];
+    const updated = [...memoryFoods.filter(f => String(f.id) !== String(createdFood.id)), createdFood];
     saveMemoryFoods(updated);
     broadcastFoods(updated);
     if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('cte:foods_updated', { detail: updated }));
@@ -943,6 +627,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'PUT') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     const updatePayload = { ...body };
@@ -970,6 +655,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/foods/') && method === 'DELETE') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const foodId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
@@ -988,18 +674,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   // 4. HERO SLIDES
   // -------------------------------------------------------------
   if (cleanPath === '/hero-slides' || cleanPath === '/hero-slides/admin') {
-    if (isHeroSlidesUserModified) {
-      const filteredMemory = cleanPath === '/hero-slides' 
-        ? memoryHeroSlides.filter(s => s.is_active !== false && s.is_active !== 0)
-        : memoryHeroSlides;
-      const formattedMemory = filteredMemory.map(s => ({
-        ...s,
-        desc: s.desc_text || s.desc || '',
-        desc_text: s.desc_text || s.desc || ''
-      }));
-      return { success: true, slides: formattedMemory };
-    }
-
     if (supabase) {
       try {
         const { data, error } = await supabase
@@ -1008,34 +682,27 @@ export async function directSupabaseRequest(endpoint, options = {}) {
           .order('sort_order', { ascending: true });
 
         if (!error && data && data.length) {
-          let slides = data;
-          if (cleanPath === '/hero-slides') {
-            slides = data.filter(s => s.is_active !== false && s.is_active !== 0);
-          }
-          const formatted = slides.map(s => ({
+          const formatted = data.map(s => ({
             ...s,
             desc: s.desc_text || s.desc || '',
             desc_text: s.desc_text || s.desc || ''
           }));
-          // Save to memory store
-          memoryHeroSlides = formatted;
-          return { success: true, slides: formatted };
+          saveMemoryHeroSlides(formatted);
+          const slides = cleanPath === '/hero-slides' ? formatted.filter(s => s.is_active !== false && s.is_active !== 0) : formatted;
+          return { success: true, slides };
         }
       } catch (e) {}
     }
-    const filteredMemory = cleanPath === '/hero-slides' 
+    const filteredMemory = cleanPath === '/hero-slides'
       ? memoryHeroSlides.filter(s => s.is_active !== false && s.is_active !== 0)
       : memoryHeroSlides;
-    const formattedMemory = filteredMemory.map(s => ({
-      ...s,
-      desc: s.desc_text || s.desc || '',
-      desc_text: s.desc_text || s.desc || ''
-    }));
-    return { success: true, slides: formattedMemory };
+    return { success: true, slides: filteredMemory };
   }
 
   if (cleanPath === '/hero-slides' && method === 'POST') {
-    const newId = Date.now();
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryHeroSlides.map(s => Number(s.id) || 0));
+    const newId = maxId + 1;
     const payload = {
       id: newId,
       tag: body.tag || 'CHEF SPECIAL',
@@ -1055,7 +722,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     let createdSlide = payload;
     if (supabase) {
       try {
-        const { id, desc, ...dbPayload } = payload;
+        const { desc, ...dbPayload } = payload;
         const { data, error } = await supabase.from('hero_slides').insert([dbPayload]).select().single();
         if (!error && data) {
           createdSlide = { ...data, desc: data.desc_text || data.desc || '' };
@@ -1063,7 +730,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       } catch (e) {}
     }
 
-    const updated = [...memoryHeroSlides, createdSlide];
+    const updated = [...memoryHeroSlides.filter(s => String(s.id) !== String(createdSlide.id)), createdSlide];
     saveMemoryHeroSlides(updated);
     broadcastHeroSlides(updated);
     if (typeof window !== 'undefined') {
@@ -1073,6 +740,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'PUT') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const slideId = isNaN(Number(rawId)) ? rawId : Number(rawId);
 
@@ -1098,7 +766,8 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         const { desc, ...dbPayload } = payload;
         const { data, error } = await supabase
           .from('hero_slides')
-          .upsert({ id: slideId, ...dbPayload }, { onConflict: 'id' })
+          .update(dbPayload)
+          .eq('id', slideId)
           .select()
           .single();
         if (!error && data) {
@@ -1107,17 +776,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       } catch (e) {}
     }
 
-    let found = false;
-    let updatedList = memoryHeroSlides.map(s => {
-      if (String(s.id) === String(rawId)) {
-        found = true;
-        return { ...s, ...updatedSlide };
-      }
-      return s;
-    });
-    if (!found) {
-      updatedList.push(updatedSlide);
-    }
+    const updatedList = memoryHeroSlides.map(s => String(s.id) === String(rawId) ? { ...s, ...updatedSlide } : s);
     saveMemoryHeroSlides(updatedList);
     broadcastHeroSlides(updatedList);
     if (typeof window !== 'undefined') {
@@ -1127,6 +786,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/hero-slides/') && method === 'DELETE') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const slideId = isNaN(Number(rawId)) ? rawId : Number(rawId);
 
@@ -1154,7 +814,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         let q = supabase.from('offer_banners').select('*').order('id', { ascending: true });
         if (cleanPath === '/offers') q = q.eq('is_active', 1);
         const { data, error } = await q;
-        if (!error && data && data.length) return { success: true, offers: data };
+        if (!error && data && data.length) {
+          saveMemoryOffers(data);
+          return { success: true, offers: data };
+        }
       } catch (e) {}
     }
     const filteredOffers = cleanPath === '/offers' ? memoryOffers.filter(o => o.is_active !== 0) : memoryOffers;
@@ -1162,20 +825,26 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/offers' && method === 'POST') {
-    let created = { id: Date.now(), ...body };
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryOffers.map(o => Number(o.id) || 0));
+    const newId = maxId + 1;
+    const offerData = { id: newId, ...body };
+
+    let created = offerData;
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('offer_banners').insert([body]).select().single();
+        const { data, error } = await supabase.from('offer_banners').insert([offerData]).select().single();
         if (!error && data) created = data;
       } catch (e) {}
     }
-    const updated = [...memoryOffers, created];
+    const updated = [...memoryOffers.filter(o => String(o.id) !== String(created.id)), created];
     saveMemoryOffers(updated);
     broadcastOffers(updated);
     return { success: true, offer: created, offers: updated };
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'PUT') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const offerId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     let updatedOffer = { id: offerId, ...body };
@@ -1192,6 +861,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/offers/') && method === 'DELETE') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const offerId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
@@ -1217,7 +887,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         }
         const { data, error } = await q;
         if (!error && data && data.length) {
-          memoryCoupons = data;
+          saveMemoryCoupons(data);
           return { success: true, coupons: data };
         }
       } catch (e) {}
@@ -1238,7 +908,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
 
     let coupon = memoryCoupons.find(c => c.code.toUpperCase() === cleanCode);
-    if (!coupon && supabase) {
+    if (supabase) {
       try {
         const { data, error } = await supabase
           .from('coupons')
@@ -1315,7 +985,9 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/coupons' && method === 'POST') {
-    const newId = Date.now();
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryCoupons.map(c => Number(c.id) || 0));
+    const newId = maxId + 1;
     const newCouponData = {
       id: newId,
       code: (body.code || '').trim().toUpperCase(),
@@ -1332,19 +1004,19 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     let createdCoupon = newCouponData;
     if (supabase) {
       try {
-        const { id, ...dbPayload } = newCouponData;
-        const { data, error } = await supabase.from('coupons').insert([dbPayload]).select().single();
+        const { data, error } = await supabase.from('coupons').insert([newCouponData]).select().single();
         if (!error && data) createdCoupon = data;
       } catch (e) {}
     }
 
-    const updated = [...memoryCoupons, createdCoupon];
+    const updated = [...memoryCoupons.filter(c => String(c.id) !== String(createdCoupon.id)), createdCoupon];
     saveMemoryCoupons(updated);
     broadcastCoupons(updated);
     return { success: true, coupon: createdCoupon, coupons: updated };
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'PUT') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const couponId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     const updateData = {
@@ -1372,6 +1044,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/coupons/') && method === 'DELETE') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const couponId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
@@ -1393,7 +1066,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       try {
         const { data, error } = await supabase.from('branches').select('*').order('id', { ascending: true });
         if (!error && data && data.length) {
-          memoryBranches = data;
+          saveMemoryBranches(data);
           return { success: true, branches: data };
         }
       } catch (e) {}
@@ -1403,35 +1076,36 @@ export async function directSupabaseRequest(endpoint, options = {}) {
 
   if (cleanPath.startsWith('/branches/') && method === 'GET') {
     const rawId = cleanPath.split('/')[2];
-    const found = memoryBranches.find(br => String(br.id) === String(rawId));
-    if (found) return { success: true, branch: found };
     if (supabase) {
       try {
         const { data, error } = await supabase.from('branches').select('*').eq('id', rawId).maybeSingle();
         if (!error && data) return { success: true, branch: data };
       } catch (e) {}
     }
-    return { success: true, branch: memoryBranches[0] };
+    const found = memoryBranches.find(br => String(br.id) === String(rawId));
+    return { success: true, branch: found || memoryBranches[0] };
   }
 
   if (cleanPath === '/branches' && method === 'POST') {
-    const newId = Date.now();
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryBranches.map(b => Number(b.id) || 0));
+    const newId = maxId + 1;
     const branchData = { id: newId, ...body };
     let createdBranch = branchData;
     if (supabase) {
       try {
-        const { id, ...dbPayload } = branchData;
-        const { data, error } = await supabase.from('branches').insert([dbPayload]).select().single();
+        const { data, error } = await supabase.from('branches').insert([branchData]).select().single();
         if (!error && data) createdBranch = data;
       } catch (e) {}
     }
-    const updated = [...memoryBranches, createdBranch];
+    const updated = [...memoryBranches.filter(b => String(b.id) !== String(createdBranch.id)), createdBranch];
     saveMemoryBranches(updated);
     broadcastBranches(updated);
     return { success: true, branch: createdBranch, branches: updated };
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'PUT') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const branchId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     let updatedBranch = { id: branchId, ...body };
@@ -1448,6 +1122,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/branches/') && method === 'DELETE') {
+    requireAdminRole();
     const rawId = cleanPath.split('/')[2];
     const branchId = isNaN(Number(rawId)) ? rawId : Number(rawId);
     if (supabase) {
@@ -1473,7 +1148,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
             const map = {};
             data.forEach(item => { map[item.setting_key] = item.setting_value; });
             const merged = { ...DEFAULT_SETTINGS, ...map };
-            memorySettings = merged;
+            saveMemorySettings(merged);
             return { success: true, settings: merged };
           }
         } catch (e) {}
@@ -1482,6 +1157,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
     }
 
     if (method === 'PUT') {
+      requireAdminRole();
       const merged = { ...memorySettings, ...body };
       saveMemorySettings(merged);
       broadcastSettings(merged);
@@ -1515,10 +1191,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
           if (!error && data && data.length) return { success: true, reviews: data };
         } catch (e) {}
       }
-      return { success: true, reviews: [
+      return { success: true, reviews: getStore('reviews', [
         { id: 1, user_name: 'Ananya Sharma', rating: 5, comment: 'The Double Smash Burger is truly the best in Bengaluru!', created_at: new Date().toISOString() },
         { id: 2, user_name: 'Rahul Mehta', rating: 5, comment: 'Brown Sugar Tiger Boba is authentic Taiwanese quality.', created_at: new Date().toISOString() }
-      ] };
+      ]) };
     }
 
     if (method === 'POST') {
@@ -1594,7 +1270,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
         if (!orderErr && insertedOrder) {
           createdOrder = insertedOrder;
 
-          // Insert order items if table exists
           if (body.items && Array.isArray(body.items)) {
             try {
               const itemsPayload = body.items.map(item => ({
@@ -1617,19 +1292,13 @@ export async function directSupabaseRequest(endpoint, options = {}) {
       createdOrder = { id: Date.now(), ...orderRecord };
     }
 
-    // Increment times_used on coupon if applicable
     if (body.coupon_code) {
       const appliedCode = body.coupon_code.trim().toUpperCase();
-      if (supabase) {
-        try {
-          await supabase.rpc('increment_coupon_usage', { coupon_code_param: appliedCode }).catch(() => {});
-        } catch (e) {}
-      }
       const localCoupons = getStore('coupons', DEFAULT_COUPONS);
       const cpIdx = localCoupons.findIndex(c => c.code.toUpperCase() === appliedCode);
       if (cpIdx >= 0) {
         localCoupons[cpIdx].times_used = (localCoupons[cpIdx].times_used || 0) + 1;
-        setStore('coupons', localCoupons);
+        saveMemoryCoupons(localCoupons);
       }
     }
 
@@ -1854,6 +1523,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/admin/customers/') && cleanPath.endsWith('/block') && method === 'PATCH') {
+    requireAdminRole();
     const id = cleanPath.split('/')[3];
     if (supabase) {
       try {
@@ -1867,12 +1537,10 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/admin/employees') {
-    if (!isEmployeesUserModified && supabase) {
+    if (supabase) {
       try {
-        // Fetch admins without relational join (avoids FK requirement → 400 error)
         const { data, error } = await supabase.from('admins').select('*').order('id', { ascending: true });
         if (!error && data && data.length) {
-          // Separately fetch branches to map names
           let branchMap = {};
           try {
             const { data: branchData } = await supabase.from('branches').select('id, name, code');
@@ -1886,6 +1554,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
             branch_name: branchMap[e.branch_id]?.name || 'Indiranagar (Flagship)',
             branch_code: branchMap[e.branch_id]?.code || 'INDIRA'
           }));
+          saveMemoryEmployees(mapped);
           return { success: true, employees: mapped };
         }
       } catch (e) {}
@@ -1897,19 +1566,24 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath === '/admin/employees' && method === 'POST') {
-    let newEmp = { id: Date.now(), role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)', ...body };
+    requireAdminRole();
+    const maxId = Math.max(0, ...memoryEmployees.map(e => Number(e.id) || 0));
+    const newId = maxId + 1;
+    let newEmp = { id: newId, role: 'employee', branch_id: 1, branch_name: 'Indiranagar (Flagship)', ...body };
+
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('admins').insert([body]).select().single();
+        const { data, error } = await supabase.from('admins').insert([{ id: newId, role: 'employee', branch_id: 1, ...body }]).select().single();
         if (!error && data) newEmp = data;
       } catch (e) {}
     }
-    const updated = [newEmp, ...memoryEmployees];
+    const updated = [...memoryEmployees.filter(e => String(e.id) !== String(newEmp.id)), newEmp];
     saveMemoryEmployees(updated);
     return { success: true, employee: newEmp };
   }
 
   if (cleanPath.startsWith('/admin/employees/') && cleanPath.endsWith('/transfer') && method === 'POST') {
+    requireAdminRole();
     const id = cleanPath.split('/')[3];
     const { targetBranchId } = body;
     if (supabase) {
@@ -1923,6 +1597,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/admin/employees/') && cleanPath.endsWith('/cancel-transfer') && method === 'POST') {
+    requireAdminRole();
     const id = cleanPath.split('/')[3];
     if (supabase) {
       try {
@@ -1970,7 +1645,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/admin/payments') {
     if (supabase) {
       try {
-        // Plain select to avoid FK join 400 error (payments→orders FK not defined in Supabase)
         const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
         if (!error && data && data.length) return { success: true, payments: data };
       } catch (e) {}
@@ -1984,6 +1658,7 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   }
 
   if (cleanPath.startsWith('/admin/payments/') && cleanPath.endsWith('/refund') && method === 'POST') {
+    requireAdminRole();
     const orderId = cleanPath.split('/')[3];
     if (supabase) {
       try {
@@ -1996,7 +1671,6 @@ export async function directSupabaseRequest(endpoint, options = {}) {
   if (cleanPath === '/admin/deliveries') {
     if (supabase) {
       try {
-        // Plain select to avoid FK join 400 error (delivery_orders→orders FK not defined in Supabase)
         const { data, error } = await supabase.from('delivery_orders').select('*').order('updated_at', { ascending: false });
         if (!error && data && data.length) return { success: true, deliveries: data };
       } catch (e) {}
